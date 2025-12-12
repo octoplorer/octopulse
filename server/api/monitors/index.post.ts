@@ -1,4 +1,4 @@
-import { db ,schema} from 'hub:db';   
+import { db, schema } from 'hub:db'
 
 /**
  * POST /monitors
@@ -6,20 +6,19 @@ import { db ,schema} from 'hub:db';
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event);
+  verifyAuth(event)
 
-  const body = await readBody(event);
-  
+  const body = await readBody(event)
+
   // Validate required fields
   if (!body.name || !body.url) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
       message: 'Missing required fields: name, url',
-    });
+    })
   }
- 
-  
+
   // Insert new monitor
   const newMonitor = await db.insert(schema.monitors).values({
     name: body.name,
@@ -31,9 +30,9 @@ export default defineEventHandler(async (event) => {
     keyword: body.keyword || null,
     userAgent: body.userAgent || null,
     createdAt: new Date().toISOString(),
-  }).returning();
+  }).returning()
 
   return {
     monitor: newMonitor[0],
-  };
-});
+  }
+})

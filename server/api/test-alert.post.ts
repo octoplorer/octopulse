@@ -4,19 +4,20 @@
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event);
+  verifyAuth(event)
 
-  const body = await readBody(event);
-  
+  const body = await readBody(event)
+
   // This is a placeholder for testing
+  // eslint-disable-next-line no-console
   console.log('Test alert triggered:', {
     message: body.message || 'Test alert',
     timestamp: new Date().toISOString(),
-  });
+  })
 
   return {
     success: true,
     message: 'Test alert sent (placeholder)',
     timestamp: new Date().toISOString(),
-  };
-});
+  }
+})

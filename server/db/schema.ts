@@ -1,5 +1,5 @@
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
+import { relations } from 'drizzle-orm'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // monitors table
 export const monitors = sqliteTable('monitors', {
@@ -17,7 +17,7 @@ export const monitors = sqliteTable('monitors', {
   certExpiry: text('cert_expiry'), // DATETIME stored as ISO string
   checkInfoStatus: text('check_info_status'),
   createdAt: text('created_at').notNull(), // DATETIME stored as ISO string
-});
+})
 
 // logs table
 export const logs = sqliteTable('logs', {
@@ -30,16 +30,16 @@ export const logs = sqliteTable('logs', {
   isFail: integer('is_fail').notNull().default(0), // BOOLEAN as INTEGER (0/1)
   reason: text('reason'),
   createdAt: text('created_at').notNull(), // DATETIME stored as ISO string
-});
+})
 
 // Relations
 export const monitorsRelations = relations(monitors, ({ many }) => ({
   logs: many(logs),
-}));
+}))
 
 export const logsRelations = relations(logs, ({ one }) => ({
   monitor: one(monitors, {
     fields: [logs.monitorId],
     references: [monitors.id],
   }),
-}));
+}))

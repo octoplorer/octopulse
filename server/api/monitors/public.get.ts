@@ -1,12 +1,12 @@
-import { db, schema } from 'hub:db'; 
+import { db, schema } from 'hub:db'
 
-const monitors = schema.monitors;
+const monitors = schema.monitors
 
 /**
  * GET /monitors/public
  * Get public monitoring data (no authentication required)
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   // Get all monitors with public information only
   const allMonitors = await db.select({
     id: monitors.id,
@@ -16,14 +16,14 @@ export default defineEventHandler(async (event) => {
     lastCheck: monitors.lastCheck,
     certExpiry: monitors.certExpiry,
     domainExpiry: monitors.domainExpiry,
-  }).from(monitors);
+  }).from(monitors)
 
   // Calculate overall system status
-  const hasDown = allMonitors.some(m => m.status === 'DOWN');
-  const systemStatus = hasDown ? 'Disruption' : 'Operational';
+  const hasDown = allMonitors.some(m => m.status === 'DOWN')
+  const systemStatus = hasDown ? 'Disruption' : 'Operational'
 
   return {
     status: systemStatus,
     monitors: allMonitors,
-  };
-});
+  }
+})

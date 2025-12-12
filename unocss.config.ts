@@ -1,18 +1,18 @@
 import {
   defineConfig,
-  presetWind4,
   presetAttributify,
+  presetWind4,
   transformerDirectives,
-  transformerVariantGroup
+  transformerVariantGroup,
 } from 'unocss'
 
 export default defineConfig({
   presets: [
     presetWind4(),
-    presetAttributify()
+    presetAttributify(),
   ],
   transformers: [
     transformerDirectives(),
-    transformerVariantGroup()
-  ]
+    transformerVariantGroup(),
+  ],
 })

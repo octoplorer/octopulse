@@ -21,4 +21,4 @@ Alway import `db` which is drizzle database and `schema` which define in `~serve
 import { db } from 'hub:db'
 ```
 
-Should excute command `npx nuxt db generate` after `ni` or edited database schema.
+Should excute command `nr db:generate` after `ni` or edited database schema.

@@ -1,4 +1,4 @@
-import { db, schema } from 'hub:db';
+import { db, schema } from 'hub:db'
 
 /**
  * GET /monitors
@@ -6,12 +6,12 @@ import { db, schema } from 'hub:db';
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event);
+  verifyAuth(event)
 
   // Get all monitors with full details
-  const allMonitors = await db.select().from(schema.monitors);
+  const allMonitors = await db.select().from(schema.monitors)
 
   return {
     monitors: allMonitors,
-  };
-});
+  }
+})

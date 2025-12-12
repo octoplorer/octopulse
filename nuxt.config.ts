@@ -6,16 +6,16 @@ export default defineNuxtConfig({
     '@nuxthub/core',
     '@unocss/nuxt',
     '@vueuse/nuxt',
-    '@nuxt/eslint'
+    '@nuxt/eslint',
   ],
 
   hub: {
-    db: 'sqlite'
+    db: 'sqlite',
   },
 
   eslint: {
     config: {
-      standalone: false
-    }
-  }
+      standalone: false,
+    },
+  },
 })
