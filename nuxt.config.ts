@@ -18,4 +18,13 @@ export default defineNuxtConfig({
       standalone: false,
     },
   },
+
+  nitro: {
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      '* * * * *': ['check-monitors'], // Run every minute
+    },
+  },
 })
