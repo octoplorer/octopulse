@@ -1,0 +1,12 @@
+---
+description: 
+globs: *.vue,*.tsx
+alwaysApply: false
+---
+Please prioritize code quality and strictly adhere to the following guidelines:
+
+1. Minimize code duplication as much as possible.
+   1. Extract types used multiple times into shared Type definitions.
+   2. Encapsulate repeatedly used component code into reusable generic components.
+2. Avoid bloated components with excessive logic. You must achieve this by extracting logic into custom Vue Composables or by splitting the UI into smaller sub-components.
+3. Demonstrate proficiency with the Vue Composition API when implementing Vue components.
