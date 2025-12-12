@@ -1,5 +1,24 @@
 ---
 alwaysApply: true
 ---
+# Overview
 
-This is an uptime monitoring website built with Nuxt 4 and Nuxthub.
+This is an uptime monitoring website built with Nuxt 4 and Nuxthub, and styling with unocss.
+
+## NPM package manager
+
+Should be pnpm, but alway install package with `[ni](https://github.com/antfu-collective/ni)` and related command.
+
+## How to use Nuxthub?
+
+Nuxthub is a Nuxt module provider a complete backend experience on top of the framework that can deploy on many cloud providers, allowing developers to build full-stack applications.
+
+### Database
+
+Alway import `db` which is drizzle database and `schema` which define in `~server/db/schema.ts` from `hub:db`.
+
+```ts
+import { db } from 'hub:db'
+```
+
+Should excute command `npx nuxt db generate` after `ni` or edited database schema.

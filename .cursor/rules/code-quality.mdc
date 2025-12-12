@@ -1,6 +1,6 @@
 ---
 description: 
-globs: *.vue,*.tsx
+globs: *.vue,*.tsx,*.ts
 alwaysApply: false
 ---
 Please prioritize code quality and strictly adhere to the following guidelines:
