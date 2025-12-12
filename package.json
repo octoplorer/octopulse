@@ -8,8 +8,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare && simple-git-hooks",
-    "db:generate": "npx nuxt db generate",
+    "postinstall": "nuxt prepare && simple-git-hooks && pnpm db:generate",
+    "db:generate": "nuxt db generate",
+    "db:migrate": "nuxt db migrate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
