@@ -2,9 +2,20 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxthub/core', '@unocss/nuxt', '@vueuse/nuxt'],
+  modules: [
+    '@nuxthub/core',
+    '@unocss/nuxt',
+    '@vueuse/nuxt',
+    '@nuxt/eslint'
+  ],
 
   hub: {
     db: 'sqlite'
+  },
+
+  eslint: {
+    config: {
+      standalone: false
+    }
   }
 })
