@@ -12,7 +12,7 @@ const { error, isLoading, mutateAsync } = useMutation({
   },
   async onSuccess() {
     await fetch()
-    await navigateTo('/')
+    await navigateTo('/admin')
   },
 })
 

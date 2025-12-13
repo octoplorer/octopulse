@@ -5,7 +5,7 @@ const { data, isLoading } = useQuery({
 })
 const queryCache = useQueryCache()
 const colorMode = useColorMode()
-const { clear } = useUserSession()
+const { loggedIn, clear } = useUserSession()
 
 function onThemeToggle() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -71,7 +71,7 @@ function onThemeToggle() {
         </button>
 
         <button
-          v-if="$route.path === '/admin'"
+          v-if="loggedIn"
           bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
           un-text="zinc-500 dark:zinc-400"
           class="transition-all"
@@ -99,6 +99,12 @@ function onThemeToggle() {
           }"
         >
           <div i-lucide:refresh-cw size-5 aria-hidden="true" />
+        </button>
+        <button
+          v-if="loggedIn"
+          class="ml-2 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+        >
+          管理服务
         </button>
       </div>
     </div>

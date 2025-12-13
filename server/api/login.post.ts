@@ -15,7 +15,9 @@ export default eventHandler(async (event) => {
     })
   }
   await setUserSession(event, {
-    user: {},
+    user: {
+      login: 'nuxt-pulse',
+    },
   })
   return { ok: true }
 })
