@@ -1,45 +1,87 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-// monitors table
-export const monitors = sqliteTable('monitors', {
+// #region [TABLES]
+export const services = sqliteTable('services', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+
+  /**
+   * Service type
+   *
+   * - `public`: service will show service url to public
+   * - `private`: service will not show service url to public
+   *
+   * @default 'public'
+   */
+  type: text('type', { enum: ['public', 'private'] }).default('public'),
+  /** Service name */
   name: text('name').notNull(),
+  /** Service tags */
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull(),
+
+  /** Service health check url */
   url: text('url').notNull(),
-  method: text('method').notNull().default('GET'),
+  /** Service health check method */
+  method: text('method', { enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] }).notNull().default('GET'),
+
+  /** Service health check interval in seconds */
   interval: integer('interval').notNull(),
-  status: text('status').notNull(), // UP/DOWN/RETRYING
-  retryCount: integer('retry_count').notNull().default(0),
-  lastCheck: text('last_check'), // DATETIME stored as ISO string
-  keyword: text('keyword'), // Optional
-  userAgent: text('user_agent'), // Optional
-  domainExpiry: text('domain_expiry'), // DATETIME stored as ISO string
-  certExpiry: text('cert_expiry'), // DATETIME stored as ISO string
-  checkInfoStatus: text('check_info_status'),
-  createdAt: text('created_at').notNull(), // DATETIME stored as ISO string
+
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch('now'))`)
+    .$onUpdate(() => new Date())
+    .notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch('now'))`)
+    .notNull(),
 })
 
-// logs table
-export const logs = sqliteTable('logs', {
+export const serviceLogs = sqliteTable('service_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  monitorId: integer('monitor_id')
+  serviceId: integer('service_id')
     .notNull()
-    .references(() => monitors.id, { onDelete: 'cascade' }),
+    .references(() => services.id, { onDelete: 'cascade' }),
+
+  status: text('status', { enum: ['up', 'timeout', 'error'] })
+    .notNull(),
+  latency: integer('latency'),
+
+  timestamp: integer('timestamp', { mode: 'timestamp' })
+    .default(sql`(unixepoch('now'))`)
+    .notNull(),
+
   statusCode: integer('status_code'),
-  latency: integer('latency'), // Response time in ms
-  isFail: integer('is_fail').notNull().default(0), // BOOLEAN as INTEGER (0/1)
-  reason: text('reason'),
-  createdAt: text('created_at').notNull(), // DATETIME stored as ISO string
+  errorMessage: text('error_message'),
 })
 
-// Relations
-export const monitorsRelations = relations(monitors, ({ many }) => ({
-  logs: many(logs),
+export const incidents = sqliteTable('incidents', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  serviceId: integer('service_id')
+    .references(() => services.id)
+    .notNull(),
+  startTime: text('start_time').notNull(),
+  endTime: text('end_time'),
+  status: text('status', { enum: ['ongoing', 'resolved'] }).notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+})
+
+// #region [RELATIONS]
+export const monitorsRelations = relations(services, ({ many }) => ({
+  incidents: many(incidents),
+  logs: many(serviceLogs),
 }))
 
-export const logsRelations = relations(logs, ({ one }) => ({
-  monitor: one(monitors, {
-    fields: [logs.monitorId],
-    references: [monitors.id],
+export const serviceLogsRelations = relations(serviceLogs, ({ one }) => ({
+  service: one(services, {
+    fields: [serviceLogs.serviceId],
+    references: [services.id],
+  }),
+}))
+
+export const incidentsRelations = relations(incidents, ({ one }) => ({
+  service: one(services, {
+    fields: [incidents.serviceId],
+    references: [services.id],
   }),
 }))

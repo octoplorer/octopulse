@@ -1,17 +1,17 @@
 import { db, schema } from 'hub:db'
 
 /**
- * GET /monitors
- * Get all monitoring details (authentication required)
+ * GET /services
+ * Get all services (authentication required)
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
   verifyAuth(event)
 
   // Get all monitors with full details
-  const allMonitors = await db.select().from(schema.monitors)
+  const services = await db.select().from(schema.services)
 
   return {
-    monitors: allMonitors,
+    services,
   }
 })

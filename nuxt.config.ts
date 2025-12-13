@@ -11,6 +11,7 @@ export default defineNuxtConfig({
 
   hub: {
     db: 'sqlite',
+    kv: true,
   },
 
   eslint: {
@@ -24,7 +25,10 @@ export default defineNuxtConfig({
       tasks: true,
     },
     scheduledTasks: {
-      '* * * * *': ['check-monitors'], // Run every minute
+      '* * * * *': [
+        'check',
+        'incident',
+      ],
     },
   },
 })
