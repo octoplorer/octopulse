@@ -1,25 +1,44 @@
 <script setup lang="ts">
+const { data, isLoading } = useQuery({
+  key: ['overview'],
+  query: () => $fetch('/api/services/overviews'),
+})
 const queryCache = useQueryCache()
 </script>
 
 <template>
   <header
-    class="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors duration-300"
+    bg="white dark:zinc-900"
+    border="b zinc-200 dark:zinc-800"
+    class="sticky top-0 z-30 transition-colors duration-300"
   >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-end">
-      <div class="flex items-center gap-4">
-        <div class="hidden md:flex flex-col items-end mr-2">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-semibold tracking-wider">
+    <div
+      flex="~ items-center justify-end"
+      max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16
+    >
+      <div flex="~ items-center gap-4">
+        <div flex="md:~ col items-end" mr-2hidden>
+          <span
+            un-text="xs zinc-500 dark:zinc-400"
+            uppercase font-semibold tracking-wider
+          >
             最后更新
           </span>
           <span
-            class="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-200"
+            un-text="zinc-900 dark:zinc-200"
+            text-sm font-medium tabular-nums
           >
-            16:32:03
+            <NuxtTime
+              v-if="data" :datetime="data.timestamp"
+              day="numeric" month="long"
+              hour="2-digit" minute="2-digit" second="2-digit"
+            />
           </span>
         </div>
         <button
-          class="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-all"
+          bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
+          un-text="zinc-500 dark:zinc-400"
+          class="transition-all"
           :title="`Switch to ${$colorMode.value === 'dark' ? 'Light' : 'Dark'} Mode`"
           @click="() => $colorMode.preference = $colorMode.value === 'dark' ? 'light' : 'dark'"
         >
@@ -31,7 +50,10 @@ const queryCache = useQueryCache()
           </ClientOnly>
         </button>
         <button
-          class="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-zinc-500 dark:text-zinc-400"
+          bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
+          un-text="zinc-500 dark:zinc-400"
+          class="transition-all"
+          :class="isLoading ? 'animate-spin' : ''"
           title="Refresh Status"
           @click="() => {
             queryCache.invalidateQueries({ key: ['overview'] })
