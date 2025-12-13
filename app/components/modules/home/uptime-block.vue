@@ -34,7 +34,7 @@ const datetime = computed(() => {
 </script>
 
 <template>
-  <Tooltip.Root lazy-mount unmount-on-exit>
+  <Tooltip.Root>
     <Tooltip.Trigger class="group relative flex-1 h-8 min-w-[4px] mx-[1px] first:ml-0 last:mr-0">
       <div
         class="w-full h-full rounded-sm opacity-80 hover:opacity-100 transition-all duration-200 cursor-pointer hover:scale-110"
@@ -44,13 +44,13 @@ const datetime = computed(() => {
     <Teleport to="#teleports">
       <Tooltip.Positioner>
         <Tooltip.Content
-          space-y-1.5 divide="y zinc-200 dark:zinc-600"
+          flex="~ col gap-y-1.5" relative
+          divide="y zinc-200 dark:zinc-600"
           class="bg-white dark:bg-zinc-700 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-zinc-200 dark:border-zinc-600"
         >
-          <Tooltip.Arrow>
-            <Tooltip.ArrowTip />
+          <Tooltip.Arrow class="[--arrow-size:10px]" z--1>
+            <Tooltip.ArrowTip class="bg-zinc-200! dark:bg-zinc-600!" />
           </Tooltip.Arrow>
-
           <p class="text-zinc-900 dark:text-zinc-300 font-semibold" pb-1.5>
             <NuxtTime
               :datetime="datetime"
