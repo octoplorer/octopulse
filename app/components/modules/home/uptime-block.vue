@@ -60,7 +60,7 @@ const datetime = computed(() => {
 
           <div v-if="history.uptime" flex="~ items-center gap-2" pb-1.5>
             <span class="text-zinc-900 dark:text-zinc-300">在线率:</span>
-            <span class="font-medium text-emerald-400">{{ history.uptime }}%</span>
+            <span class="font-medium text-emerald-400">{{ history.uptime.toFixed(2) }}%</span>
           </div>
 
           <div v-else pb-1.5>
