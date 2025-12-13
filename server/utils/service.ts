@@ -1,4 +1,5 @@
-import { schema } from 'hub:db'
+import { desc, eq } from 'drizzle-orm'
+import { db, schema } from 'hub:db'
 
 export async function checkService(service: typeof schema.services.$inferSelect) {
   const startTime = Date.now()
@@ -49,4 +50,18 @@ export async function checkService(service: typeof schema.services.$inferSelect)
     `service:${service.id}`,
     status === 'up' ? ServiceStatus.Up : ServiceStatus.Down,
   )
+}
+
+export async function getServiceLogs(
+  serviceId: number,
+  limit: number = 30,
+  offset: number = 0,
+) {
+  return db
+    .select()
+    .from(schema.serviceLogs)
+    .where(eq(schema.serviceLogs.serviceId, serviceId))
+    .orderBy(desc(schema.serviceLogs.timestamp))
+    .limit(limit)
+    .offset(offset)
 }

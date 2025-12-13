@@ -14,8 +14,13 @@ export interface Service {
 
 export interface ServiceLog {
   status: 'up' | 'timeout' | 'error'
-  latency: number
+  latency: number | null
   statusCode: number
   errorMessage: string | null
   timestamp: Date
+}
+
+export interface ServiceOverview {
+  logs: Pick<ServiceLog, 'status' | 'latency' | 'timestamp'>[]
+  service: Service
 }

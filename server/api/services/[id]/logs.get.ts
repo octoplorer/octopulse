@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 /**
@@ -42,21 +42,10 @@ export default defineEventHandler(async (event) => {
 
   // Get query parameters for pagination
   const query = getQuery(event)
-  const limit = query.limit ? Number.parseInt(query.limit as string, 10) : 100
+  const limit = query.limit ? Number.parseInt(query.limit as string, 10) : 30
   const offset = query.offset ? Number.parseInt(query.offset as string, 10) : 0
 
-  // Get logs for this monitor, ordered by created_at descending
-  const monitorLogs = await db
-    .select()
-    .from(schema.serviceLogs)
-    .where(eq(schema.serviceLogs.serviceId, serviceId))
-    .orderBy(desc(schema.serviceLogs.timestamp))
-    .limit(limit)
-    .offset(offset)
+  const logs = await getServiceLogs(serviceId, limit, offset)
 
-  return {
-    serviceId,
-    logs: monitorLogs,
-    total: monitorLogs.length,
-  }
+  return logs
 })
