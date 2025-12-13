@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+globs: *.vue,*.tsx,*.ts
+---
+**Please adhere to the following rules when handling time-related data:**
+
+1. Ensure that time is maintained in **UTC** within server-side logic.
+2. When displaying time on the client side, ensure it is converted to the user's timezone using `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+3. Use **`Temporal`** APIs instead of the `Date` object for time processing.
+4. Since server API responses are serialized into strings when returning JSON data, you must process time data according to the actual type returned by the server. For example, if the server returns a `Temporal.ZonedDateTime`, the client must use `Temporal.ZonedDateTime.from` to reconstruct the `Temporal.ZonedDateTime` object. The same applies to `Temporal.PlainDateTime`, `Temporal.Instant`, `Temporal.Duration`, etc.
