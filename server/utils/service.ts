@@ -2,7 +2,7 @@ import { desc, eq } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 export async function checkService(service: typeof schema.services.$inferSelect) {
-  const startTime = Date.now()
+  let startTime = 0
 
   let status: 'up' | 'timeout' | 'error' = 'up'
 
@@ -15,6 +15,9 @@ export async function checkService(service: typeof schema.services.$inferSelect)
     },
     timeout: 30000,
     retry: 3,
+    onRequest() {
+      startTime = Date.now()
+    },
     onRequestError({ error }) {
       status = 'error'
       errorMessage = error.message
