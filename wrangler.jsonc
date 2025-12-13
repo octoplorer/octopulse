@@ -16,7 +16,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_id": "a30aa564-d388-493b-8994-23f8dfd129f5",
+      "database_id": "1388bb76-e986-4e0a-bf1d-46bbb0ecfc4d",
       "migrations_table": "_hub_migrations",
       "migrations_dir": ".output/server/db/migrations/sqlite/"
     }
