@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+const queryCache = useQueryCache()
 </script>
 
 <template>
@@ -33,6 +33,9 @@
         <button
           class="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-zinc-500 dark:text-zinc-400"
           title="Refresh Status"
+          @click="() => {
+            queryCache.invalidateQueries({ key: ['overview'] })
+          }"
         >
           <div class="i-lucide:refresh-cw w-5 h-5" aria-hidden="true" />
         </button>

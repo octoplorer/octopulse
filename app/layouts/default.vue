@@ -13,7 +13,7 @@ useHead({
   >
     <HomeHeaders />
 
-    <main flex-grow max-w-7xl mx-auto p="x4 sm:x6 lg:x8 y8">
+    <main flex-grow max-w-80rem w-full mx-auto p="x4 sm:x6 lg:x8 y8">
       <slot />
     </main>
 
