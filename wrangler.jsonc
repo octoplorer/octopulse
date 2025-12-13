@@ -20,5 +20,10 @@
       "migrations_table": "_hub_migrations",
       "migrations_dir": ".output/server/db/migrations/sqlite/"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": [
+      "0 0 * * *"
+    ]
+  }
 }
