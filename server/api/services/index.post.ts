@@ -5,7 +5,6 @@ const createServiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   url: z.url('Invalid URL format'),
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']).default('GET'),
-  interval: z.number().int().positive('Interval must be a positive integer').default(60),
   tags: z.array(z.string()).default([]),
   type: z.enum(['public', 'private']).default('public'),
 })
@@ -42,8 +41,7 @@ export default defineEventHandler(async (event) => {
   const [newService] = await db.insert(schema.services).values({
     name: body.name,
     url: body.url,
-    method: body.method || 'GET',
-    interval: body.interval || 60, // Default 60 seconds
+    method: body.method,
     tags: body.tags,
   }).returning()
 

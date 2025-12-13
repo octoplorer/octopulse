@@ -24,9 +24,6 @@ export const services = sqliteTable('services', {
   /** Service health check method */
   method: text('method', { enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] }).notNull().default('GET'),
 
-  /** Service health check interval in seconds */
-  interval: integer('interval').notNull(),
-
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .default(sql`(unixepoch('now'))`)
     .$onUpdate(() => new Date())

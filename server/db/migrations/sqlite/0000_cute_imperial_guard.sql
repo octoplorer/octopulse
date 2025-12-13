@@ -27,7 +27,6 @@ CREATE TABLE `services` (
 	`tags` text NOT NULL,
 	`url` text NOT NULL,
 	`method` text DEFAULT 'GET' NOT NULL,
-	`interval` integer NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch('now')) NOT NULL,
 	`created_at` integer DEFAULT (unixepoch('now')) NOT NULL
 );

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5312d189-54bc-491a-b53e-1ff6d959c41c",
+  "id": "2622f0ce-895d-4b5e-b662-00fe8559dab8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "incidents": {
@@ -197,13 +197,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'GET'"
-        },
-        "interval": {
-          "name": "interval",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         },
         "updated_at": {
           "name": "updated_at",
