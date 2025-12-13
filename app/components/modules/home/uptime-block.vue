@@ -114,7 +114,7 @@ const datetime = computed(() => {
             </div>
 
             <div v-if="history.latency" flex="~ items-center gap-2">
-              <span class="text-zinc-900 dark:text-zinc-300" i-lucide:gauge size-4 />
+              <span class="text-zinc-900 dark:text-zinc-300" i-lucide:zap size-4 />
               <span class="font-medium" :class="latencyColor">{{ history.latency }}ms</span>
             </div>
 

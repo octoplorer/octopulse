@@ -29,4 +29,6 @@ export interface ServiceHistroy {
 export interface ServiceOverview {
   service: Service
   histories: ServiceHistroy[]
+  /** Last check time as Temporal.ZonedDateTime */
+  lastCheckTime: Temporal.ZonedDateTime | null
 }

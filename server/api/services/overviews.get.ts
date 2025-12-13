@@ -1,4 +1,4 @@
-import { and, eq, gte } from 'drizzle-orm'
+import { and, desc, eq, gte } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 export default defineEventHandler(async () => {
@@ -21,6 +21,15 @@ export default defineEventHandler(async () => {
       )
       .orderBy(schema.serviceLogs.timestamp)
 
+    // Get the latest log for last check time
+    const latestLog = await db
+      .select()
+      .from(schema.serviceLogs)
+      .where(eq(schema.serviceLogs.serviceId, service.id))
+      .orderBy(desc(schema.serviceLogs.timestamp))
+      .limit(1)
+      .then(logs => logs[0] ?? null)
+
     const serviceLogsByDays = manageServiceLogsByDays(serviceLogs)
     const status = getServiceStatus(serviceLogs)
 
@@ -33,6 +42,15 @@ export default defineEventHandler(async () => {
       }))
       .sort((a, b) => a.date.epochMilliseconds - b.date.epochMilliseconds)
 
+    // Convert latest log timestamp to Temporal.ZonedDateTime
+    const lastCheckTime = latestLog
+      ? Temporal.Instant.fromEpochMilliseconds(
+          latestLog.timestamp instanceof Date
+            ? latestLog.timestamp.getTime()
+            : new Date(latestLog.timestamp).getTime(),
+        ).toZonedDateTimeISO('UTC')
+      : null
+
     overviews.push({
       histories: logs,
       service: {
@@ -42,6 +60,7 @@ export default defineEventHandler(async () => {
         url: service.url,
         status: status ?? ServiceStatus.Down,
       },
+      lastCheckTime,
     })
   }
   return {
