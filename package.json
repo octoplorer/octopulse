@@ -17,7 +17,7 @@
   "dependencies": {
     "@iconify-json/lucide": "^1.2.80",
     "@libsql/client": "^0.15.15",
-    "@nuxthub/core": "npm:@nuxthub/core-nightly",
+    "@nuxthub/core": "^0.10.1",
     "@unocss/nuxt": "66.5.10",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "14.1.0",

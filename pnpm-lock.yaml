@@ -15,8 +15,8 @@ importers:
         specifier: ^0.15.15
         version: 0.15.15
       '@nuxthub/core':
-        specifier: npm:@nuxthub/core-nightly
-        version: '@nuxthub/core-nightly@0.10.0-20251210-113644-c25eff9(db0@0.3.4(@libsql/client@0.15.15)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20251212.0)(@libsql/client@0.15.15)))(ioredis@5.8.2)(magicast@0.5.1)(synckit@0.11.11)(typescript@5.9.3)'
+        specifier: ^0.10.1
+        version: 0.10.1(db0@0.3.4(@libsql/client@0.15.15)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20251212.0)(@libsql/client@0.15.15)))(ioredis@5.8.2)(magicast@0.5.1)(synckit@0.11.11)(typescript@5.9.3)
       '@unocss/nuxt':
         specifier: 66.5.10
         version: 66.5.10(magicast@0.5.1)(postcss@8.5.6)(vite@7.2.7(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(yaml@2.8.2))(webpack@5.103.0(esbuild@0.25.12))
@@ -1007,8 +1007,8 @@ packages:
       rolldown:
         optional: true
 
-  '@nuxthub/core-nightly@0.10.0-20251210-113644-c25eff9':
-    resolution: {integrity: sha512-VFktj4wmtk+fWkGjuP8OZQSd4JgBhiAZqMttsHXzbWlUkW6GeppHcJS81oADuJGFmkAAdBiJo8lRr+/o5BqysA==}
+  '@nuxthub/core@0.10.1':
+    resolution: {integrity: sha512-oxbJNnHhNc6b2/gls02jM8OKGOa+h2mT0qVejz6B1EoEHQBiL38WdoQbvFJJP27o/C3Asz7sxdA6LRwEqzcHXA==}
     hasBin: true
 
   '@oxc-minify/binding-android-arm64@0.102.0':
@@ -6367,7 +6367,7 @@ snapshots:
       - vue-tsc
       - yaml
 
-  '@nuxthub/core-nightly@0.10.0-20251210-113644-c25eff9(db0@0.3.4(@libsql/client@0.15.15)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20251212.0)(@libsql/client@0.15.15)))(ioredis@5.8.2)(magicast@0.5.1)(synckit@0.11.11)(typescript@5.9.3)':
+  '@nuxthub/core@0.10.1(db0@0.3.4(@libsql/client@0.15.15)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20251212.0)(@libsql/client@0.15.15)))(ioredis@5.8.2)(magicast@0.5.1)(synckit@0.11.11)(typescript@5.9.3)':
     dependencies:
       '@cloudflare/workers-types': 4.20251212.0
       '@nuxt/kit': 4.2.2(magicast@0.5.1)
