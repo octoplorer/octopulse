@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@pinia/colada-nuxt',
     'nuxt-auth-utils',
+    'reka-ui',
   ],
 
   runtimeConfig: {

@@ -16,7 +16,6 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@ark-ui/vue": "^5.30.0",
     "@iconify-json/lucide": "^1.2.80",
     "@libsql/client": "^0.15.15",
     "@nuxthub/core": "^0.10.1",
@@ -42,6 +41,7 @@
     "eslint-plugin-format": "^1.1.0",
     "lint-staged": "^16.2.7",
     "nuxt-auth-utils": "^0.5.26",
+    "reka-ui": "^2.6.1",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "unocss": "^66.5.10",
