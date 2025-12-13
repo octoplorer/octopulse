@@ -43,6 +43,7 @@ export default defineEventHandler(async (event) => {
     url: body.url,
     method: body.method,
     tags: body.tags,
+    type: body.type,
   }).returning()
 
   return {
