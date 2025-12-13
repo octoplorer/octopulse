@@ -1,23 +1,40 @@
-import type { ServiceOverview } from '~~/shared/types/service'
+import { and, eq, gte } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 export default defineEventHandler(async () => {
   const services = await db.select().from(schema.services)
   const overviews: ServiceOverview[] = []
 
-  for (const service of services) {
-    const status = await kv.get<ServiceStatus>(`service:${service.id}`)
-    const serviceLogs = await getServiceLogs(service.id)
+  const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')
+  const thirtyDaysAgo = now.subtract(Temporal.Duration.from({ days: 30 }))
+  const thirtyDaysAgoDate = new Date(thirtyDaysAgo.toInstant().epochMilliseconds)
 
-    const logs = serviceLogs.map(log => ({
-      status: log.status,
-      latency: log.latency,
-      timestamp: new Date(log.timestamp),
-    }))
+  for (const service of services) {
+    const serviceLogs = await db
+      .select()
+      .from(schema.serviceLogs)
+      .where(
+        and(
+          eq(schema.serviceLogs.serviceId, service.id),
+          gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),
+        ),
+      )
+      .orderBy(schema.serviceLogs.timestamp)
+
+    const serviceLogsByDays = manageServiceLogsByDays(serviceLogs)
+    const status = getServiceStatus(serviceLogs)
+
+    const logs: ServiceHistroy[] = Array.from(serviceLogsByDays.entries())
+      .map(([date, logsByDay]) => ({
+        date: Temporal.ZonedDateTime.from(date),
+        uptime: logsByDay.uptime,
+      }))
+      .sort((a, b) => a.date.epochMilliseconds - b.date.epochMilliseconds)
 
     overviews.push({
-      logs,
+      histories: logs,
       service: {
+        id: service.id,
         name: service.name,
         tags: service.tags,
         url: service.url,
@@ -27,6 +44,6 @@ export default defineEventHandler(async () => {
   }
   return {
     overviews,
-    timestamp: new Date(),
+    timestamp: Temporal.Now.instant().toString(),
   }
 })

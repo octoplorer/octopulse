@@ -1,26 +1,28 @@
 export enum ServiceStatus {
-  /** Service is up */
-  Up = 'UP',
+  /** Service is operational */
+  Operational = 'operational',
+  /** Service is degraded */
+  Degraded = 'degraded',
   /** Service is down */
-  Down = 'DOWN',
+  Down = 'down',
+  /** Service is under maintenance */
+  Maintenance = 'maintenance',
 }
 
 export interface Service {
+  id: number
   name: string
   tags: string[]
   url: string | null
   status: ServiceStatus
 }
 
-export interface ServiceLog {
-  status: 'up' | 'timeout' | 'error'
-  latency: number | null
-  statusCode: number
-  errorMessage: string | null
-  timestamp: Date
+export interface ServiceHistroy {
+  uptime: number | null
+  date: Temporal.ZonedDateTime
 }
 
 export interface ServiceOverview {
-  logs: Pick<ServiceLog, 'status' | 'latency' | 'timestamp'>[]
   service: Service
+  histories: ServiceHistroy[]
 }
