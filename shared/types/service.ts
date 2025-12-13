@@ -19,6 +19,9 @@ export interface Service {
 
 export interface ServiceHistroy {
   uptime: number | null
+  /** latest latency */
+  latency: number | null
+  /** date by day */
   date: Temporal.ZonedDateTime
 }
 

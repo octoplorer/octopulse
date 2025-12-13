@@ -64,6 +64,7 @@ export async function getServiceLogs(
 export interface ServiceLogsByDays {
   total: number
   upCount: number
+  latency: number | null
   logs: typeof schema.serviceLogs.$inferSelect[]
   uptime: number
 }
@@ -86,6 +87,7 @@ export function manageServiceLogsByDays(
           return this.logs.filter(log => log.status === 'up').length
         },
         logs: [],
+        latency: null,
         get uptime() {
           return this.upCount / this.total * 100
         },
@@ -99,6 +101,7 @@ export function manageServiceLogsByDays(
     const serviceLogsByDay = serviceLogsByDays.get(date.toString())
     if (serviceLogsByDay) {
       serviceLogsByDay.logs.push(log)
+      serviceLogsByDay.latency = log.latency
     }
   }
 
@@ -109,13 +112,13 @@ export function getServiceStatus(
   logs: typeof schema.serviceLogs.$inferSelect[],
 ): ServiceStatus {
   const now = Temporal.Now.instant()
-  const threeHoursAgo = now.subtract(Temporal.Duration.from({ hours: 3 }))
-  const threeHoursAgoDate = new Date(threeHoursAgo.epochMilliseconds)
+  const halfDayAgo = now.subtract(Temporal.Duration.from({ hours: 12 }))
+  const halfDayAgoDate = new Date(halfDayAgo.epochMilliseconds)
 
   // Filter logs from the last 3 hours
   const recentLogs = logs.filter((log) => {
     const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)
-    return logDate >= threeHoursAgoDate
+    return logDate >= halfDayAgoDate
   })
 
   // If no logs in the last 3 hours, return down
@@ -128,7 +131,7 @@ export function getServiceStatus(
   const uptime = (upCount / recentLogs.length) * 100
 
   // Calculate status based on uptime percentage
-  if (uptime === 100) {
+  if (uptime >= 99.5) {
     return ServiceStatus.Operational
   }
   else if (uptime > 98) {

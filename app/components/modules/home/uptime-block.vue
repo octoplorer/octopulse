@@ -7,11 +7,11 @@ const props = defineProps<{
   history: SerializeObject<ServiceHistroy>
 }>()
 
-const uptimeColor = computed(() => {
+const uptimeBgColor = computed(() => {
   if (props.history.uptime === null) {
     return 'bg-gray-400'
   }
-  if (props.history.uptime === 100) {
+  if (props.history.uptime > 99.5) {
     return 'bg-emerald-500'
   }
   else if (props.history.uptime > 98) {
@@ -19,6 +19,36 @@ const uptimeColor = computed(() => {
   }
   else {
     return 'bg-rose-500'
+  }
+})
+
+const uptimeTextColor = computed(() => {
+  if (props.history.uptime === null) {
+    return 'text-gray-400'
+  }
+  if (props.history.uptime > 99.5) {
+    return 'text-emerald-500'
+  }
+  else if (props.history.uptime > 98) {
+    return 'text-amber-400'
+  }
+  else {
+    return 'text-rose-500'
+  }
+})
+
+const latencyColor = computed(() => {
+  if (props.history.latency === null) {
+    return 'text-gray-400'
+  }
+  if (props.history.latency > 800) {
+    return 'text-rose-500'
+  }
+  else if (props.history.latency > 500) {
+    return 'text-amber-400'
+  }
+  else {
+    return 'text-emerald-500'
   }
 })
 
@@ -38,7 +68,7 @@ const datetime = computed(() => {
     <Tooltip.Trigger class="group relative flex-1 h-8 min-w-[4px] mx-[1px] first:ml-0 last:mr-0">
       <div
         class="w-full h-full rounded-sm opacity-80 hover:opacity-100 transition-all duration-200 cursor-pointer hover:scale-110"
-        :class="uptimeColor"
+        :class="uptimeBgColor"
       />
     </Tooltip.Trigger>
     <Teleport to="#teleports">
@@ -58,13 +88,20 @@ const datetime = computed(() => {
             />
           </p>
 
-          <div v-if="history.uptime" flex="~ items-center gap-2" pb-1.5>
-            <span class="text-zinc-900 dark:text-zinc-300">在线率:</span>
-            <span class="font-medium text-emerald-400">{{ history.uptime.toFixed(2) }}%</span>
-          </div>
+          <div pb-1.5 flex="~ items-center gap-2">
+            <div v-if="history.uptime" flex="~ items-center gap-2">
+              <span class="text-zinc-900 dark:text-zinc-300" i-lucide:clock-arrow-up size-4 />
+              <span class="font-medium" :class="uptimeTextColor">{{ history.uptime.toFixed(2) }}%</span>
+            </div>
 
-          <div v-else pb-1.5>
-            <span class="text-gray-400">无数据</span>
+            <div v-if="history.latency" flex="~ items-center gap-2">
+              <span class="text-zinc-900 dark:text-zinc-300" i-lucide:gauge size-4 />
+              <span class="font-medium" :class="latencyColor">{{ history.latency }}ms</span>
+            </div>
+
+            <div v-else>
+              <span class="text-gray-400">无数据</span>
+            </div>
           </div>
 
           <div v-if="outages.length > 0" pb-1.5>
