@@ -15,6 +15,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@ark-ui/vue": "^5.30.0",
     "@iconify-json/lucide": "^1.2.80",
     "@libsql/client": "^0.15.15",
     "@nuxthub/core": "^0.10.1",
