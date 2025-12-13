@@ -8,7 +8,7 @@ import { db, schema } from 'hub:db'
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event)
+  await requireUserSession(event)
 
   const id = getRouterParam(event, 'id')
 

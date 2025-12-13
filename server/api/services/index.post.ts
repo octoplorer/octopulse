@@ -15,7 +15,7 @@ const createServiceSchema = z.object({
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event)
+  await requireUserSession(event)
 
   const validateBody = await readValidatedBody(event, createServiceSchema.safeParse)
   if (!validateBody.success) {

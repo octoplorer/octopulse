@@ -4,7 +4,7 @@
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event)
+  await requireUserSession(event)
 
   const body = await readBody(event)
 

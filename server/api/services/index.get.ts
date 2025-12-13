@@ -6,7 +6,7 @@ import { db, schema } from 'hub:db'
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
-  verifyAuth(event)
+  await requireUserSession(event)
 
   // Get all monitors with full details
   const services = await db.select().from(schema.services)

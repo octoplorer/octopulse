@@ -55,6 +55,7 @@ function onThemeToggle() {
           </ClientOnly>
         </button>
         <button
+          v-if="$route.path === '/'"
           bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
           un-text="zinc-500 dark:zinc-400"
           class="transition-all"
