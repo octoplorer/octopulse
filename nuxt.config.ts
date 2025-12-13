@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@pinia/nuxt',
     '@pinia/colada-nuxt',
+    'nuxt-auth-utils',
   ],
 
   components: {

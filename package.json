@@ -41,6 +41,7 @@
     "@pinia/nuxt": "^0.11.3",
     "eslint-plugin-format": "^1.1.0",
     "lint-staged": "^16.2.7",
+    "nuxt-auth-utils": "^0.5.26",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "unocss": "^66.5.10",
