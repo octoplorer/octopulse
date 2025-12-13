@@ -15,7 +15,7 @@ const averageUptime = computed(() => {
     return acc + serviceUptime
   }, 0) ?? 0
 
-  return uptimes / totalServices.value
+  return (uptimes / totalServices.value).toFixed(2)
 })
 </script>
 

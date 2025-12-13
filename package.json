@@ -6,8 +6,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "deploy-cloudflare": "NITRO_PRESET=cloudflare_module npm run build && npx wrangler deploy && npx wrangler d1 migrations apply DB --remote",
+    "deploy-vercel": "npx vercel deploy",
     "postinstall": "nuxt prepare && simple-git-hooks && pnpm db:generate",
     "db:generate": "nuxt db generate",
     "db:migrate": "nuxt db migrate",
@@ -43,6 +44,15 @@
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "unocss": "^66.5.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "workerd"
+    ]
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged"
