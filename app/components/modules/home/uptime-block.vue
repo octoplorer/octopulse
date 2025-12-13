@@ -125,14 +125,17 @@ const datetime = computed(() => {
 
           <div v-if="outages.length > 0" pb-1.5>
             <div class="flex justify-between items-center mb-1">
-              <span class="text-rose-300 dark:text-rose-300 font-medium">中断时段</span>
+              <span class="text-rose-600 dark:text-rose-300 font-medium">中断时段</span>
             </div>
 
             <div flex="~ col gap-1">
               <span
                 v-for="(outage, idx) in outages"
                 :key="idx"
-                class="bg-rose-950/40 border border-rose-900/30 text-rose-200 px-1.5 py-0.5 rounded text-[10px] font-mono"
+                bg="rose-50/50 dark:rose-950/50"
+                border="~ rose-100/30 dark:rose-900/30 rounded"
+                un-text="rose-800 dark:rose-200"
+                class="px-1.5 py-0.5 text-10px font-mono"
               >
                 {{ outage }}
               </span>
