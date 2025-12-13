@@ -53,12 +53,29 @@ const latencyColor = computed(() => {
 })
 
 const outages = computed<string[]>(() => {
-  // TODO
-  return []
+  return props.history.outages.map((outage) => {
+    const from = Temporal.ZonedDateTime.from(outage.from)
+      .withTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    const duration = Temporal.Duration.from(outage.duration)
+    const to = from.add(duration)
+
+    const fromString = from.toLocaleString('zh-CN', {
+      timeStyle: 'long',
+      hourCycle: 'h24',
+    })
+
+    const endString = to.toLocaleString('zh-CN', {
+      timeStyle: 'long',
+      hourCycle: 'h24',
+    })
+
+    return `${fromString} ~ ${endString}`
+  })
 })
 
 const datetime = computed(() => {
-  const instant = Temporal.Instant.from(props.history.date)
+  const instant = Temporal.ZonedDateTime.from(props.history.date)
+    .withTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone)
   return new Date(instant.epochMilliseconds)
 })
 </script>
@@ -84,7 +101,9 @@ const datetime = computed(() => {
           <p class="text-zinc-900 dark:text-zinc-300 font-semibold" pb-1.5>
             <NuxtTime
               :datetime="datetime"
-              year="2-digit" month="long" day="numeric"
+              year="numeric"
+              month="long"
+              day="numeric"
             />
           </p>
 

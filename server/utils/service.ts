@@ -67,6 +67,7 @@ export interface ServiceLogsByDays {
   latency: number | null
   logs: typeof schema.serviceLogs.$inferSelect[]
   uptime: number
+  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]
 }
 
 export function manageServiceLogsByDays(
@@ -86,10 +87,15 @@ export function manageServiceLogsByDays(
         get upCount() {
           return this.logs.filter(log => log.status === 'up').length
         },
-        logs: [],
-        latency: null,
         get uptime() {
           return this.upCount / this.total * 100
+        },
+        logs: [],
+        get latency() {
+          return this.logs.at(-1)?.latency ?? null
+        },
+        get outages() {
+          return getOutages(this.logs)
         },
       }
       return [date, logsByDay]
@@ -101,7 +107,6 @@ export function manageServiceLogsByDays(
     const serviceLogsByDay = serviceLogsByDays.get(date.toString())
     if (serviceLogsByDay) {
       serviceLogsByDay.logs.push(log)
-      serviceLogsByDay.latency = log.latency
     }
   }
 
@@ -140,4 +145,56 @@ export function getServiceStatus(
   else {
     return ServiceStatus.Down
   }
+}
+
+export function getOutages(histories: typeof schema.serviceLogs.$inferSelect[]) {
+  // Returns an array of outage periods: [{ from: Temporal.ZonedDateTime, duration: Temporal.Duration }]
+  // Outage is defined as contiguous logs where status !== 'up'
+
+  if (!histories || histories.length === 0)
+    return []
+
+  // Make sure logs are ordered
+  const sorted = [...histories].sort((a, b) => {
+    const aDate = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime()
+    const bDate = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime()
+    return aDate - bDate
+  })
+
+  const outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[] = []
+
+  let inOutage = false
+  let outageStart: Temporal.ZonedDateTime | null = null
+  let lastTimestamp: Temporal.ZonedDateTime | null = null
+
+  for (const log of sorted) {
+    const logDate = log.timestamp instanceof Date
+      ? Temporal.Instant.fromEpochMilliseconds(log.timestamp.getTime()).toZonedDateTimeISO('UTC')
+      : Temporal.Instant.fromEpochMilliseconds(new Date(log.timestamp).getTime()).toZonedDateTimeISO('UTC')
+
+    if (log.status !== 'up') {
+      if (!inOutage) {
+        inOutage = true
+        outageStart = logDate
+      }
+    }
+    else {
+      if (inOutage && outageStart) {
+        // Outage ends at previous log's timestamp
+        const duration = logDate.since(outageStart)
+        outages.push({ from: outageStart, duration })
+        inOutage = false
+        outageStart = null
+      }
+    }
+    lastTimestamp = logDate
+  }
+
+  // If still in outage at the end, measure until lastTimestamp (last log)
+  if (inOutage && outageStart && lastTimestamp) {
+    const duration = lastTimestamp.since(outageStart)
+    outages.push({ from: outageStart, duration })
+  }
+
+  return outages
 }

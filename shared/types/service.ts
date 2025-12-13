@@ -23,6 +23,7 @@ export interface ServiceHistroy {
   latency: number | null
   /** date by day */
   date: Temporal.ZonedDateTime
+  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]
 }
 
 export interface ServiceOverview {

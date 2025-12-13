@@ -29,6 +29,7 @@ export default defineEventHandler(async () => {
         date: Temporal.ZonedDateTime.from(date),
         uptime: logsByDay.uptime,
         latency: logsByDay.latency,
+        outages: logsByDay.outages,
       }))
       .sort((a, b) => a.date.epochMilliseconds - b.date.epochMilliseconds)
 
