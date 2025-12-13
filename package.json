@@ -43,7 +43,8 @@
     "lint-staged": "^16.2.7",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
-    "unocss": "^66.5.10"
+    "unocss": "^66.5.10",
+    "wrangler": "^4.54.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
