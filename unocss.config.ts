@@ -10,7 +10,11 @@ import {
 export default defineConfig({
   presets: [
     presetWind4(),
-    presetAttributify(),
+    presetAttributify({
+      ignoreAttributes: [
+        'text',
+      ],
+    }),
     presetIcons(),
   ],
   transformers: [
