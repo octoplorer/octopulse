@@ -39,7 +39,6 @@ export default defineNuxtConfig({
     scheduledTasks: {
       '* * * * *': [
         'check',
-        'incident',
       ],
     },
     typescript: {
