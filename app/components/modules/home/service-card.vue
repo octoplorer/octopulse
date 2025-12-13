@@ -90,7 +90,10 @@ const latencyColor = computed(() => {
 
 <template>
   <div
-    class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-all duration-300"
+    bg="white dark:zinc-900"
+    border="xl zinc-200 dark:zinc-800"
+    overflow-hidden shadow-sm hover:shadow-md
+    transition-all duration-300
   >
     <div p-5 flex="~ grow col">
       <div flex="~ justify-between items-start" data-part="header">
@@ -105,11 +108,12 @@ const latencyColor = computed(() => {
             />
             <div
               v-if="overview.service.status === ServiceStatus.Operational"
-              class="absolute top-0 left-0 size-3 rounded-full bg-emerald-500 opacity-50 animate-ping"
+              absolute top-0 left-0 size-3
+              rounded-full bg-emerald-500 opacity-50 animate-ping
             />
           </div>
           <div>
-            <h3 class="text-lg font-bold text-zinc-800 dark:text-zinc-100 leading-tight transition-colors">
+            <h3 un-text="lg zinc-800 dark:zinc-100" font-bold leading-tight transition-colors>
               {{ overview.service.name }}
             </h3>
             <NuxtLink
@@ -117,15 +121,21 @@ const latencyColor = computed(() => {
               :href="overview.service.url"
               external
               rel="noopener noreferrer"
-              class="text-sm text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 mt-0.5 transition-colors"
+              un-text="sm zinc-500 dark:zinc-400 hover:indigo-600 dark:hover:indigo-400"
+              flex="~ items-center gap-1"
+              mt-0.5
+              transition-colors
             >
               {{ overview.service.url }}
-              <div size-4 class="i-lucide:external-link" />
+              <div size-4 i-lucide:external-link />
             </NuxtLink>
           </div>
         </div>
         <span
-          class="px-3 py-1 rounded-full text-xs font-medium text-white"
+          p="x3 y1"
+          rounded-full
+          un-text="xs white"
+          font-medium
           :class="getStatusColor(overview.service.status)"
         >
           {{ getStatusText(overview.service.status) }}
@@ -133,47 +143,61 @@ const latencyColor = computed(() => {
       </div>
 
       <div
-        class="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 border-dashed flex items-center justify-between gap-4"
+        mt-4 pt-3
+        border="t zinc-100 dark:zinc-800 dashed"
+        flex="~ items-center justify-between gap-4"
         data-part="information"
       >
         <div
           v-if="overview.service.tags && overview.service.tags.length > 0"
           flex="~ item-center 1 gap-1.5"
-          class="min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mask-linear-fade"
+          min-w-0 overflow-x-auto
+          class="[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mask-linear-fade"
         >
           <span
             v-for="tag in overview.service.tags"
             :key="tag"
-            flex="inline items-center"
-            class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50 whitespace-nowrap shrink-0"
+            flex="inline items-center shrink-0"
+            p="x2 y0.5"
+            un-text="[10px] zinc-600 dark:zinc-400"
+            font-medium
+            bg="zinc-100 dark:zinc-800"
+            border="rounded zinc-200 dark:zinc-700/50"
+            whitespace-nowrap
           >
             {{ tag }}
           </span>
         </div>
 
-        <div class="flex items-center gap-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0 ml-auto pl-2 bg-white dark:bg-zinc-900 shadow-[-8px_0_4px_-4px_rgba(255,255,255,0.8)] dark:shadow-[-8px_0_4px_-4px_rgba(24,24,27,0.8)]">
-          <div class="flex items-center gap-1.5" title="实时延迟">
+        <div
+          flex="~ items-center gap-3 shrink-0"
+          un-text="xs zinc-500 dark:zinc-400"
+          font-medium ml-auto pl-2
+          bg="white dark:zinc-900"
+          class="shadow-[-8px_0_4px_-4px_rgba(255,255,255,0.8)] dark:shadow-[-8px_0_4px_-4px_rgba(24,24,27,0.8)]"
+        >
+          <div flex="~ items-center gap-1.5" title="实时延迟">
             <div size-13px i-lucide:zap :class="latencyColor" aria-hidden="true" />
             <span>{{ latestLatency }}ms</span>
           </div>
-          <div class="w-px h-3 bg-zinc-200 dark:bg-zinc-700" />
-          <div class="flex items-center gap-1.5" title="最后更新">
-            <div size-13px i-lucide:clock class="text-zinc-600 dark:text-zinc-400" aria-hidden="true" />
-            <span class="tabular-nums">{{ lastCheckTime }}</span>
+          <div w-px h-3 bg="zinc-200 dark:zinc-700" />
+          <div flex="~ items-center gap-1.5" title="最后更新">
+            <div size-13px i-lucide:clock un-text="zinc-600 dark:zinc-400" aria-hidden="true" />
+            <span tabular-nums>{{ lastCheckTime }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Bottom Section: Uptime Percentage and History -->
-    <div data-part="visualizer" px-5 pb-5 mt-auto>
+    <div data-part="visualizer" p="x5 b5" mt-auto>
       <div pt-2 border="t zinc-100 dark:zinc-800/50">
-        <div class="flex justify-between items-center mb-3">
-          <div class="flex items-baseline gap-2">
-            <span class="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+        <div flex="~ justify-between items-center" mb-3>
+          <div flex="~ items-baseline gap-2">
+            <span un-text="2xl zinc-800 dark:zinc-100" font-bold>
               {{ uptimePercentage.toFixed(2) }}%
             </span>
-            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">30天在线率</span>
+            <span un-text="xs zinc-500 dark:zinc-400" font-medium>30天在线率</span>
           </div>
         </div>
         <div flex="~ items-center gap-2px" w-full h-8>
@@ -183,7 +207,7 @@ const latencyColor = computed(() => {
             :history="history"
           />
         </div>
-        <div class="flex justify-between mt-2 text-[10px] text-zinc-400 dark:text-zinc-500">
+        <div flex="~ justify-between" mt-2 un-text="[10px] zinc-400 dark:zinc-500">
           <span>30天前</span>
           <span>今天</span>
         </div>

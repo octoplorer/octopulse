@@ -7,12 +7,12 @@ For most CSS styles, utilize [UnoCSS Attributify mode](https://unocss.dev/preset
 
 Prefer use the UnoCSS Attributify mode, especially in the following cases:
 
-1. `flex="~ col 1 items-center justify-between"`: Flex-related utilities.
-2. `grid="~ cols-1 lg:cols-3 gap-4"`: Grid-related utilities.
-3. `un-text="sm zinc-600 dark:zinc-400"`: Text-related utilities. Use the `un-text` attribute name to avoid conflicts, as `text` is a common prop.
-4. `border="2 rounded blue-200"`: Border-related utilities.
-5. `p="y2 x4"`, `m="y2 x4"`: Padding and margin-related utilities. If applying to a single axis only, use syntax like `px="2"` or `mx="2"`.
-6. `bg="zinc-400 dark:zinc-600"`: Background-related utilities. If setting gradients, it is best to apply them directly within the `class` attribute or use individual attribute values.
+1. `flex="~ col 1 items-center justify-between"`: flex utilities.
+2. `grid="~ cols-1 lg:cols-3 gap-4"`: grid related utilities.
+3. `un-text="sm zinc-600 dark:zinc-400"`: text utilities. Use the `un-text` attribute name to avoid conflicts, as `text` is a common prop.
+4. `border="2 rounded blue-200"`: Border utilities.
+5. `p="y2 x4"`, `m="y2 x4"`: Padding and margin utilities. If applying to a single axis only, use syntax like `px="2"` or `mx="2"`.
+6. `bg="zinc-400 dark:zinc-600"`: background utilities. If setting gradients, it is best to apply them directly within the `class` attribute or use individual attribute values.
 
 For those only one attributes utility, can be valueless attributes. For example,
 
