@@ -120,13 +120,13 @@ export function getServiceStatus(
   const halfDayAgo = now.subtract(Temporal.Duration.from({ hours: 12 }))
   const halfDayAgoDate = new Date(halfDayAgo.epochMilliseconds)
 
-  // Filter logs from the last 3 hours
+  // Filter logs from the last 12 hours
   const recentLogs = logs.filter((log) => {
     const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)
     return logDate >= halfDayAgoDate
   })
 
-  // If no logs in the last 3 hours, return down
+  // If no logs in the last 12 hours, return down
   if (recentLogs.length === 0) {
     return ServiceStatus.Down
   }

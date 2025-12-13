@@ -11,7 +11,7 @@ const uptimeBgColor = computed(() => {
   if (props.history.uptime === null) {
     return 'bg-gray-400'
   }
-  if (props.history.uptime > 99.5) {
+  if (props.history.uptime >= 99.9) {
     return 'bg-emerald-500'
   }
   else if (props.history.uptime > 98) {
@@ -26,7 +26,7 @@ const uptimeTextColor = computed(() => {
   if (props.history.uptime === null) {
     return 'text-gray-400'
   }
-  if (props.history.uptime > 99.5) {
+  if (props.history.uptime >= 99.9) {
     return 'text-emerald-500'
   }
   else if (props.history.uptime > 98) {
