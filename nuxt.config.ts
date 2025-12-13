@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxtjs/color-mode',
     '@pinia/nuxt',
+    '@pinia/colada-nuxt',
   ],
 
   components: {
@@ -41,6 +42,26 @@ export default defineNuxtConfig({
         'check',
         'incident',
       ],
+    },
+    typescript: {
+      tsConfig: {
+        compilerOptions: {
+          types: ['temporal-polyfill/global'],
+        },
+      },
+    },
+    minify: false,
+  },
+  typescript: {
+    sharedTsConfig: {
+      compilerOptions: {
+        types: ['temporal-polyfill/global'],
+      },
+    },
+    tsConfig: {
+      compilerOptions: {
+        types: ['temporal-polyfill/global'],
+      },
     },
   },
 })

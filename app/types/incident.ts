@@ -1,8 +1,7 @@
 export interface Incident {
   id: number
-  startTime: Date
-  endTime: string | null
-  status: 'ongoing' | 'resolved'
+  startTime: Temporal.PlainDateTime
+  endTime: Temporal.PlainDateTime | null
   title: string
   description: string | null
 }
