@@ -1,8 +1,7 @@
 import { schema } from 'hub:db'
 
 export async function checkService(service: typeof schema.services.$inferSelect) {
-  const performance = new Performance()
-  const startTime = performance.now()
+  const startTime = Date.now()
 
   let status: 'up' | 'timeout' | 'error' = 'up'
 
@@ -33,7 +32,7 @@ export async function checkService(service: typeof schema.services.$inferSelect)
 
   const statusCode = response.status
 
-  const latency = performance.now() - startTime
+  const latency = Date.now() - startTime
 
   // Create log entry
   await db.insert(schema.serviceLogs).values({
