@@ -41,6 +41,18 @@ export default defineNuxtConfig({
         'check',
       ],
     },
+    // https://github.com/nitrojs/nitro/issues/1974
+    // workaround
+    vercel: {
+      config: {
+        crons: [
+          {
+            path: '/api/_cron',
+            schedule: '0 0 * * *',
+          },
+        ],
+      },
+    },
     typescript: {
       tsConfig: {
         compilerOptions: {
