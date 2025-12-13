@@ -5,6 +5,7 @@ const { data, isLoading } = useQuery({
 })
 const queryCache = useQueryCache()
 const colorMode = useColorMode()
+const { clear } = useUserSession()
 
 function onThemeToggle() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -54,18 +55,50 @@ function onThemeToggle() {
             </template>
           </ClientOnly>
         </button>
+
         <button
-          v-if="$route.path === '/'"
+          v-if="$route.path !== '/admin'"
+          :data-sign-in="$route.path === '/sign-in'"
+          bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
+          un-text="zinc-500 dark:zinc-400 data-[sign-in]:text-indigo-600"
+          class="transition-all"
+          title="Admin login"
+          @click="() => {
+            $router.push('/admin')
+          }"
+        >
+          <div i-lucide:settings size-5 aria-hidden="true" />
+        </button>
+
+        <button
+          v-if="$route.path === '/admin'"
           bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
           un-text="zinc-500 dark:zinc-400"
           class="transition-all"
+          title="Admin login"
+          @click="() => {
+            clear().then(() => {
+              $router.push('/')
+            })
+          }"
+        >
+          <div i-lucide:log-out size-5 aria-hidden="true" />
+        </button>
+
+        <button
+          v-if="$route.path === '/'"
+          :data-load="isLoading"
+          bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
+          un-text="zinc-500 dark:zinc-400 data-[loading]:text-indigo-600"
+          class="transition-all"
           :class="isLoading ? 'animate-spin' : ''"
           title="Refresh Status"
+          :disabled="isLoading"
           @click="() => {
             queryCache.invalidateQueries({ key: ['overview'] })
           }"
         >
-          <div class="i-lucide:refresh-cw w-5 h-5" aria-hidden="true" />
+          <div i-lucide:refresh-cw size-5 aria-hidden="true" />
         </button>
       </div>
     </div>

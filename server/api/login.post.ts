@@ -14,6 +14,8 @@ export default eventHandler(async (event) => {
       message: 'Wrong password',
     })
   }
-  await setUserSession(event, { })
+  await setUserSession(event, {
+    user: {},
+  })
   return { ok: true }
 })
