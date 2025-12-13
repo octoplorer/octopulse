@@ -18,11 +18,18 @@ useHead({
     </main>
 
     <footer
+      w-full
       un-text="center zinc-500 dark:zinc-300 sm"
       flex-shrink-0 max-w-7xl mx-auto px-4 py-6 transition-colors
+      class="mt-16 pt-6 border-t border-zinc-200 dark:border-zinc-800"
     >
-      <div text-center text-sm>
-        © 2025 NuxtPulse. All systems operational.
+      <div
+        flex="~ col sm:row items-center justify-between gap-4"
+        un-text="xs zinc-500 dark:zinc-400"
+      >
+        <div flex="~ items-center gap-4">
+          <span font-mono>Powered By NuxtPulse</span>
+        </div>
       </div>
     </footer>
   </div>
