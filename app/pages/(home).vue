@@ -6,9 +6,12 @@ const { data } = useQuery({
 </script>
 
 <template>
-  <div>
-    <div v-for="overview in data?.overviews" :key="overview.service.id">
-      {{ overview }}
+  <div w-full grid="~ cols-1 md:cols-2 lg:cols-3 gap-6">
+    <div
+      v-for="overview in data?.overviews"
+      :key="overview.service.id"
+    >
+      <HomeServiceCard :overview="overview" />
     </div>
   </div>
 </template>

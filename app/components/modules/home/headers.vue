@@ -23,7 +23,12 @@
           :title="`Switch to ${$colorMode.value === 'dark' ? 'Light' : 'Dark'} Mode`"
           @click="() => $colorMode.preference = $colorMode.value === 'dark' ? 'light' : 'dark'"
         >
-          <div :class="$colorMode.value === 'dark' ? 'i-lucide:moon' : 'i-lucide:sun'" class="w-5 h-5" aria-hidden="true" />
+          <ClientOnly>
+            <div :class="$colorMode.value === 'dark' ? 'i-lucide:moon' : 'i-lucide:sun'" size-5 aria-hidden="true" />
+            <template #fallback>
+              <div size-5 i-lucide:eclipse aria-hidden="true" />
+            </template>
+          </ClientOnly>
         </button>
         <button
           class="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-zinc-500 dark:text-zinc-400"
