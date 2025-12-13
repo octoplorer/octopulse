@@ -31,6 +31,8 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.12.1",
+    "@nuxtjs/color-mode": "^4.0.0",
+    "@pinia/nuxt": "^0.11.3",
     "eslint-plugin-format": "^1.1.0",
     "lint-staged": "^16.2.7",
     "simple-git-hooks": "^2.13.1",

@@ -7,7 +7,19 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     '@vueuse/nuxt',
     '@nuxt/eslint',
+    '@nuxtjs/color-mode',
+    '@pinia/nuxt',
   ],
+
+  components: {
+    global: true,
+    dirs: [
+      {
+        path: '~/components/modules',
+      },
+      '~/components',
+    ],
+  },
 
   hub: {
     db: 'sqlite',
