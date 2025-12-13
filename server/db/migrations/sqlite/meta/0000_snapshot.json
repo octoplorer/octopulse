@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d771a26e-991d-4796-aee4-317fbd431712",
+  "id": "2622f0ce-895d-4b5e-b662-00fe8559dab8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "logs": {
-      "name": "logs",
+    "incidents": {
+      "name": "incidents",
       "columns": {
         "id": {
           "name": "id",
@@ -14,18 +14,91 @@
           "notNull": true,
           "autoincrement": true
         },
-        "monitor_id": {
-          "name": "monitor_id",
+        "service_id": {
+          "name": "service_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "status_code": {
-          "name": "status_code",
-          "type": "integer",
+        "start_time": {
+          "name": "start_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "incidents_service_id_services_id_fk": {
+          "name": "incidents_service_id_services_id_fk",
+          "tableFrom": "incidents",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "service_logs": {
+      "name": "service_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         },
         "latency": {
@@ -35,37 +108,37 @@
           "notNull": false,
           "autoincrement": false
         },
-        "is_fail": {
-          "name": "is_fail",
+        "timestamp": {
+          "name": "timestamp",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": 0
+          "default": "(unixepoch('now'))"
         },
-        "reason": {
-          "name": "reason",
-          "type": "text",
+        "status_code": {
+          "name": "status_code",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "created_at": {
-          "name": "created_at",
+        "error_message": {
+          "name": "error_message",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "logs_monitor_id_monitors_id_fk": {
-          "name": "logs_monitor_id_monitors_id_fk",
-          "tableFrom": "logs",
-          "tableTo": "monitors",
+        "service_logs_service_id_services_id_fk": {
+          "name": "service_logs_service_id_services_id_fk",
+          "tableFrom": "service_logs",
+          "tableTo": "services",
           "columnsFrom": [
-            "monitor_id"
+            "service_id"
           ],
           "columnsTo": [
             "id"
@@ -78,8 +151,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "monitors": {
-      "name": "monitors",
+    "services": {
+      "name": "services",
       "columns": {
         "id": {
           "name": "id",
@@ -88,8 +161,23 @@
           "notNull": true,
           "autoincrement": true
         },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'public'"
+        },
         "name": {
           "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tags": {
+          "name": "tags",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -110,76 +198,21 @@
           "autoincrement": false,
           "default": "'GET'"
         },
-        "interval": {
-          "name": "interval",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "retry_count": {
-          "name": "retry_count",
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": 0
-        },
-        "last_check": {
-          "name": "last_check",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "keyword": {
-          "name": "keyword",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "user_agent": {
-          "name": "user_agent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "domain_expiry": {
-          "name": "domain_expiry",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "cert_expiry": {
-          "name": "cert_expiry",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "check_info_status": {
-          "name": "check_info_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "default": "(unixepoch('now'))"
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(unixepoch('now'))"
         }
       },
       "indexes": {},

@@ -20,29 +20,29 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const monitorId = Number.parseInt(id, 10)
+  const serviceId = Number.parseInt(id, 10)
 
-  if (Number.isNaN(monitorId)) {
+  if (Number.isNaN(serviceId)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
-      message: 'Invalid monitor ID',
+      message: 'Invalid service ID',
     })
   }
 
   // Check if monitor exists
-  const existingMonitor = await db.select().from(schema.monitors).where(eq(schema.monitors.id, monitorId)).limit(1)
+  const existingService = await db.select().from(schema.services).where(eq(schema.services.id, serviceId)).limit(1)
 
-  if (existingMonitor.length === 0) {
+  if (existingService.length === 0) {
     throw createError({
       statusCode: 404,
       statusMessage: 'Not Found',
-      message: 'Monitor not found',
+      message: 'Service not found',
     })
   }
 
-  // Delete monitor (logs will be deleted automatically due to cascade)
-  await db.delete(schema.monitors).where(eq(schema.monitors.id, monitorId))
+  // Delete service (logs will be deleted automatically due to cascade)
+  await db.delete(schema.services).where(eq(schema.services.id, serviceId))
 
   return {
     success: true,
