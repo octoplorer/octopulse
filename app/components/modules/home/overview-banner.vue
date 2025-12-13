@@ -29,7 +29,7 @@ const averageUptime = computed(() => {
     >
       <div
         class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br to-transparent dark:to-transparent rounded-bl-full pointer-events-none opacity-50"
-        :class="isSystemHealthy ? 'from-emerald-500/5 dark:from-emerald-500/10' : 'from-rose-500/5 dark:from-rose-500/10'"
+        :class="isSystemHealthy ? 'from-emerald-500/30 dark:from-emerald-500/10' : 'from-rose-500/30 dark:from-rose-500/10'"
       />
 
       <div
@@ -66,7 +66,7 @@ const averageUptime = computed(() => {
               {{ averageUptime }}%
             </div>
             <div class="text-10px font-semibold text-zinc-400 uppercase tracking-wider">
-              Uptime (30d)
+              在线率 (30d)
             </div>
           </div>
           <div space-y-0.5>
@@ -74,7 +74,7 @@ const averageUptime = computed(() => {
               {{ activeServices }}/{{ totalServices }}
             </div>
             <div class="text-10px font-semibold text-zinc-400 uppercase tracking-wider">
-              Services Active
+              服务数
             </div>
           </div>
         </div>
