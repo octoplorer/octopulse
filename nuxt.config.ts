@@ -61,7 +61,7 @@ export default defineNuxtConfig({
         crons: [
           {
             path: '/api/_cron',
-            schedule: '0 0 * * *',
+            schedule: '* * * * *',
           },
         ],
       },
