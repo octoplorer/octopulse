@@ -4,6 +4,11 @@ const { data, isLoading } = useQuery({
   query: () => $fetch('/api/services/overviews'),
 })
 const queryCache = useQueryCache()
+const colorMode = useColorMode()
+
+function onThemeToggle() {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
 </script>
 
 <template>
@@ -39,13 +44,13 @@ const queryCache = useQueryCache()
           bg="hover:zinc-100 dark:hover:zinc-800" p-2 rounded-full
           un-text="zinc-500 dark:zinc-400"
           class="transition-all"
-          :title="`Switch to ${$colorMode.value === 'dark' ? 'Light' : 'Dark'} Mode`"
-          @click="() => $colorMode.preference = $colorMode.value === 'dark' ? 'light' : 'dark'"
+          title="Toggle color theme"
+          @click="onThemeToggle"
         >
           <ClientOnly>
             <div :class="$colorMode.value === 'dark' ? 'i-lucide:moon' : 'i-lucide:sun'" size-5 aria-hidden="true" />
             <template #fallback>
-              <div size-5 i-lucide:eclipse aria-hidden="true" />
+              <div size-5 i-lucide:earth aria-hidden="true" />
             </template>
           </ClientOnly>
         </button>
