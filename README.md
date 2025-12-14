@@ -1,8 +1,8 @@
-# NuxtPulse
+# Octopulse
 
-NuxtPulse is a modern uptime monitoring / status page
+Octopulse is a modern uptime monitoring / status page
 
-NuxtPulse base on Nuxt.js and [@nuxthub/core](https://nuxt.com/modules/hub), learn more on [hub.nuxt.com](https://hub.nuxt.com/).
+Octopulse base on Nuxt.js and [@nuxthub/core](https://nuxt.com/modules/hub), learn more on [hub.nuxt.com](https://hub.nuxt.com/).
 
 ## Development
 

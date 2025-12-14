@@ -1,5 +1,5 @@
 {
-  "name": "nuxt-pulse",
+  "name": "octopulse",
   "type": "module",
   "private": true,
   "packageManager": "pnpm@10.25.0",
