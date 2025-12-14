@@ -56,12 +56,6 @@ export default defineEventHandler(async (event) => {
     .set({ deletedAt: new Date() })
     .where(eq(schema.services.id, serviceId))
 
-  // Soft delete related service logs
-  await db
-    .update(schema.serviceLogs)
-    .set({ deletedAt: new Date() })
-    .where(eq(schema.serviceLogs.serviceId, serviceId))
-
   return {
     success: true,
     message: 'Monitor deleted successfully',

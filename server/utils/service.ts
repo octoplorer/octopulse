@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 export async function checkService(service: typeof schema.services.$inferSelect) {
@@ -58,12 +58,7 @@ export async function getServiceLogs(
   return db
     .select()
     .from(schema.serviceLogs)
-    .where(
-      and(
-        eq(schema.serviceLogs.serviceId, serviceId),
-        isNull(schema.serviceLogs.deletedAt),
-      ),
-    )
+    .where(eq(schema.serviceLogs.serviceId, serviceId))
     .orderBy(desc(schema.serviceLogs.timestamp))
     .limit(limit)
     .offset(offset)

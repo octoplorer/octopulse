@@ -1,0 +1,1 @@
+ALTER TABLE `service_logs` DROP COLUMN `deleted_at`;

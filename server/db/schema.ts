@@ -50,7 +50,6 @@ export const serviceLogs = sqliteTable('service_logs', {
 
   statusCode: integer('status_code'),
   errorMessage: text('error_message'),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 })
 
 export const incidents = sqliteTable('incidents', {

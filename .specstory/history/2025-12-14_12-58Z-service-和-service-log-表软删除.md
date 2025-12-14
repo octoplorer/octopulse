@@ -16559,3 +16559,5407 @@ Status: **completed**
 
 ---
 
+
+
+---
+
+
+检查 tasks/check.ts 中的查询：
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/tasks/check.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "from\\(schema\\.(services|serviceLogs)\\)",
+  "path": "server",
+  "caseInsensitive": false
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "from\\(schema\\.(services|serviceLogs)\\)",
+    "path": "server",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Volumes/External/Projects/nuxt-pulse": {
+        "content": {
+          "matches": [
+            {
+              "file": "server/api/services/overviews.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 5,
+                  "content": "  const services = await db.select().from(schema.services)"
+                },
+                {
+                  "lineNumber": 15,
+                  "content": "      .from(schema.serviceLogs)"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/[id].delete.ts",
+              "matches": [
+                {
+                  "lineNumber": 34,
+                  "content": "  const existingService = await db.select().from(schema.services).where(eq(schema.services.id, serviceId)).limit(1)"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/index.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 12,
+                  "content": "  const services = await db.select().from(schema.services)"
+                }
+              ]
+            },
+            {
+              "file": "server/utils/service.ts",
+              "matches": [
+                {
+                  "lineNumber": 60,
+                  "content": "    .from(schema.serviceLogs)"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/[id]/logs.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 33,
+                  "content": "  const existingService = await db.select().from(schema.services).where(eq(schema.services.id, serviceId)).limit(1)"
+                }
+              ]
+            },
+            {
+              "file": "server/tasks/check.ts",
+              "matches": [
+                {
+                  "lineNumber": 11,
+                  "content": "    const services = await db.select().from(schema.services)"
+                }
+              ]
+            }
+          ],
+          "totalLines": 7,
+          "totalMatchedLines": 7
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+创建任务列表，开始实施软删除：
+
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [-] 在 schema 中为 services 和 serviceLogs 表添加 deletedAt 字段
+- [ ] 生成数据库迁移文件
+- [ ] 修改删除操作，改为软删除（更新 deletedAt）
+- [ ] 修改所有查询操作，过滤掉已删除的记录
+- [ ] 修改外键约束，移除 cascade delete
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/db/schema.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+更新 schema，添加 `deletedAt` 字段，并修改外键约束：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "67df365e-64b7-4bfd-90ff-795218d2e712"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "f7404b7f-79d1-4972-b55f-3244e69fd3ba"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+生成数据库迁移文件：
+
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] 在 schema 中为 services 和 serviceLogs 表添加 deletedAt 字段
+- [-] 生成数据库迁移文件
+- [ ] 修改删除操作，改为软删除（更新 deletedAt）
+- [ ] 修改所有查询操作，过滤掉已删除的记录
+- [x] 修改外键约束，移除 cascade delete
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /Volumes/External/Projects/nuxt-pulse && npx nuxt db generate</summary>
+
+```bash
+cd /Volumes/External/Projects/nuxt-pulse && npx nuxt db generate
+```
+
+```
+[info] Ensuring database schema is generated...
+[info] Generating database migrations...
+Reading config file '/Volumes/External/Projects/nuxt-pulse/.nuxt/hub/db/drizzle.config.ts'
+3 tables
+incidents 7 columns 0 indexes 1 fks
+service_logs 8 columns 0 indexes 1 fks
+services 9 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ server/db/migrations/sqlite/0001_chilly_queen_noir.sql 🚀
+[success] Database migrations generated successfully.
+[info] Run &#96;npx nuxt dev&#96; or run &#96;npx nuxt db migrate&#96; to apply the migrations.
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+查看生成的迁移文件，然后修改删除和查询操作：
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/db/migrations/sqlite/0001_chilly_queen_noir.sql</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] 在 schema 中为 services 和 serviceLogs 表添加 deletedAt 字段
+- [x] 生成数据库迁移文件
+- [-] 修改删除操作，改为软删除（更新 deletedAt）
+- [ ] 修改所有查询操作，过滤掉已删除的记录
+- [x] 修改外键约束，移除 cascade delete
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+修改删除操作，改为软删除：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "8c85883d-c44d-4e88-9261-5e19283a5fc0"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] 在 schema 中为 services 和 serviceLogs 表添加 deletedAt 字段
+- [x] 生成数据库迁移文件
+- [x] 修改删除操作，改为软删除（更新 deletedAt）
+- [-] 修改所有查询操作，过滤掉已删除的记录
+- [x] 修改外键约束，移除 cascade delete
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+修改所有查询操作，过滤已删除的记录：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "4a130acd-acdd-43fd-9ae6-ea29398a3d36"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "b69411a2-5370-487d-8df0-6912f47ccf1f"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "ed34b053-6ac7-4c67-88b3-741346f181da"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "27bbb991-8b44-4f6f-8ed7-8ab07c6543a8"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "63e6461b-d944-48da-8a0e-ff671050ec11"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "30d99f0a-997d-4491-a289-d359b4f37440"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+检查是否还有其他地方需要修改，特别是更新操作：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "update\\(schema\\.(services|serviceLogs)\\)",
+  "path": "server",
+  "caseInsensitive": false
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "update\\(schema\\.(services|serviceLogs)\\)",
+    "path": "server",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Volumes/External/Projects/nuxt-pulse": {
+        "content": {
+          "matches": [
+            {
+              "file": "server/api/services/[id].delete.ts",
+              "matches": [
+                {
+                  "lineNumber": 55,
+                  "content": "    .update(schema.services)"
+                },
+                {
+                  "lineNumber": 61,
+                  "content": "    .update(schema.serviceLogs)"
+                }
+              ]
+            }
+          ],
+          "totalLines": 2,
+          "totalMatchedLines": 2
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "update service in database",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/db/schema.ts",
+        "range": {
+          "startPosition": {
+            "column": 44
+          },
+          "endPosition": {
+            "line": 53
+          }
+        },
+        "contents": "import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'\n\n// #region [TABLES]\nexport const services = sqliteTable('services', {\n  id: integer('id').primaryKey({ autoIncrement: true }),\n\n  /**\n   * Service type\n   *\n   * - &#96;public&#96;: service will show service url to public\n   * - &#96;private&#96;: service will not show service url to public\n   *\n   * @default 'public'\n   */\n  type: text('type', { enum: ['public', 'private'] }).default('public'),\n  /** Service name */\n  name: text('name').notNull(),\n  /** Service tags */\n  tags: text('tags', { mode: 'json' }).$type&lt;string[]&gt;().notNull(),\n\n  /** Service health check url */\n  url: text('url').notNull(),\n  /** Service health check method */\n  method: text('method', { enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] }).notNull().default('GET'),\n\n  updatedAt: integer('updated_at', { mode: 'timestamp' })\n    .default(sql&#96;(unixepoch('now'))&#96;)\n    .$onUpdate(() =&gt; new Date())\n    .notNull(),\n  createdAt: integer('created_at', { mode: 'timestamp' })\n    .default(sql&#96;(unixepoch('now'))&#96;)\n    .notNull(),\n  deletedAt: integer('deleted_at', { mode: 'timestamp' }),\n})\n\nexport const serviceLogs = sqliteTable('service_logs',",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "// #region [TABLES]",
+            "lineNumber": 4
+          },
+          {
+            "text": "export const services = sqliteTable('services', {",
+            "lineNumber": 5
+          },
+          {
+            "text": "  id: integer('id').primaryKey({ autoIncrement: true }),",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 8
+          },
+          {
+            "text": "   * Service type",
+            "lineNumber": 9
+          },
+          {
+            "text": "   *",
+            "lineNumber": 10
+          },
+          {
+            "text": "   * - &#96;public&#96;: service will show service url to public",
+            "lineNumber": 11
+          },
+          {
+            "text": "   * - &#96;private&#96;: service will not show service url to public",
+            "lineNumber": 12
+          },
+          {
+            "text": "   *",
+            "lineNumber": 13
+          },
+          {
+            "text": "   * @default 'public'",
+            "lineNumber": 14
+          },
+          {
+            "text": "   */",
+            "lineNumber": 15
+          },
+          {
+            "text": "  type: text('type', { enum: ['public', 'private'] }).default('public'),",
+            "lineNumber": 16
+          },
+          {
+            "text": "  /** Service name */",
+            "lineNumber": 17
+          },
+          {
+            "text": "  name: text('name').notNull(),",
+            "lineNumber": 18
+          },
+          {
+            "text": "  /** Service tags */",
+            "lineNumber": 19
+          },
+          {
+            "text": "  tags: text('tags', { mode: 'json' }).$type&lt;string[]&gt;().notNull(),",
+            "lineNumber": 20
+          },
+          {
+            "lineNumber": 21
+          },
+          {
+            "text": "  /** Service health check url */",
+            "lineNumber": 22
+          },
+          {
+            "text": "  url: text('url').notNull(),",
+            "lineNumber": 23
+          },
+          {
+            "text": "  /** Service health check method */",
+            "lineNumber": 24
+          },
+          {
+            "text": "  method: text('method', { enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] }).notNull().default('GET'),",
+            "lineNumber": 25
+          },
+          {
+            "lineNumber": 26
+          },
+          {
+            "text": "  updatedAt: integer('updated_at', { mode: 'timestamp' })",
+            "lineNumber": 27
+          },
+          {
+            "text": "    .default(sql&#96;(unixepoch('now'))&#96;)",
+            "lineNumber": 28
+          },
+          {
+            "text": "    .$onUpdate(() =&gt; new Date())",
+            "lineNumber": 29
+          },
+          {
+            "text": "    .notNull(),",
+            "lineNumber": 30
+          },
+          {
+            "text": "  createdAt: integer('created_at', { mode: 'timestamp' })",
+            "lineNumber": 31
+          },
+          {
+            "text": "    .default(sql&#96;(unixepoch('now'))&#96;)",
+            "lineNumber": 32
+          },
+          {
+            "text": "    .notNull(),",
+            "lineNumber": 33
+          },
+          {
+            "text": "  deletedAt: integer('deleted_at', { mode: 'timestamp' }),",
+            "lineNumber": 34
+          },
+          {
+            "text": "})",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "export const serviceLogs = sqliteTable('service_logs',",
+            "lineNumber": 37
+          }
+        ]
+      },
+      "score": 0.40595629811286926
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/db/migrations/sqlite/0000_cute_imperial_guard.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 32
+          }
+        },
+        "contents": "CREATE TABLE &#96;incidents&#96; (\n\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t&#96;service_id&#96; integer NOT NULL,\n\t&#96;start_time&#96; text NOT NULL,\n\t&#96;end_time&#96; text,\n\t&#96;status&#96; text NOT NULL,\n\t&#96;title&#96; text NOT NULL,\n\t&#96;description&#96; text NOT NULL,\n\tFOREIGN KEY (&#96;service_id&#96;) REFERENCES &#96;services&#96;(&#96;id&#96;) ON UPDATE no action ON DELETE no action\n);\n--&gt; statement-breakpoint\nCREATE TABLE &#96;service_logs&#96; (\n\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t&#96;service_id&#96; integer NOT NULL,\n\t&#96;status&#96; text NOT NULL,\n\t&#96;latency&#96; integer,\n\t&#96;timestamp&#96; integer DEFAULT (unixepoch('now')) NOT NULL,\n\t&#96;status_code&#96; integer,\n\t&#96;error_message&#96; text,\n\tFOREIGN KEY (&#96;service_id&#96;) REFERENCES &#96;services&#96;(&#96;id&#96;) ON UPDATE no action ON DELETE cascade\n);\n--&gt; statement-breakpoint\nCREATE TABLE &#96;services&#96; (\n\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t&#96;type&#96; text DEFAULT 'public',\n\t&#96;name&#96; text NOT NULL,\n\t&#96;tags&#96; text NOT NULL,\n\t&#96;url&#96; text NOT NULL,\n\t&#96;method&#96; text DEFAULT 'GET' NOT NULL,\n\t&#96;updated_at&#96; integer DEFAULT (unixepoch('now')) NOT NULL,\n\t&#96;created_at&#96; integer DEFAULT (unixepoch('now')) NOT NULL\n);",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "CREATE TABLE &#96;incidents&#96; (",
+            "lineNumber": 1
+          },
+          {
+            "text": "\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,",
+            "lineNumber": 2
+          },
+          {
+            "text": "\t&#96;service_id&#96; integer NOT NULL,",
+            "lineNumber": 3
+          },
+          {
+            "text": "\t&#96;start_time&#96; text NOT NULL,",
+            "lineNumber": 4
+          },
+          {
+            "text": "\t&#96;end_time&#96; text,",
+            "lineNumber": 5
+          },
+          {
+            "text": "\t&#96;status&#96; text NOT NULL,",
+            "lineNumber": 6
+          },
+          {
+            "text": "\t&#96;title&#96; text NOT NULL,",
+            "lineNumber": 7
+          },
+          {
+            "text": "\t&#96;description&#96; text NOT NULL,",
+            "lineNumber": 8
+          },
+          {
+            "text": "\tFOREIGN KEY (&#96;service_id&#96;) REFERENCES &#96;services&#96;(&#96;id&#96;) ON UPDATE no action ON DELETE no action",
+            "lineNumber": 9
+          },
+          {
+            "text": ");",
+            "lineNumber": 10
+          },
+          {
+            "text": "--&gt; statement-breakpoint",
+            "lineNumber": 11
+          },
+          {
+            "text": "CREATE TABLE &#96;service_logs&#96; (",
+            "lineNumber": 12
+          },
+          {
+            "text": "\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,",
+            "lineNumber": 13
+          },
+          {
+            "text": "\t&#96;service_id&#96; integer NOT NULL,",
+            "lineNumber": 14
+          },
+          {
+            "text": "\t&#96;status&#96; text NOT NULL,",
+            "lineNumber": 15
+          },
+          {
+            "text": "\t&#96;latency&#96; integer,",
+            "lineNumber": 16
+          },
+          {
+            "text": "\t&#96;timestamp&#96; integer DEFAULT (unixepoch('now')) NOT NULL,",
+            "lineNumber": 17
+          },
+          {
+            "text": "\t&#96;status_code&#96; integer,",
+            "lineNumber": 18
+          },
+          {
+            "text": "\t&#96;error_message&#96; text,",
+            "lineNumber": 19
+          },
+          {
+            "text": "\tFOREIGN KEY (&#96;service_id&#96;) REFERENCES &#96;services&#96;(&#96;id&#96;) ON UPDATE no action ON DELETE cascade",
+            "lineNumber": 20
+          },
+          {
+            "text": ");",
+            "lineNumber": 21
+          },
+          {
+            "text": "--&gt; statement-breakpoint",
+            "lineNumber": 22
+          },
+          {
+            "text": "CREATE TABLE &#96;services&#96; (",
+            "lineNumber": 23
+          },
+          {
+            "text": "\t&#96;id&#96; integer PRIMARY KEY AUTOINCREMENT NOT NULL,",
+            "lineNumber": 24
+          },
+          {
+            "text": "\t&#96;type&#96; text DEFAULT 'public',",
+            "lineNumber": 25
+          },
+          {
+            "text": "\t&#96;name&#96; text NOT NULL,",
+            "lineNumber": 26
+          },
+          {
+            "text": "\t&#96;tags&#96; text NOT NULL,",
+            "lineNumber": 27
+          },
+          {
+            "text": "\t&#96;url&#96; text NOT NULL,",
+            "lineNumber": 28
+          },
+          {
+            "text": "\t&#96;method&#96; text DEFAULT 'GET' NOT NULL,",
+            "lineNumber": 29
+          },
+          {
+            "text": "\t&#96;updated_at&#96; integer DEFAULT (unixepoch('now')) NOT NULL,",
+            "lineNumber": 30
+          },
+          {
+            "text": "\t&#96;created_at&#96; integer DEFAULT (unixepoch('now')) NOT NULL",
+            "lineNumber": 31
+          },
+          {
+            "text": ");",
+            "lineNumber": 32
+          }
+        ]
+      },
+      "score": 0.35264110565185547
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/utils/service.ts",
+        "range": {
+          "startPosition": {
+            "column": 51
+          },
+          "endPosition": {
+            "line": 69,
+            "column": 1
+          }
+        },
+        "contents": "import { db, schema } from 'hub:db'\n\nexport async function checkService(service: typeof schema.services.$inferSelect) {\n  let startTime = 0\n\n  let status: 'up' | 'timeout' | 'error' = 'up'\n\n  let errorMessage: string = ''\n\n  const response = await $fetch.raw(service.url, {\n    method: service.method || 'GET',\n    headers: {\n      'User-Agent': 'Pulse/1.0',\n    },\n    timeout: 30000,\n    retry: 3,\n    onRequest() {\n      startTime = performance.now()\n    },\n    onRequestError({ error }) {\n      status = 'error'\n      errorMessage = error.message\n    },\n    onResponseError({ error }) {\n      if (error?.name === 'TimeoutError') {\n        status = 'timeout'\n        errorMessage = 'Request timed out'\n      }\n      else {\n        status = 'error'\n        errorMessage = error?.message ?? 'Unknown error'\n      }\n    },\n  })\n\n  const statusCode = response.status\n\n  const latency = Math.round(performance.now() - startTime)\n\n  // Create log entry\n  await db.insert(schema.serviceLogs).values({\n    serviceId: service.id,\n\n    status,\n    latency,\n\n    statusCode,\n    errorMessage,\n  })\n}\n\nexport async function getServiceLogs(\n  serviceId: number,\n  limit: number = 30,\n  offset: number = 0,\n) {\n  \n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "export async function checkService(service: typeof schema.services.$inferSelect) {",
+            "lineNumber": 4,
+            "isSignature": true
+          },
+          {
+            "text": "  let startTime = 0",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "  let status: 'up' | 'timeout' | 'error' = 'up'",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "  let errorMessage: string = ''",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "  const response = await $fetch.raw(service.url, {",
+            "lineNumber": 11
+          },
+          {
+            "text": "    method: service.method || 'GET',",
+            "lineNumber": 12
+          },
+          {
+            "text": "    headers: {",
+            "lineNumber": 13
+          },
+          {
+            "text": "      'User-Agent': 'Pulse/1.0',",
+            "lineNumber": 14
+          },
+          {
+            "text": "    },",
+            "lineNumber": 15
+          },
+          {
+            "text": "    timeout: 30000,",
+            "lineNumber": 16
+          },
+          {
+            "text": "    retry: 3,",
+            "lineNumber": 17
+          },
+          {
+            "text": "    onRequest() {",
+            "lineNumber": 18
+          },
+          {
+            "text": "      startTime = performance.now()",
+            "lineNumber": 19
+          },
+          {
+            "text": "    },",
+            "lineNumber": 20
+          },
+          {
+            "text": "    onRequestError({ error }) {",
+            "lineNumber": 21
+          },
+          {
+            "text": "      status = 'error'",
+            "lineNumber": 22
+          },
+          {
+            "text": "      errorMessage = error.message",
+            "lineNumber": 23
+          },
+          {
+            "text": "    },",
+            "lineNumber": 24
+          },
+          {
+            "text": "    onResponseError({ error }) {",
+            "lineNumber": 25
+          },
+          {
+            "text": "      if (error?.name === 'TimeoutError') {",
+            "lineNumber": 26
+          },
+          {
+            "text": "        status = 'timeout'",
+            "lineNumber": 27
+          },
+          {
+            "text": "        errorMessage = 'Request timed out'",
+            "lineNumber": 28
+          },
+          {
+            "text": "      }",
+            "lineNumber": 29
+          },
+          {
+            "text": "      else {",
+            "lineNumber": 30
+          },
+          {
+            "text": "        status = 'error'",
+            "lineNumber": 31
+          },
+          {
+            "text": "        errorMessage = error?.message ?? 'Unknown error'",
+            "lineNumber": 32
+          },
+          {
+            "text": "      }",
+            "lineNumber": 33
+          },
+          {
+            "text": "    },",
+            "lineNumber": 34
+          },
+          {
+            "text": "  })",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "  const statusCode = response.status",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "  const latency = Math.round(performance.now() - startTime)",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "  // Create log entry",
+            "lineNumber": 41
+          },
+          {
+            "text": "  await db.insert(schema.serviceLogs).values({",
+            "lineNumber": 42
+          },
+          {
+            "text": "    serviceId: service.id,",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "    status,",
+            "lineNumber": 45
+          },
+          {
+            "text": "    latency,",
+            "lineNumber": 46
+          },
+          {
+            "lineNumber": 47
+          },
+          {
+            "text": "    statusCode,",
+            "lineNumber": 48
+          },
+          {
+            "text": "    errorMessage,",
+            "lineNumber": 49
+          },
+          {
+            "text": "  })",
+            "lineNumber": 50
+          },
+          {
+            "text": "}",
+            "lineNumber": 51,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "export async function getServiceLogs(",
+            "lineNumber": 53,
+            "isSignature": true
+          },
+          {
+            "text": "  serviceId: number,",
+            "lineNumber": 54,
+            "isSignature": true
+          },
+          {
+            "text": "  limit: number = 30,",
+            "lineNumber": 55,
+            "isSignature": true
+          },
+          {
+            "text": "  offset: number = 0,",
+            "lineNumber": 56,
+            "isSignature": true
+          },
+          {
+            "text": ") {",
+            "lineNumber": 57,
+            "isSignature": true
+          },
+          {
+            "text": "  ",
+            "lineNumber": 58
+          },
+          {
+            "text": "}",
+            "lineNumber": 70,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.33150678873062134
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/api/services/index.post.ts",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 51,
+            "column": 2
+          }
+        },
+        "contents": "import { db, schema } from 'hub:db'\nimport { z } from 'zod'\n\nconst createServiceSchema = z.object({\n  name: z.string().min(1, 'Name is required'),\n  url: z.url('Invalid URL format'),\n  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']).default('GET'),\n  tags: z.array(z.string()).default([]),\n  type: z.enum(['public', 'private']).default('public'),\n})\n\n/**\n * POST /services\n * Add new service (authentication required)\n */\nexport default defineEventHandler(async (event) =&gt; {\n  // Verify authentication\n  await requireUserSession(event)\n\n  const validateBody = await readValidatedBody(event, createServiceSchema.safeParse)\n  if (!validateBody.success) {\n    throw createError({\n      statusCode: 400,\n      statusMessage: 'Bad Request',\n      message: validateBody.error.message,\n    })\n  }\n\n  const body = validateBody.data\n\n  // Validate required fields\n  if (!body.name || !body.url) {\n    throw createError({\n      statusCode: 400,\n      statusMessage: 'Bad Request',\n      message: 'Missing required fields: name, url',\n    })\n  }\n\n  // Insert new monitor\n  const [newService] = await db.insert(schema.services).values({\n    name: body.name,\n    url: body.url,\n    method: body.method,\n    tags: body.tags,\n    type: body.type,\n  }).returning()\n\n  return {\n    monitor: newService,\n  }\n})",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 1
+          },
+          {
+            "text": "import { z } from 'zod'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "const createServiceSchema = z.object({",
+            "lineNumber": 4
+          },
+          {
+            "text": "  name: z.string().min(1, 'Name is required'),",
+            "lineNumber": 5
+          },
+          {
+            "text": "  url: z.url('Invalid URL format'),",
+            "lineNumber": 6
+          },
+          {
+            "text": "  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']).default('GET'),",
+            "lineNumber": 7
+          },
+          {
+            "text": "  tags: z.array(z.string()).default([]),",
+            "lineNumber": 8
+          },
+          {
+            "text": "  type: z.enum(['public', 'private']).default('public'),",
+            "lineNumber": 9
+          },
+          {
+            "text": "})",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "/**",
+            "lineNumber": 12
+          },
+          {
+            "text": " * POST /services",
+            "lineNumber": 13
+          },
+          {
+            "text": " * Add new service (authentication required)",
+            "lineNumber": 14
+          },
+          {
+            "text": " */",
+            "lineNumber": 15
+          },
+          {
+            "text": "export default defineEventHandler(async (event) =&gt; {",
+            "lineNumber": 16
+          },
+          {
+            "text": "  // Verify authentication",
+            "lineNumber": 17
+          },
+          {
+            "text": "  await requireUserSession(event)",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "  const validateBody = await readValidatedBody(event, createServiceSchema.safeParse)",
+            "lineNumber": 20
+          },
+          {
+            "text": "  if (!validateBody.success) {",
+            "lineNumber": 21
+          },
+          {
+            "text": "    throw createError({",
+            "lineNumber": 22
+          },
+          {
+            "text": "      statusCode: 400,",
+            "lineNumber": 23
+          },
+          {
+            "text": "      statusMessage: 'Bad Request',",
+            "lineNumber": 24
+          },
+          {
+            "text": "      message: validateBody.error.message,",
+            "lineNumber": 25
+          },
+          {
+            "text": "    })",
+            "lineNumber": 26
+          },
+          {
+            "text": "  }",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  const body = validateBody.data",
+            "lineNumber": 29
+          },
+          {
+            "lineNumber": 30
+          },
+          {
+            "text": "  // Validate required fields",
+            "lineNumber": 31
+          },
+          {
+            "text": "  if (!body.name || !body.url) {",
+            "lineNumber": 32
+          },
+          {
+            "text": "    throw createError({",
+            "lineNumber": 33
+          },
+          {
+            "text": "      statusCode: 400,",
+            "lineNumber": 34
+          },
+          {
+            "text": "      statusMessage: 'Bad Request',",
+            "lineNumber": 35
+          },
+          {
+            "text": "      message: 'Missing required fields: name, url',",
+            "lineNumber": 36
+          },
+          {
+            "text": "    })",
+            "lineNumber": 37
+          },
+          {
+            "text": "  }",
+            "lineNumber": 38
+          },
+          {
+            "lineNumber": 39
+          },
+          {
+            "text": "  // Insert new monitor",
+            "lineNumber": 40
+          },
+          {
+            "text": "  const [newService] = await db.insert(schema.services).values({",
+            "lineNumber": 41
+          },
+          {
+            "text": "    name: body.name,",
+            "lineNumber": 42
+          },
+          {
+            "text": "    url: body.url,",
+            "lineNumber": 43
+          },
+          {
+            "text": "    method: body.method,",
+            "lineNumber": 44
+          },
+          {
+            "text": "    tags: body.tags,",
+            "lineNumber": 45
+          },
+          {
+            "text": "    type: body.type,",
+            "lineNumber": 46
+          },
+          {
+            "text": "  }).returning()",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "  return {",
+            "lineNumber": 49
+          },
+          {
+            "text": "    monitor: newService,",
+            "lineNumber": 50
+          },
+          {
+            "text": "  }",
+            "lineNumber": 51
+          },
+          {
+            "text": "})",
+            "lineNumber": 52
+          }
+        ]
+      },
+      "score": 0.3029347062110901
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/api/services/overviews.get.ts",
+        "range": {
+          "startPosition": {
+            "column": 50
+          },
+          "endPosition": {
+            "line": 58,
+            "column": 1
+          }
+        },
+        "contents": "import { db, schema } from 'hub:db'\n\nexport default defineEventHandler(async () =&gt; {\n  const services = await db\n    .select()\n    .from(schema.services)\n    .where(isNull(schema.services.deletedAt))\n  const overviews: ServiceOverview[] = []\n\n  const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')\n  const thirtyDaysAgo = now.subtract(Temporal.Duration.from({ days: 30 }))\n  const thirtyDaysAgoDate = new Date(thirtyDaysAgo.toInstant().epochMilliseconds)\n\n  for (const service of services) {\n    const serviceLogs = await db\n      .select()\n      .from(schema.serviceLogs)\n      .where(\n        and(\n          eq(schema.serviceLogs.serviceId, service.id),\n          gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),\n          isNull(schema.serviceLogs.deletedAt),\n        ),\n      )\n      .orderBy(schema.serviceLogs.timestamp)\n\n    const serviceLogsByDays = manageServiceLogsByDays(serviceLogs)\n    const status = getServiceStatus(serviceLogs)\n\n    const logs: ServiceHistroy[] = Array.from(serviceLogsByDays.entries())\n      .map(([date, logsByDay]) =&gt; ({\n        date: Temporal.ZonedDateTime.from(date),\n        uptime: logsByDay.uptime,\n        latency: logsByDay.latency,\n        outages: logsByDay.outages,\n      }))\n      .sort((a, b) =&gt; a.date.epochMilliseconds - b.date.epochMilliseconds)\n\n    // Convert latest log timestamp to Temporal.ZonedDateTime\n    const lastCheckTime = serviceLogs.at(-1)?.timestamp.toTemporalInstant().toZonedDateTimeISO('UTC') ?? null\n\n    overviews.push({\n      histories: logs,\n      service: {\n        id: service.id,\n        name: service.name,\n        tags: service.tags,\n        url: service.url,\n        status: status ?? ServiceStatus.Down,\n      },\n      lastCheckTime,\n    })\n  }\n  return {\n    overviews,\n    timestamp:\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "export default defineEventHandler(async () =&gt; {",
+            "lineNumber": 4
+          },
+          {
+            "text": "  const services = await db",
+            "lineNumber": 5
+          },
+          {
+            "text": "    .select()",
+            "lineNumber": 6
+          },
+          {
+            "text": "    .from(schema.services)",
+            "lineNumber": 7
+          },
+          {
+            "text": "    .where(isNull(schema.services.deletedAt))",
+            "lineNumber": 8
+          },
+          {
+            "text": "  const overviews: ServiceOverview[] = []",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "  const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')",
+            "lineNumber": 11
+          },
+          {
+            "text": "  const thirtyDaysAgo = now.subtract(Temporal.Duration.from({ days: 30 }))",
+            "lineNumber": 12
+          },
+          {
+            "text": "  const thirtyDaysAgoDate = new Date(thirtyDaysAgo.toInstant().epochMilliseconds)",
+            "lineNumber": 13
+          },
+          {
+            "lineNumber": 14
+          },
+          {
+            "text": "  for (const service of services) {",
+            "lineNumber": 15
+          },
+          {
+            "text": "    const serviceLogs = await db",
+            "lineNumber": 16
+          },
+          {
+            "text": "      .select()",
+            "lineNumber": 17
+          },
+          {
+            "text": "      .from(schema.serviceLogs)",
+            "lineNumber": 18
+          },
+          {
+            "text": "      .where(",
+            "lineNumber": 19
+          },
+          {
+            "text": "        and(",
+            "lineNumber": 20
+          },
+          {
+            "text": "          eq(schema.serviceLogs.serviceId, service.id),",
+            "lineNumber": 21
+          },
+          {
+            "text": "          gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),",
+            "lineNumber": 22
+          },
+          {
+            "text": "          isNull(schema.serviceLogs.deletedAt),",
+            "lineNumber": 23
+          },
+          {
+            "text": "        ),",
+            "lineNumber": 24
+          },
+          {
+            "text": "      )",
+            "lineNumber": 25
+          },
+          {
+            "text": "      .orderBy(schema.serviceLogs.timestamp)",
+            "lineNumber": 26
+          },
+          {
+            "lineNumber": 27
+          },
+          {
+            "text": "    const serviceLogsByDays = manageServiceLogsByDays(serviceLogs)",
+            "lineNumber": 28
+          },
+          {
+            "text": "    const status = getServiceStatus(serviceLogs)",
+            "lineNumber": 29
+          },
+          {
+            "lineNumber": 30
+          },
+          {
+            "text": "    const logs: ServiceHistroy[] = Array.from(serviceLogsByDays.entries())",
+            "lineNumber": 31
+          },
+          {
+            "text": "      .map(([date, logsByDay]) =&gt; ({",
+            "lineNumber": 32
+          },
+          {
+            "text": "        date: Temporal.ZonedDateTime.from(date),",
+            "lineNumber": 33
+          },
+          {
+            "text": "        uptime: logsByDay.uptime,",
+            "lineNumber": 34
+          },
+          {
+            "text": "        latency: logsByDay.latency,",
+            "lineNumber": 35
+          },
+          {
+            "text": "        outages: logsByDay.outages,",
+            "lineNumber": 36
+          },
+          {
+            "text": "      }))",
+            "lineNumber": 37
+          },
+          {
+            "text": "      .sort((a, b) =&gt; a.date.epochMilliseconds - b.date.epochMilliseconds)",
+            "lineNumber": 38
+          },
+          {
+            "lineNumber": 39
+          },
+          {
+            "text": "    // Convert latest log timestamp to Temporal.ZonedDateTime",
+            "lineNumber": 40
+          },
+          {
+            "text": "    const lastCheckTime = serviceLogs.at(-1)?.timestamp.toTemporalInstant().toZonedDateTimeISO('UTC') ?? null",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "    overviews.push({",
+            "lineNumber": 43
+          },
+          {
+            "text": "      histories: logs,",
+            "lineNumber": 44
+          },
+          {
+            "text": "      service: {",
+            "lineNumber": 45
+          },
+          {
+            "text": "        id: service.id,",
+            "lineNumber": 46
+          },
+          {
+            "text": "        name: service.name,",
+            "lineNumber": 47
+          },
+          {
+            "text": "        tags: service.tags,",
+            "lineNumber": 48
+          },
+          {
+            "text": "        url: service.url,",
+            "lineNumber": 49
+          },
+          {
+            "text": "        status: status ?? ServiceStatus.Down,",
+            "lineNumber": 50
+          },
+          {
+            "text": "      },",
+            "lineNumber": 51
+          },
+          {
+            "text": "      lastCheckTime,",
+            "lineNumber": 52
+          },
+          {
+            "text": "    })",
+            "lineNumber": 53
+          },
+          {
+            "text": "  }",
+            "lineNumber": 54
+          },
+          {
+            "text": "  return {",
+            "lineNumber": 55
+          },
+          {
+            "text": "    overviews,",
+            "lineNumber": 56
+          },
+          {
+            "text": "    timestamp:",
+            "lineNumber": 57
+          },
+          {
+            "text": "}",
+            "lineNumber": 59
+          }
+        ]
+      },
+      "score": 0.29283034801483154
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/db/schema.ts",
+        "range": {
+          "startPosition": {
+            "line": 4
+          },
+          "endPosition": {
+            "line": 53,
+            "column": 2
+          }
+        },
+        "contents": "export const services = \n\n  deletedAt: integer('deleted_at', { mode: 'timestamp' }),\n})\n\nexport const serviceLogs = sqliteTable('service_logs', {\n  id: integer('id').primaryKey({ autoIncrement: true }),\n  serviceId: integer('service_id')\n    .notNull()\n    .references(() =&gt; services.id),\n\n  status: text('status', { enum: ['up', 'timeout', 'error'] })\n    .notNull(),\n  latency: integer('latency'),\n\n  timestamp: integer('timestamp', { mode: 'timestamp' })\n    .default(sql&#96;(unixepoch('now'))&#96;)\n    .notNull(),\n\n  statusCode: integer('status_code'),\n  errorMessage: text('error_message'),\n  deletedAt: integer('deleted_at', { mode: 'timestamp' }),\n})",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export const services = ",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 33
+          },
+          {
+            "text": "  deletedAt: integer('deleted_at', { mode: 'timestamp' }),",
+            "lineNumber": 34
+          },
+          {
+            "text": "})",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "export const serviceLogs = sqliteTable('service_logs', {",
+            "lineNumber": 37
+          },
+          {
+            "text": "  id: integer('id').primaryKey({ autoIncrement: true }),",
+            "lineNumber": 38
+          },
+          {
+            "text": "  serviceId: integer('service_id')",
+            "lineNumber": 39
+          },
+          {
+            "text": "    .notNull()",
+            "lineNumber": 40
+          },
+          {
+            "text": "    .references(() =&gt; services.id),",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "  status: text('status', { enum: ['up', 'timeout', 'error'] })",
+            "lineNumber": 43
+          },
+          {
+            "text": "    .notNull(),",
+            "lineNumber": 44
+          },
+          {
+            "text": "  latency: integer('latency'),",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "  timestamp: integer('timestamp', { mode: 'timestamp' })",
+            "lineNumber": 47
+          },
+          {
+            "text": "    .default(sql&#96;(unixepoch('now'))&#96;)",
+            "lineNumber": 48
+          },
+          {
+            "text": "    .notNull(),",
+            "lineNumber": 49
+          },
+          {
+            "lineNumber": 50
+          },
+          {
+            "text": "  statusCode: integer('status_code'),",
+            "lineNumber": 51
+          },
+          {
+            "text": "  errorMessage: text('error_message'),",
+            "lineNumber": 52
+          },
+          {
+            "text": "  deletedAt: integer('deleted_at', { mode: 'timestamp' }),",
+            "lineNumber": 53
+          },
+          {
+            "text": "})",
+            "lineNumber": 54
+          }
+        ]
+      },
+      "score": 0.2871760129928589
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/api/services/[id].delete.ts",
+        "range": {
+          "startPosition": {
+            "column": 45
+          },
+          "endPosition": {
+            "line": 68,
+            "column": 1
+          }
+        },
+        "contents": "import { db, schema } from 'hub:db'\n\n/**\n * DELETE /monitors/:id\n * Delete monitor (authentication required)\n * Soft delete: sets deletedAt timestamp instead of removing the record\n */\nexport default defineEventHandler(async (event) =&gt; {\n  // Verify authentication\n  await requireUserSession(event)\n\n  const id = getRouterParam(event, 'id')\n\n  if (!id) {\n    throw createError({\n      statusCode: 400,\n      statusMessage: 'Bad Request',\n      message: 'Missing monitor ID',\n    })\n  }\n\n  const serviceId = Number.parseInt(id, 10)\n\n  if (Number.isNaN(serviceId)) {\n    throw createError({\n      statusCode: 400,\n      statusMessage: 'Bad Request',\n      message: 'Invalid service ID',\n    })\n  }\n\n  // Check if monitor exists and is not deleted\n  const existingService = await db\n    .select()\n    .from(schema.services)\n    .where(\n      and(\n        eq(schema.services.id, serviceId),\n        isNull(schema.services.deletedAt),\n      ),\n    )\n    .limit(1)\n\n  if (existingService.length === 0) {\n    throw createError({\n      statusCode: 404,\n      statusMessage: 'Not Found',\n      message: 'Service not found',\n    })\n  }\n\n  // Soft delete service: set deletedAt timestamp\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "/**",
+            "lineNumber": 4
+          },
+          {
+            "text": " * DELETE /monitors/:id",
+            "lineNumber": 5
+          },
+          {
+            "text": " * Delete monitor (authentication required)",
+            "lineNumber": 6
+          },
+          {
+            "text": " * Soft delete: sets deletedAt timestamp instead of removing the record",
+            "lineNumber": 7
+          },
+          {
+            "text": " */",
+            "lineNumber": 8
+          },
+          {
+            "text": "export default defineEventHandler(async (event) =&gt; {",
+            "lineNumber": 9
+          },
+          {
+            "text": "  // Verify authentication",
+            "lineNumber": 10
+          },
+          {
+            "text": "  await requireUserSession(event)",
+            "lineNumber": 11
+          },
+          {
+            "lineNumber": 12
+          },
+          {
+            "text": "  const id = getRouterParam(event, 'id')",
+            "lineNumber": 13
+          },
+          {
+            "lineNumber": 14
+          },
+          {
+            "text": "  if (!id) {",
+            "lineNumber": 15
+          },
+          {
+            "text": "    throw createError({",
+            "lineNumber": 16
+          },
+          {
+            "text": "      statusCode: 400,",
+            "lineNumber": 17
+          },
+          {
+            "text": "      statusMessage: 'Bad Request',",
+            "lineNumber": 18
+          },
+          {
+            "text": "      message: 'Missing monitor ID',",
+            "lineNumber": 19
+          },
+          {
+            "text": "    })",
+            "lineNumber": 20
+          },
+          {
+            "text": "  }",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  const serviceId = Number.parseInt(id, 10)",
+            "lineNumber": 23
+          },
+          {
+            "lineNumber": 24
+          },
+          {
+            "text": "  if (Number.isNaN(serviceId)) {",
+            "lineNumber": 25
+          },
+          {
+            "text": "    throw createError({",
+            "lineNumber": 26
+          },
+          {
+            "text": "      statusCode: 400,",
+            "lineNumber": 27
+          },
+          {
+            "text": "      statusMessage: 'Bad Request',",
+            "lineNumber": 28
+          },
+          {
+            "text": "      message: 'Invalid service ID',",
+            "lineNumber": 29
+          },
+          {
+            "text": "    })",
+            "lineNumber": 30
+          },
+          {
+            "text": "  }",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "  // Check if monitor exists and is not deleted",
+            "lineNumber": 33
+          },
+          {
+            "text": "  const existingService = await db",
+            "lineNumber": 34
+          },
+          {
+            "text": "    .select()",
+            "lineNumber": 35
+          },
+          {
+            "text": "    .from(schema.services)",
+            "lineNumber": 36
+          },
+          {
+            "text": "    .where(",
+            "lineNumber": 37
+          },
+          {
+            "text": "      and(",
+            "lineNumber": 38
+          },
+          {
+            "text": "        eq(schema.services.id, serviceId),",
+            "lineNumber": 39
+          },
+          {
+            "text": "        isNull(schema.services.deletedAt),",
+            "lineNumber": 40
+          },
+          {
+            "text": "      ),",
+            "lineNumber": 41
+          },
+          {
+            "text": "    )",
+            "lineNumber": 42
+          },
+          {
+            "text": "    .limit(1)",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "  if (existingService.length === 0) {",
+            "lineNumber": 45
+          },
+          {
+            "text": "    throw createError({",
+            "lineNumber": 46
+          },
+          {
+            "text": "      statusCode: 404,",
+            "lineNumber": 47
+          },
+          {
+            "text": "      statusMessage: 'Not Found',",
+            "lineNumber": 48
+          },
+          {
+            "text": "      message: 'Service not found',",
+            "lineNumber": 49
+          },
+          {
+            "text": "    })",
+            "lineNumber": 50
+          },
+          {
+            "text": "  }",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "  // Soft delete service: set deletedAt timestamp",
+            "lineNumber": 53
+          },
+          {
+            "text": "}",
+            "lineNumber": 69
+          }
+        ]
+      },
+      "score": 0.27196869254112244
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/db/migrations/sqlite/meta/0000_snapshot.json",
+        "range": {
+          "startPosition": {
+            "line": 151
+          },
+          "endPosition": {
+            "line": 235
+          }
+        },
+        "contents": "      \"checkConstraints\": {}\n    },\n    \"services\": {\n      \"name\": \"services\",\n      \"columns\": {\n        \"id\": {\n          \"name\": \"id\",\n          \"type\": \"integer\",\n          \"primaryKey\": true,\n          \"notNull\": true,\n          \"autoincrement\": true\n        },\n        \"type\": {\n          \"name\": \"type\",\n          \"type\": \"text\",\n          \"primaryKey\": false,\n          \"notNull\": false,\n          \"autoincrement\": false,\n          \"default\": \"'public'\"\n        },\n        \"name\": {\n          \"name\": \"name\",\n          \"type\": \"text\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false\n        },\n        \"tags\": {\n          \"name\": \"tags\",\n          \"type\": \"text\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false\n        },\n        \"url\": {\n          \"name\": \"url\",\n          \"type\": \"text\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false\n        },\n        \"method\": {\n          \"name\": \"method\",\n          \"type\": \"text\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false,\n          \"default\": \"'GET'\"\n        },\n        \"updated_at\": {\n          \"name\": \"updated_at\",\n          \"type\": \"integer\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false,\n          \"default\": \"(unixepoch('now'))\"\n        },\n        \"created_at\": {\n          \"name\": \"created_at\",\n          \"type\": \"integer\",\n          \"primaryKey\": false,\n          \"notNull\": true,\n          \"autoincrement\": false,\n          \"default\": \"(unixepoch('now'))\"\n        }\n      },\n      \"indexes\": {},\n      \"foreignKeys\": {},\n      \"compositePrimaryKeys\": {},\n      \"uniqueConstraints\": {},\n      \"checkConstraints\": {}\n    }\n  },\n  \"views\": {},\n  \"enums\": {},\n  \"_meta\": {\n    \"schemas\": {},\n    \"tables\": {},\n    \"columns\": {}\n  },\n  \"internal\": {\n    \"indexes\": {}\n  }\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "      \"checkConstraints\": {}",
+            "lineNumber": 152
+          },
+          {
+            "text": "    },",
+            "lineNumber": 153
+          },
+          {
+            "text": "    \"services\": {",
+            "lineNumber": 154
+          },
+          {
+            "text": "      \"name\": \"services\",",
+            "lineNumber": 155
+          },
+          {
+            "text": "      \"columns\": {",
+            "lineNumber": 156
+          },
+          {
+            "text": "        \"id\": {",
+            "lineNumber": 157
+          },
+          {
+            "text": "          \"name\": \"id\",",
+            "lineNumber": 158
+          },
+          {
+            "text": "          \"type\": \"integer\",",
+            "lineNumber": 159
+          },
+          {
+            "text": "          \"primaryKey\": true,",
+            "lineNumber": 160
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 161
+          },
+          {
+            "text": "          \"autoincrement\": true",
+            "lineNumber": 162
+          },
+          {
+            "text": "        },",
+            "lineNumber": 163
+          },
+          {
+            "text": "        \"type\": {",
+            "lineNumber": 164
+          },
+          {
+            "text": "          \"name\": \"type\",",
+            "lineNumber": 165
+          },
+          {
+            "text": "          \"type\": \"text\",",
+            "lineNumber": 166
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 167
+          },
+          {
+            "text": "          \"notNull\": false,",
+            "lineNumber": 168
+          },
+          {
+            "text": "          \"autoincrement\": false,",
+            "lineNumber": 169
+          },
+          {
+            "text": "          \"default\": \"'public'\"",
+            "lineNumber": 170
+          },
+          {
+            "text": "        },",
+            "lineNumber": 171
+          },
+          {
+            "text": "        \"name\": {",
+            "lineNumber": 172
+          },
+          {
+            "text": "          \"name\": \"name\",",
+            "lineNumber": 173
+          },
+          {
+            "text": "          \"type\": \"text\",",
+            "lineNumber": 174
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 175
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 176
+          },
+          {
+            "text": "          \"autoincrement\": false",
+            "lineNumber": 177
+          },
+          {
+            "text": "        },",
+            "lineNumber": 178
+          },
+          {
+            "text": "        \"tags\": {",
+            "lineNumber": 179
+          },
+          {
+            "text": "          \"name\": \"tags\",",
+            "lineNumber": 180
+          },
+          {
+            "text": "          \"type\": \"text\",",
+            "lineNumber": 181
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 182
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 183
+          },
+          {
+            "text": "          \"autoincrement\": false",
+            "lineNumber": 184
+          },
+          {
+            "text": "        },",
+            "lineNumber": 185
+          },
+          {
+            "text": "        \"url\": {",
+            "lineNumber": 186
+          },
+          {
+            "text": "          \"name\": \"url\",",
+            "lineNumber": 187
+          },
+          {
+            "text": "          \"type\": \"text\",",
+            "lineNumber": 188
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 189
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 190
+          },
+          {
+            "text": "          \"autoincrement\": false",
+            "lineNumber": 191
+          },
+          {
+            "text": "        },",
+            "lineNumber": 192
+          },
+          {
+            "text": "        \"method\": {",
+            "lineNumber": 193
+          },
+          {
+            "text": "          \"name\": \"method\",",
+            "lineNumber": 194
+          },
+          {
+            "text": "          \"type\": \"text\",",
+            "lineNumber": 195
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 196
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 197
+          },
+          {
+            "text": "          \"autoincrement\": false,",
+            "lineNumber": 198
+          },
+          {
+            "text": "          \"default\": \"'GET'\"",
+            "lineNumber": 199
+          },
+          {
+            "text": "        },",
+            "lineNumber": 200
+          },
+          {
+            "text": "        \"updated_at\": {",
+            "lineNumber": 201
+          },
+          {
+            "text": "          \"name\": \"updated_at\",",
+            "lineNumber": 202
+          },
+          {
+            "text": "          \"type\": \"integer\",",
+            "lineNumber": 203
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 204
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 205
+          },
+          {
+            "text": "          \"autoincrement\": false,",
+            "lineNumber": 206
+          },
+          {
+            "text": "          \"default\": \"(unixepoch('now'))\"",
+            "lineNumber": 207
+          },
+          {
+            "text": "        },",
+            "lineNumber": 208
+          },
+          {
+            "text": "        \"created_at\": {",
+            "lineNumber": 209
+          },
+          {
+            "text": "          \"name\": \"created_at\",",
+            "lineNumber": 210
+          },
+          {
+            "text": "          \"type\": \"integer\",",
+            "lineNumber": 211
+          },
+          {
+            "text": "          \"primaryKey\": false,",
+            "lineNumber": 212
+          },
+          {
+            "text": "          \"notNull\": true,",
+            "lineNumber": 213
+          },
+          {
+            "text": "          \"autoincrement\": false,",
+            "lineNumber": 214
+          },
+          {
+            "text": "          \"default\": \"(unixepoch('now'))\"",
+            "lineNumber": 215
+          },
+          {
+            "text": "        }",
+            "lineNumber": 216
+          },
+          {
+            "text": "      },",
+            "lineNumber": 217
+          },
+          {
+            "text": "      \"indexes\": {},",
+            "lineNumber": 218
+          },
+          {
+            "text": "      \"foreignKeys\": {},",
+            "lineNumber": 219
+          },
+          {
+            "text": "      \"compositePrimaryKeys\": {},",
+            "lineNumber": 220
+          },
+          {
+            "text": "      \"uniqueConstraints\": {},",
+            "lineNumber": 221
+          },
+          {
+            "text": "      \"checkConstraints\": {}",
+            "lineNumber": 222
+          },
+          {
+            "text": "    }",
+            "lineNumber": 223
+          },
+          {
+            "text": "  },",
+            "lineNumber": 224
+          },
+          {
+            "text": "  \"views\": {},",
+            "lineNumber": 225
+          },
+          {
+            "text": "  \"enums\": {},",
+            "lineNumber": 226
+          },
+          {
+            "text": "  \"_meta\": {",
+            "lineNumber": 227
+          },
+          {
+            "text": "    \"schemas\": {},",
+            "lineNumber": 228
+          },
+          {
+            "text": "    \"tables\": {},",
+            "lineNumber": 229
+          },
+          {
+            "text": "    \"columns\": {}",
+            "lineNumber": 230
+          },
+          {
+            "text": "  },",
+            "lineNumber": 231
+          },
+          {
+            "text": "  \"internal\": {",
+            "lineNumber": 232
+          },
+          {
+            "text": "    \"indexes\": {}",
+            "lineNumber": 233
+          },
+          {
+            "text": "  }",
+            "lineNumber": 234
+          },
+          {
+            "text": "}",
+            "lineNumber": 235
+          }
+        ]
+      },
+      "score": 0.266704797744751
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/pages/admin.vue",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 88
+          }
+        },
+        "contents": "&lt;script setup lang=\"ts\"&gt;\ndefinePageMeta({\n  middleware: 'auth',\n})\n\n// Form state\nconst serviceName = ref('')\nconst serviceUrl = ref('')\nconst serviceTags = ref('')\n\nconst queryCache = useQueryCache()\n\n// Fetch services\nconst { data: servicesData, isLoading, refetch } = useQuery({\n  key: ['admin-services'],\n  query() {\n    // Don't known why it need\n    return $fetch('/api/services', { headers: useRequestHeaders() })\n  },\n})\n\n// Create service mutation\nconst { mutateAsync: createService, isLoading: isCreating } = useMutation({\n  mutation(vars: { name: string, url: string, tags: string[] }) {\n    return $fetch('/api/services', {\n      method: 'POST',\n      body: {\n        name: vars.name,\n        url: vars.url,\n        tags: vars.tags,\n        method: 'GET',\n        type: 'public',\n      },\n    })\n  },\n  async onSuccess() {\n    // Reset form\n    serviceName.value = ''\n    serviceUrl.value = ''\n    serviceTags.value = ''\n    await Promise.all([\n      queryCache.invalidateQueries({ key: ['admin-services'] }),\n      queryCache.invalidateQueries({ key: ['overview'] }),\n    ])\n  },\n})\n\n// Delete service mutation\nconst { mutateAsync: deleteService, isLoading: isDeleting } = useMutation({\n  mutation(vars: number) {\n    return $fetch(&#96;/api/services/${vars}&#96;, {\n      method: 'DELETE',\n    })\n  },\n  async onSuccess() {\n    // Refresh services list\n    await refetch()\n  },\n})\n\n// Handle form submission\nasync function handleSubmit() {\n  if (!serviceName.value || !serviceUrl.value) {\n    return\n  }\n\n  const tags = serviceTags.value\n    .split(',')\n    .map(tag =&gt; tag.trim())\n    .filter(tag =&gt; tag.length &gt; 0)\n\n  try {\n    await createService({\n      name: serviceName.value,\n      url: serviceUrl.value,\n      tags,\n    })\n  }\n  catch (error) {\n    console.error('Failed to create service:', error)\n  }\n}\n\n// Handle service deletion\nasync function handleDelete(serviceId: number) {\n  try {\n    await deleteService(serviceId)\n  }",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "&lt;script setup lang=\"ts\"&gt;",
+            "lineNumber": 1
+          },
+          {
+            "text": "definePageMeta({",
+            "lineNumber": 2
+          },
+          {
+            "text": "  middleware: 'auth',",
+            "lineNumber": 3
+          },
+          {
+            "text": "})",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "// Form state",
+            "lineNumber": 6
+          },
+          {
+            "text": "const serviceName = ref('')",
+            "lineNumber": 7
+          },
+          {
+            "text": "const serviceUrl = ref('')",
+            "lineNumber": 8
+          },
+          {
+            "text": "const serviceTags = ref('')",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "const queryCache = useQueryCache()",
+            "lineNumber": 11
+          },
+          {
+            "lineNumber": 12
+          },
+          {
+            "text": "// Fetch services",
+            "lineNumber": 13
+          },
+          {
+            "text": "const { data: servicesData, isLoading, refetch } = useQuery({",
+            "lineNumber": 14
+          },
+          {
+            "text": "  key: ['admin-services'],",
+            "lineNumber": 15
+          },
+          {
+            "text": "  query() {",
+            "lineNumber": 16
+          },
+          {
+            "text": "    // Don't known why it need",
+            "lineNumber": 17
+          },
+          {
+            "text": "    return $fetch('/api/services', { headers: useRequestHeaders() })",
+            "lineNumber": 18
+          },
+          {
+            "text": "  },",
+            "lineNumber": 19
+          },
+          {
+            "text": "})",
+            "lineNumber": 20
+          },
+          {
+            "lineNumber": 21
+          },
+          {
+            "text": "// Create service mutation",
+            "lineNumber": 22
+          },
+          {
+            "text": "const { mutateAsync: createService, isLoading: isCreating } = useMutation({",
+            "lineNumber": 23
+          },
+          {
+            "text": "  mutation(vars: { name: string, url: string, tags: string[] }) {",
+            "lineNumber": 24
+          },
+          {
+            "text": "    return $fetch('/api/services', {",
+            "lineNumber": 25
+          },
+          {
+            "text": "      method: 'POST',",
+            "lineNumber": 26
+          },
+          {
+            "text": "      body: {",
+            "lineNumber": 27
+          },
+          {
+            "text": "        name: vars.name,",
+            "lineNumber": 28
+          },
+          {
+            "text": "        url: vars.url,",
+            "lineNumber": 29
+          },
+          {
+            "text": "        tags: vars.tags,",
+            "lineNumber": 30
+          },
+          {
+            "text": "        method: 'GET',",
+            "lineNumber": 31
+          },
+          {
+            "text": "        type: 'public',",
+            "lineNumber": 32
+          },
+          {
+            "text": "      },",
+            "lineNumber": 33
+          },
+          {
+            "text": "    })",
+            "lineNumber": 34
+          },
+          {
+            "text": "  },",
+            "lineNumber": 35
+          },
+          {
+            "text": "  async onSuccess() {",
+            "lineNumber": 36
+          },
+          {
+            "text": "    // Reset form",
+            "lineNumber": 37
+          },
+          {
+            "text": "    serviceName.value = ''",
+            "lineNumber": 38
+          },
+          {
+            "text": "    serviceUrl.value = ''",
+            "lineNumber": 39
+          },
+          {
+            "text": "    serviceTags.value = ''",
+            "lineNumber": 40
+          },
+          {
+            "text": "    await Promise.all([",
+            "lineNumber": 41
+          },
+          {
+            "text": "      queryCache.invalidateQueries({ key: ['admin-services'] }),",
+            "lineNumber": 42
+          },
+          {
+            "text": "      queryCache.invalidateQueries({ key: ['overview'] }),",
+            "lineNumber": 43
+          },
+          {
+            "text": "    ])",
+            "lineNumber": 44
+          },
+          {
+            "text": "  },",
+            "lineNumber": 45
+          },
+          {
+            "text": "})",
+            "lineNumber": 46
+          },
+          {
+            "lineNumber": 47
+          },
+          {
+            "text": "// Delete service mutation",
+            "lineNumber": 48
+          },
+          {
+            "text": "const { mutateAsync: deleteService, isLoading: isDeleting } = useMutation({",
+            "lineNumber": 49
+          },
+          {
+            "text": "  mutation(vars: number) {",
+            "lineNumber": 50
+          },
+          {
+            "text": "    return $fetch(&#96;/api/services/${vars}&#96;, {",
+            "lineNumber": 51
+          },
+          {
+            "text": "      method: 'DELETE',",
+            "lineNumber": 52
+          },
+          {
+            "text": "    })",
+            "lineNumber": 53
+          },
+          {
+            "text": "  },",
+            "lineNumber": 54
+          },
+          {
+            "text": "  async onSuccess() {",
+            "lineNumber": 55
+          },
+          {
+            "text": "    // Refresh services list",
+            "lineNumber": 56
+          },
+          {
+            "text": "    await refetch()",
+            "lineNumber": 57
+          },
+          {
+            "text": "  },",
+            "lineNumber": 58
+          },
+          {
+            "text": "})",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "// Handle form submission",
+            "lineNumber": 61
+          },
+          {
+            "text": "async function handleSubmit() {",
+            "lineNumber": 62
+          },
+          {
+            "text": "  if (!serviceName.value || !serviceUrl.value) {",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return",
+            "lineNumber": 64
+          },
+          {
+            "text": "  }",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "  const tags = serviceTags.value",
+            "lineNumber": 67
+          },
+          {
+            "text": "    .split(',')",
+            "lineNumber": 68
+          },
+          {
+            "text": "    .map(tag =&gt; tag.trim())",
+            "lineNumber": 69
+          },
+          {
+            "text": "    .filter(tag =&gt; tag.length &gt; 0)",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "  try {",
+            "lineNumber": 72
+          },
+          {
+            "text": "    await createService({",
+            "lineNumber": 73
+          },
+          {
+            "text": "      name: serviceName.value,",
+            "lineNumber": 74
+          },
+          {
+            "text": "      url: serviceUrl.value,",
+            "lineNumber": 75
+          },
+          {
+            "text": "      tags,",
+            "lineNumber": 76
+          },
+          {
+            "text": "    })",
+            "lineNumber": 77
+          },
+          {
+            "text": "  }",
+            "lineNumber": 78
+          },
+          {
+            "text": "  catch (error) {",
+            "lineNumber": 79
+          },
+          {
+            "text": "    console.error('Failed to create service:', error)",
+            "lineNumber": 80
+          },
+          {
+            "text": "  }",
+            "lineNumber": 81
+          },
+          {
+            "text": "}",
+            "lineNumber": 82
+          },
+          {
+            "lineNumber": 83
+          },
+          {
+            "text": "// Handle service deletion",
+            "lineNumber": 84
+          },
+          {
+            "text": "async function handleDelete(serviceId: number) {",
+            "lineNumber": 85
+          },
+          {
+            "text": "  try {",
+            "lineNumber": 86
+          },
+          {
+            "text": "    await deleteService(serviceId)",
+            "lineNumber": 87
+          },
+          {
+            "text": "  }",
+            "lineNumber": 88
+          }
+        ]
+      },
+      "score": 0.2587476968765259
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/tasks/check.ts",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 25
+          }
+        },
+        "contents": "import { isNull } from 'drizzle-orm'\nimport { db, schema } from 'hub:db'\nimport { checkService } from '~~/server/utils/service'\n\nexport default defineTask({\n  meta: {\n    name: 'check',\n    description: 'Check status for all services',\n  },\n  async run() {\n    // Fetch all services from database (excluding soft-deleted)\n    const services = await db\n      .select()\n      .from(schema.services)\n      .where(isNull(schema.services.deletedAt))\n\n    // Process each service\n    for (const service of services) {\n      await checkService(service)\n    }\n\n    return {\n      result: 'success',\n    }\n  }",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { isNull } from 'drizzle-orm'",
+            "lineNumber": 1
+          },
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { checkService } from '~~/server/utils/service'",
+            "lineNumber": 3
+          },
+          {
+            "lineNumber": 4
+          },
+          {
+            "text": "export default defineTask({",
+            "lineNumber": 5
+          },
+          {
+            "text": "  meta: {",
+            "lineNumber": 6
+          },
+          {
+            "text": "    name: 'check',",
+            "lineNumber": 7
+          },
+          {
+            "text": "    description: 'Check status for all services',",
+            "lineNumber": 8
+          },
+          {
+            "text": "  },",
+            "lineNumber": 9
+          },
+          {
+            "text": "  async run() {",
+            "lineNumber": 10
+          },
+          {
+            "text": "    // Fetch all services from database (excluding soft-deleted)",
+            "lineNumber": 11
+          },
+          {
+            "text": "    const services = await db",
+            "lineNumber": 12
+          },
+          {
+            "text": "      .select()",
+            "lineNumber": 13
+          },
+          {
+            "text": "      .from(schema.services)",
+            "lineNumber": 14
+          },
+          {
+            "text": "      .where(isNull(schema.services.deletedAt))",
+            "lineNumber": 15
+          },
+          {
+            "lineNumber": 16
+          },
+          {
+            "text": "    // Process each service",
+            "lineNumber": 17
+          },
+          {
+            "text": "    for (const service of services) {",
+            "lineNumber": 18
+          },
+          {
+            "text": "      await checkService(service)",
+            "lineNumber": 19
+          },
+          {
+            "text": "    }",
+            "lineNumber": 20
+          },
+          {
+            "lineNumber": 21
+          },
+          {
+            "text": "    return {",
+            "lineNumber": 22
+          },
+          {
+            "text": "      result: 'success',",
+            "lineNumber": 23
+          },
+          {
+            "text": "    }",
+            "lineNumber": 24
+          },
+          {
+            "text": "  }",
+            "lineNumber": 25
+          }
+        ]
+      },
+      "score": 0.2515130043029785
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./shared/types/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 9,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 26,
+            "column": 1
+          }
+        },
+        "contents": "export interface Service {\n  id: number\n  name: string\n  tags: string[]\n  url: string | null\n  status: ServiceStatus\n}\n\nexport interface ServiceHistroy {\n  uptime: number | null\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export interface Service {",
+            "lineNumber": 12,
+            "isSignature": true
+          },
+          {
+            "text": "  id: number",
+            "lineNumber": 13
+          },
+          {
+            "text": "  name: string",
+            "lineNumber": 14
+          },
+          {
+            "text": "  tags: string[]",
+            "lineNumber": 15
+          },
+          {
+            "text": "  url: string | null",
+            "lineNumber": 16
+          },
+          {
+            "text": "  status: ServiceStatus",
+            "lineNumber": 17
+          },
+          {
+            "text": "}",
+            "lineNumber": 18,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "export interface ServiceHistroy {",
+            "lineNumber": 20,
+            "isSignature": true
+          },
+          {
+            "text": "  uptime: number | null",
+            "lineNumber": 21
+          },
+          {
+            "text": "}",
+            "lineNumber": 27,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.24473029375076294
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./shared/types/service.ts",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 17,
+            "column": 1
+          }
+        },
+        "contents": "export enum ServiceStatus {\n  /** Service is operational */\n  Operational = 'operational',\n  /** Service is degraded */\n  Degraded = 'degraded',\n  /** Service is down */\n  Down = 'down',\n  /** Service is under maintenance */\n  Maintenance = 'maintenance',\n}\n\nexport interface Service {\n  id: number\n  name: string\n  tags: string[]\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export enum ServiceStatus {",
+            "lineNumber": 1
+          },
+          {
+            "text": "  /** Service is operational */",
+            "lineNumber": 2
+          },
+          {
+            "text": "  Operational = 'operational',",
+            "lineNumber": 3
+          },
+          {
+            "text": "  /** Service is degraded */",
+            "lineNumber": 4
+          },
+          {
+            "text": "  Degraded = 'degraded',",
+            "lineNumber": 5
+          },
+          {
+            "text": "  /** Service is down */",
+            "lineNumber": 6
+          },
+          {
+            "text": "  Down = 'down',",
+            "lineNumber": 7
+          },
+          {
+            "text": "  /** Service is under maintenance */",
+            "lineNumber": 8
+          },
+          {
+            "text": "  Maintenance = 'maintenance',",
+            "lineNumber": 9
+          },
+          {
+            "text": "}",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "export interface Service {",
+            "lineNumber": 12,
+            "isSignature": true
+          },
+          {
+            "text": "  id: number",
+            "lineNumber": 13
+          },
+          {
+            "text": "  name: string",
+            "lineNumber": 14
+          },
+          {
+            "text": "  tags: string[]",
+            "lineNumber": 15
+          },
+          {
+            "text": "}",
+            "lineNumber": 18,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.22659540176391602
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/db/schema.ts",
+        "range": {
+          "startPosition": {
+            "line": 36
+          },
+          "endPosition": {
+            "line": 65,
+            "column": 2
+          }
+        },
+        "contents": "export const serviceLogs = \n,\n  errorMessage: text('error_message'),\n  deletedAt: integer('deleted_at', { mode: 'timestamp' }),\n})\n\nexport const incidents = sqliteTable('incidents', {\n  id: integer('id').primaryKey({ autoIncrement: true }),\n  serviceId: integer('service_id')\n    .references(() =&gt; services.id)\n    .notNull(),\n  startTime: text('start_time').notNull(),\n  endTime: text('end_time'),\n  status: text('status', { enum: ['ongoing', 'resolved'] }).notNull(),\n  title: text('title').notNull(),\n  description: text('description').notNull(),\n})",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export const serviceLogs = ",
+            "lineNumber": 37
+          },
+          {
+            "text": ",",
+            "lineNumber": 51
+          },
+          {
+            "text": "  errorMessage: text('error_message'),",
+            "lineNumber": 52
+          },
+          {
+            "text": "  deletedAt: integer('deleted_at', { mode: 'timestamp' }),",
+            "lineNumber": 53
+          },
+          {
+            "text": "})",
+            "lineNumber": 54
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "text": "export const incidents = sqliteTable('incidents', {",
+            "lineNumber": 56
+          },
+          {
+            "text": "  id: integer('id').primaryKey({ autoIncrement: true }),",
+            "lineNumber": 57
+          },
+          {
+            "text": "  serviceId: integer('service_id')",
+            "lineNumber": 58
+          },
+          {
+            "text": "    .references(() =&gt; services.id)",
+            "lineNumber": 59
+          },
+          {
+            "text": "    .notNull(),",
+            "lineNumber": 60
+          },
+          {
+            "text": "  startTime: text('start_time').notNull(),",
+            "lineNumber": 61
+          },
+          {
+            "text": "  endTime: text('end_time'),",
+            "lineNumber": 62
+          },
+          {
+            "text": "  status: text('status', { enum: ['ongoing', 'resolved'] }).notNull(),",
+            "lineNumber": 63
+          },
+          {
+            "text": "  title: text('title').notNull(),",
+            "lineNumber": 64
+          },
+          {
+            "text": "  description: text('description').notNull(),",
+            "lineNumber": 65
+          },
+          {
+            "text": "})",
+            "lineNumber": 66
+          }
+        ]
+      },
+      "score": 0.22115176916122437
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/utils/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 80
+          },
+          "endPosition": {
+            "line": 155,
+            "column": 1
+          }
+        },
+        "contents": "export function manageServiceLogsByDays(\n  logs: typeof schema.serviceLogs.$inferSelect[],\n) {\n\n    if (serviceLogsByDay) {\n      serviceLogsByDay.logs.push(log)\n    }\n  }\n\n  return serviceLogsByDays\n}\n\nexport function getServiceStatus(\n  logs: typeof schema.serviceLogs.$inferSelect[],\n): ServiceStatus {\n  const now = Temporal.Now.instant()\n  const halfDayAgo = now.subtract(Temporal.Duration.from({ hours: 12 }))\n  const halfDayAgoDate = new Date(halfDayAgo.epochMilliseconds)\n\n  // Filter logs from the last 12 hours\n  const recentLogs = logs.filter((log) =&gt; {\n    const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)\n    return logDate &gt;= halfDayAgoDate\n  })\n\n  // If no logs in the last 12 hours, return down\n  if (recentLogs.length === 0) {\n    return ServiceStatus.Down\n  }\n\n  // Count successful logs (status === 'up')\n  const upCount = recentLogs.filter(log =&gt; log.status === 'up').length\n  const uptime = (upCount / recentLogs.length) * 100\n\n  // Calculate status based on uptime percentage\n  if (uptime &gt;= 99.5) {\n    return ServiceStatus.Operational\n  }\n  else if (uptime &gt; 98) {\n    return ServiceStatus.Degraded\n  }\n  else {\n    return ServiceStatus.Down\n  }\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export function manageServiceLogsByDays(",
+            "lineNumber": 81,
+            "isSignature": true
+          },
+          {
+            "text": "  logs: typeof schema.serviceLogs.$inferSelect[],",
+            "lineNumber": 82,
+            "isSignature": true
+          },
+          {
+            "text": ") {",
+            "lineNumber": 83,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 115
+          },
+          {
+            "text": "    if (serviceLogsByDay) {",
+            "lineNumber": 116
+          },
+          {
+            "text": "      serviceLogsByDay.logs.push(log)",
+            "lineNumber": 117
+          },
+          {
+            "text": "    }",
+            "lineNumber": 118
+          },
+          {
+            "text": "  }",
+            "lineNumber": 119
+          },
+          {
+            "lineNumber": 120
+          },
+          {
+            "text": "  return serviceLogsByDays",
+            "lineNumber": 121
+          },
+          {
+            "text": "}",
+            "lineNumber": 122,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 123
+          },
+          {
+            "text": "export function getServiceStatus(",
+            "lineNumber": 124,
+            "isSignature": true
+          },
+          {
+            "text": "  logs: typeof schema.serviceLogs.$inferSelect[],",
+            "lineNumber": 125,
+            "isSignature": true
+          },
+          {
+            "text": "): ServiceStatus {",
+            "lineNumber": 126,
+            "isSignature": true
+          },
+          {
+            "text": "  const now = Temporal.Now.instant()",
+            "lineNumber": 127
+          },
+          {
+            "text": "  const halfDayAgo = now.subtract(Temporal.Duration.from({ hours: 12 }))",
+            "lineNumber": 128
+          },
+          {
+            "text": "  const halfDayAgoDate = new Date(halfDayAgo.epochMilliseconds)",
+            "lineNumber": 129
+          },
+          {
+            "lineNumber": 130
+          },
+          {
+            "text": "  // Filter logs from the last 12 hours",
+            "lineNumber": 131
+          },
+          {
+            "text": "  const recentLogs = logs.filter((log) =&gt; {",
+            "lineNumber": 132
+          },
+          {
+            "text": "    const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)",
+            "lineNumber": 133
+          },
+          {
+            "text": "    return logDate &gt;= halfDayAgoDate",
+            "lineNumber": 134
+          },
+          {
+            "text": "  })",
+            "lineNumber": 135
+          },
+          {
+            "lineNumber": 136
+          },
+          {
+            "text": "  // If no logs in the last 12 hours, return down",
+            "lineNumber": 137
+          },
+          {
+            "text": "  if (recentLogs.length === 0) {",
+            "lineNumber": 138
+          },
+          {
+            "text": "    return ServiceStatus.Down",
+            "lineNumber": 139
+          },
+          {
+            "text": "  }",
+            "lineNumber": 140
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "  // Count successful logs (status === 'up')",
+            "lineNumber": 142
+          },
+          {
+            "text": "  const upCount = recentLogs.filter(log =&gt; log.status === 'up').length",
+            "lineNumber": 143
+          },
+          {
+            "text": "  const uptime = (upCount / recentLogs.length) * 100",
+            "lineNumber": 144
+          },
+          {
+            "lineNumber": 145
+          },
+          {
+            "text": "  // Calculate status based on uptime percentage",
+            "lineNumber": 146
+          },
+          {
+            "text": "  if (uptime &gt;= 99.5) {",
+            "lineNumber": 147
+          },
+          {
+            "text": "    return ServiceStatus.Operational",
+            "lineNumber": 148
+          },
+          {
+            "text": "  }",
+            "lineNumber": 149
+          },
+          {
+            "text": "  else if (uptime &gt; 98) {",
+            "lineNumber": 150
+          },
+          {
+            "text": "    return ServiceStatus.Degraded",
+            "lineNumber": 151
+          },
+          {
+            "text": "  }",
+            "lineNumber": 152
+          },
+          {
+            "text": "  else {",
+            "lineNumber": 153
+          },
+          {
+            "text": "    return ServiceStatus.Down",
+            "lineNumber": 154
+          },
+          {
+            "text": "  }",
+            "lineNumber": 155
+          },
+          {
+            "text": "}",
+            "lineNumber": 156,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.2179725021123886
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/api/services/index.get.ts",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 20,
+            "column": 2
+          }
+        },
+        "contents": "import { and, isNull } from 'drizzle-orm'\nimport { db, schema } from 'hub:db'\n\n/**\n * GET /services\n * Get all services (authentication required)\n */\nexport default defineEventHandler(async (event) =&gt; {\n  // Verify authentication\n  await requireUserSession(event)\n\n  // Get all monitors with full details (excluding soft-deleted)\n  const services = await db\n    .select()\n    .from(schema.services)\n    .where(isNull(schema.services.deletedAt))\n\n  return {\n    services,\n  }\n})",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { and, isNull } from 'drizzle-orm'",
+            "lineNumber": 1
+          },
+          {
+            "text": "import { db, schema } from 'hub:db'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "/**",
+            "lineNumber": 4
+          },
+          {
+            "text": " * GET /services",
+            "lineNumber": 5
+          },
+          {
+            "text": " * Get all services (authentication required)",
+            "lineNumber": 6
+          },
+          {
+            "text": " */",
+            "lineNumber": 7
+          },
+          {
+            "text": "export default defineEventHandler(async (event) =&gt; {",
+            "lineNumber": 8
+          },
+          {
+            "text": "  // Verify authentication",
+            "lineNumber": 9
+          },
+          {
+            "text": "  await requireUserSession(event)",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  // Get all monitors with full details (excluding soft-deleted)",
+            "lineNumber": 12
+          },
+          {
+            "text": "  const services = await db",
+            "lineNumber": 13
+          },
+          {
+            "text": "    .select()",
+            "lineNumber": 14
+          },
+          {
+            "text": "    .from(schema.services)",
+            "lineNumber": 15
+          },
+          {
+            "text": "    .where(isNull(schema.services.deletedAt))",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "  return {",
+            "lineNumber": 18
+          },
+          {
+            "text": "    services,",
+            "lineNumber": 19
+          },
+          {
+            "text": "  }",
+            "lineNumber": 20
+          },
+          {
+            "text": "})",
+            "lineNumber": 21
+          }
+        ]
+      },
+      "score": 0.2165820598602295
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/components/modules/home/service-card.vue",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 56
+          }
+        },
+        "contents": "&lt;script setup lang=\"ts\"&gt;\nimport type { SerializeObject } from 'nitropack'\n\nconst props = defineProps&lt;{\n  overview: SerializeObject&lt;ServiceOverview&gt;\n}&gt;()\n\nfunction getStatusColor(status: ServiceStatus): string {\n  switch (status) {\n    case ServiceStatus.Operational: return 'bg-emerald-500'\n    case ServiceStatus.Degraded: return 'bg-amber-400'\n    case ServiceStatus.Down: return 'bg-rose-500'\n    case ServiceStatus.Maintenance: return 'bg-blue-400'\n    default: return 'bg-gray-400'\n  }\n}\n\nfunction getStatusText(status: ServiceStatus): string {\n  switch (status) {\n    case ServiceStatus.Operational: return '运行正常'\n    case ServiceStatus.Degraded: return '性能降低'\n    case ServiceStatus.Down: return '服务中断'\n    case ServiceStatus.Maintenance: return '维护中'\n    default: return '未知状态'\n  }\n}\n\n// Calculate 30-day uptime percentage\nconst uptimePercentage = computed(() =&gt; {\n  if (!props.overview.histories || props.overview.histories.length === 0) {\n    return 0\n  }\n\n  const validHistories = props.overview.histories.filter(h =&gt; h.uptime !== null)\n  if (validHistories.length === 0) {\n    return 0\n  }\n\n  const totalUptime = validHistories.reduce((sum, h) =&gt; sum + (h.uptime ?? 0), 0)\n  return totalUptime / validHistories.length\n})\n\n// Get latest latency from most recent history\nconst latestLatency = computed(() =&gt; {\n  const histories = [...props.overview.histories].sort((a, b) =&gt;\n    Temporal.ZonedDateTime.from(b.date).epochMilliseconds - Temporal.ZonedDateTime.from(a.date).epochMilliseconds,\n  )\n  return histories.find(h =&gt; h.latency !== null)?.latency ?? null\n})\n\n// Get last check time from overview\nconst lastCheckTime = computed(() =&gt; {\n  if (!props.overview.lastCheckTime) {\n    return null\n  }",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "&lt;script setup lang=\"ts\"&gt;",
+            "lineNumber": 1
+          },
+          {
+            "text": "import type { SerializeObject } from 'nitropack'",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "const props = defineProps&lt;{",
+            "lineNumber": 4
+          },
+          {
+            "text": "  overview: SerializeObject&lt;ServiceOverview&gt;",
+            "lineNumber": 5
+          },
+          {
+            "text": "}&gt;()",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "function getStatusColor(status: ServiceStatus): string {",
+            "lineNumber": 8
+          },
+          {
+            "text": "  switch (status) {",
+            "lineNumber": 9
+          },
+          {
+            "text": "    case ServiceStatus.Operational: return 'bg-emerald-500'",
+            "lineNumber": 10
+          },
+          {
+            "text": "    case ServiceStatus.Degraded: return 'bg-amber-400'",
+            "lineNumber": 11
+          },
+          {
+            "text": "    case ServiceStatus.Down: return 'bg-rose-500'",
+            "lineNumber": 12
+          },
+          {
+            "text": "    case ServiceStatus.Maintenance: return 'bg-blue-400'",
+            "lineNumber": 13
+          },
+          {
+            "text": "    default: return 'bg-gray-400'",
+            "lineNumber": 14
+          },
+          {
+            "text": "  }",
+            "lineNumber": 15
+          },
+          {
+            "text": "}",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "function getStatusText(status: ServiceStatus): string {",
+            "lineNumber": 18
+          },
+          {
+            "text": "  switch (status) {",
+            "lineNumber": 19
+          },
+          {
+            "text": "    case ServiceStatus.Operational: return '运行正常'",
+            "lineNumber": 20
+          },
+          {
+            "text": "    case ServiceStatus.Degraded: return '性能降低'",
+            "lineNumber": 21
+          },
+          {
+            "text": "    case ServiceStatus.Down: return '服务中断'",
+            "lineNumber": 22
+          },
+          {
+            "text": "    case ServiceStatus.Maintenance: return '维护中'",
+            "lineNumber": 23
+          },
+          {
+            "text": "    default: return '未知状态'",
+            "lineNumber": 24
+          },
+          {
+            "text": "  }",
+            "lineNumber": 25
+          },
+          {
+            "text": "}",
+            "lineNumber": 26
+          },
+          {
+            "lineNumber": 27
+          },
+          {
+            "text": "// Calculate 30-day uptime percentage",
+            "lineNumber": 28
+          },
+          {
+            "text": "const uptimePercentage = computed(() =&gt; {",
+            "lineNumber": 29
+          },
+          {
+            "text": "  if (!props.overview.histories || props.overview.histories.length === 0) {",
+            "lineNumber": 30
+          },
+          {
+            "text": "    return 0",
+            "lineNumber": 31
+          },
+          {
+            "text": "  }",
+            "lineNumber": 32
+          },
+          {
+            "lineNumber": 33
+          },
+          {
+            "text": "  const validHistories = props.overview.histories.filter(h =&gt; h.uptime !== null)",
+            "lineNumber": 34
+          },
+          {
+            "text": "  if (validHistories.length === 0) {",
+            "lineNumber": 35
+          },
+          {
+            "text": "    return 0",
+            "lineNumber": 36
+          },
+          {
+            "text": "  }",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "  const totalUptime = validHistories.reduce((sum, h) =&gt; sum + (h.uptime ?? 0), 0)",
+            "lineNumber": 39
+          },
+          {
+            "text": "  return totalUptime / validHistories.length",
+            "lineNumber": 40
+          },
+          {
+            "text": "})",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "// Get latest latency from most recent history",
+            "lineNumber": 43
+          },
+          {
+            "text": "const latestLatency = computed(() =&gt; {",
+            "lineNumber": 44
+          },
+          {
+            "text": "  const histories = [...props.overview.histories].sort((a, b) =&gt;",
+            "lineNumber": 45
+          },
+          {
+            "text": "    Temporal.ZonedDateTime.from(b.date).epochMilliseconds - Temporal.ZonedDateTime.from(a.date).epochMilliseconds,",
+            "lineNumber": 46
+          },
+          {
+            "text": "  )",
+            "lineNumber": 47
+          },
+          {
+            "text": "  return histories.find(h =&gt; h.latency !== null)?.latency ?? null",
+            "lineNumber": 48
+          },
+          {
+            "text": "})",
+            "lineNumber": 49
+          },
+          {
+            "lineNumber": 50
+          },
+          {
+            "text": "// Get last check time from overview",
+            "lineNumber": 51
+          },
+          {
+            "text": "const lastCheckTime = computed(() =&gt; {",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if (!props.overview.lastCheckTime) {",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return null",
+            "lineNumber": 54
+          },
+          {
+            "text": "  }",
+            "lineNumber": 55
+          }
+        ]
+      },
+      "score": 0.20977795124053955
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/utils/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 123
+          },
+          "endPosition": {
+            "line": 207,
+            "column": 1
+          }
+        },
+        "contents": "export function getServiceStatus(\n  logs: typeof schema.serviceLogs.$inferSelect[],\n): ServiceStatus {\n\n  else if (uptime &gt; 98) {\n    return ServiceStatus.Degraded\n  }\n  else {\n    return ServiceStatus.Down\n  }\n}\n\nexport function getOutages(histories: typeof schema.serviceLogs.$inferSelect[]) {\n  // Returns an array of outage periods: [{ from: Temporal.ZonedDateTime, duration: Temporal.Duration }]\n  // Outage is defined as contiguous logs where status !== 'up'\n\n  if (!histories || histories.length === 0)\n    return []\n\n  // Make sure logs are ordered\n  const sorted = [...histories].sort((a, b) =&gt; {\n    const aDate = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime()\n    const bDate = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime()\n    return aDate - bDate\n  })\n\n  const outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[] = []\n\n  let inOutage = false\n  let outageStart: Temporal.ZonedDateTime | null = null\n  let lastTimestamp: Temporal.ZonedDateTime | null = null\n\n  for (const log of sorted) {\n    const logDate = log.timestamp instanceof Date\n      ? Temporal.Instant.fromEpochMilliseconds(log.timestamp.getTime()).toZonedDateTimeISO('UTC')\n      : Temporal.Instant.fromEpochMilliseconds(new Date(log.timestamp).getTime()).toZonedDateTimeISO('UTC')\n\n    if (log.status !== 'up') {\n      if (!inOutage) {\n        inOutage = true\n        outageStart = logDate\n      }\n    }\n    else {\n      if (inOutage &amp;&amp; outageStart) {\n        // Outage ends at previous log's timestamp\n        const duration = logDate.since(outageStart)\n        outages.push({ from: outageStart, duration })\n        inOutage = false\n        outageStart = null\n      }\n    }\n    lastTimestamp = logDate\n  }\n\n  // If still in outage at the end, measure until lastTimestamp (last log)\n  if (inOutage &amp;&amp; outageStart &amp;&amp; lastTimestamp) {\n    const duration = lastTimestamp.since(outageStart)\n    outages.push({ from: outageStart, duration })\n  }\n\n  return outages\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export function getServiceStatus(",
+            "lineNumber": 124,
+            "isSignature": true
+          },
+          {
+            "text": "  logs: typeof schema.serviceLogs.$inferSelect[],",
+            "lineNumber": 125,
+            "isSignature": true
+          },
+          {
+            "text": "): ServiceStatus {",
+            "lineNumber": 126,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 149
+          },
+          {
+            "text": "  else if (uptime &gt; 98) {",
+            "lineNumber": 150
+          },
+          {
+            "text": "    return ServiceStatus.Degraded",
+            "lineNumber": 151
+          },
+          {
+            "text": "  }",
+            "lineNumber": 152
+          },
+          {
+            "text": "  else {",
+            "lineNumber": 153
+          },
+          {
+            "text": "    return ServiceStatus.Down",
+            "lineNumber": 154
+          },
+          {
+            "text": "  }",
+            "lineNumber": 155
+          },
+          {
+            "text": "}",
+            "lineNumber": 156,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 157
+          },
+          {
+            "text": "export function getOutages(histories: typeof schema.serviceLogs.$inferSelect[]) {",
+            "lineNumber": 158,
+            "isSignature": true
+          },
+          {
+            "text": "  // Returns an array of outage periods: [{ from: Temporal.ZonedDateTime, duration: Temporal.Duration }]",
+            "lineNumber": 159
+          },
+          {
+            "text": "  // Outage is defined as contiguous logs where status !== 'up'",
+            "lineNumber": 160
+          },
+          {
+            "lineNumber": 161
+          },
+          {
+            "text": "  if (!histories || histories.length === 0)",
+            "lineNumber": 162
+          },
+          {
+            "text": "    return []",
+            "lineNumber": 163
+          },
+          {
+            "lineNumber": 164
+          },
+          {
+            "text": "  // Make sure logs are ordered",
+            "lineNumber": 165
+          },
+          {
+            "text": "  const sorted = [...histories].sort((a, b) =&gt; {",
+            "lineNumber": 166
+          },
+          {
+            "text": "    const aDate = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime()",
+            "lineNumber": 167
+          },
+          {
+            "text": "    const bDate = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime()",
+            "lineNumber": 168
+          },
+          {
+            "text": "    return aDate - bDate",
+            "lineNumber": 169
+          },
+          {
+            "text": "  })",
+            "lineNumber": 170
+          },
+          {
+            "lineNumber": 171
+          },
+          {
+            "text": "  const outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[] = []",
+            "lineNumber": 172
+          },
+          {
+            "lineNumber": 173
+          },
+          {
+            "text": "  let inOutage = false",
+            "lineNumber": 174
+          },
+          {
+            "text": "  let outageStart: Temporal.ZonedDateTime | null = null",
+            "lineNumber": 175
+          },
+          {
+            "text": "  let lastTimestamp: Temporal.ZonedDateTime | null = null",
+            "lineNumber": 176
+          },
+          {
+            "lineNumber": 177
+          },
+          {
+            "text": "  for (const log of sorted) {",
+            "lineNumber": 178
+          },
+          {
+            "text": "    const logDate = log.timestamp instanceof Date",
+            "lineNumber": 179
+          },
+          {
+            "text": "      ? Temporal.Instant.fromEpochMilliseconds(log.timestamp.getTime()).toZonedDateTimeISO('UTC')",
+            "lineNumber": 180
+          },
+          {
+            "text": "      : Temporal.Instant.fromEpochMilliseconds(new Date(log.timestamp).getTime()).toZonedDateTimeISO('UTC')",
+            "lineNumber": 181
+          },
+          {
+            "lineNumber": 182
+          },
+          {
+            "text": "    if (log.status !== 'up') {",
+            "lineNumber": 183
+          },
+          {
+            "text": "      if (!inOutage) {",
+            "lineNumber": 184
+          },
+          {
+            "text": "        inOutage = true",
+            "lineNumber": 185
+          },
+          {
+            "text": "        outageStart = logDate",
+            "lineNumber": 186
+          },
+          {
+            "text": "      }",
+            "lineNumber": 187
+          },
+          {
+            "text": "    }",
+            "lineNumber": 188
+          },
+          {
+            "text": "    else {",
+            "lineNumber": 189
+          },
+          {
+            "text": "      if (inOutage &amp;&amp; outageStart) {",
+            "lineNumber": 190
+          },
+          {
+            "text": "        // Outage ends at previous log's timestamp",
+            "lineNumber": 191
+          },
+          {
+            "text": "        const duration = logDate.since(outageStart)",
+            "lineNumber": 192
+          },
+          {
+            "text": "        outages.push({ from: outageStart, duration })",
+            "lineNumber": 193
+          },
+          {
+            "text": "        inOutage = false",
+            "lineNumber": 194
+          },
+          {
+            "text": "        outageStart = null",
+            "lineNumber": 195
+          },
+          {
+            "text": "      }",
+            "lineNumber": 196
+          },
+          {
+            "text": "    }",
+            "lineNumber": 197
+          },
+          {
+            "text": "    lastTimestamp = logDate",
+            "lineNumber": 198
+          },
+          {
+            "text": "  }",
+            "lineNumber": 199
+          },
+          {
+            "lineNumber": 200
+          },
+          {
+            "text": "  // If still in outage at the end, measure until lastTimestamp (last log)",
+            "lineNumber": 201
+          },
+          {
+            "text": "  if (inOutage &amp;&amp; outageStart &amp;&amp; lastTimestamp) {",
+            "lineNumber": 202
+          },
+          {
+            "text": "    const duration = lastTimestamp.since(outageStart)",
+            "lineNumber": 203
+          },
+          {
+            "text": "    outages.push({ from: outageStart, duration })",
+            "lineNumber": 204
+          },
+          {
+            "text": "  }",
+            "lineNumber": 205
+          },
+          {
+            "lineNumber": 206
+          },
+          {
+            "text": "  return outages",
+            "lineNumber": 207
+          },
+          {
+            "text": "}",
+            "lineNumber": 208,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.17982429265975952
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./shared/types/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 26,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 33,
+            "column": 1
+          }
+        },
+        "contents": "export interface ServiceOverview {\n  service: Service\n  histories: ServiceHistroy[]\n  /** Last check time as Temporal.ZonedDateTime */\n  lastCheckTime: Temporal.ZonedDateTime | null\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export interface ServiceOverview {",
+            "lineNumber": 29,
+            "isSignature": true
+          },
+          {
+            "text": "  service: Service",
+            "lineNumber": 30
+          },
+          {
+            "text": "  histories: ServiceHistroy[]",
+            "lineNumber": 31
+          },
+          {
+            "text": "  /** Last check time as Temporal.ZonedDateTime */",
+            "lineNumber": 32
+          },
+          {
+            "text": "  lastCheckTime: Temporal.ZonedDateTime | null",
+            "lineNumber": 33
+          },
+          {
+            "text": "}",
+            "lineNumber": 34,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.1792394518852234
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/pages/admin.vue",
+        "range": {
+          "startPosition": {
+            "line": 222
+          },
+          "endPosition": {
+            "line": 245
+          }
+        },
+        "contents": "          &gt;\n            &lt;div class=\"min-w-0 flex-1\"&gt;\n              &lt;h3 class=\"text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate\"&gt;\n                {{ service.name }}\n              &lt;/h3&gt;\n              &lt;p class=\"text-xs text-zinc-500 dark:text-zinc-400 truncate mb-1\"&gt;\n                {{ service.url }}\n              &lt;/p&gt;\n            &lt;/div&gt;\n            &lt;button\n              :disabled=\"isDeleting\"\n              class=\"p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed\"\n              title=\"删除服务\"\n              @click=\"handleDelete(service.id)\"\n            &gt;\n              &lt;div size-4 i-lucide:trash-2 aria-hidden=\"true\" /&gt;\n            &lt;/button&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  &lt;/div&gt;\n&lt;/template&gt;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "          &gt;",
+            "lineNumber": 223
+          },
+          {
+            "text": "            &lt;div class=\"min-w-0 flex-1\"&gt;",
+            "lineNumber": 224
+          },
+          {
+            "text": "              &lt;h3 class=\"text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate\"&gt;",
+            "lineNumber": 225
+          },
+          {
+            "text": "                {{ service.name }}",
+            "lineNumber": 226
+          },
+          {
+            "text": "              &lt;/h3&gt;",
+            "lineNumber": 227
+          },
+          {
+            "text": "              &lt;p class=\"text-xs text-zinc-500 dark:text-zinc-400 truncate mb-1\"&gt;",
+            "lineNumber": 228
+          },
+          {
+            "text": "                {{ service.url }}",
+            "lineNumber": 229
+          },
+          {
+            "text": "              &lt;/p&gt;",
+            "lineNumber": 230
+          },
+          {
+            "text": "            &lt;/div&gt;",
+            "lineNumber": 231
+          },
+          {
+            "text": "            &lt;button",
+            "lineNumber": 232
+          },
+          {
+            "text": "              :disabled=\"isDeleting\"",
+            "lineNumber": 233
+          },
+          {
+            "text": "              class=\"p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed\"",
+            "lineNumber": 234
+          },
+          {
+            "text": "              title=\"删除服务\"",
+            "lineNumber": 235
+          },
+          {
+            "text": "              @click=\"handleDelete(service.id)\"",
+            "lineNumber": 236
+          },
+          {
+            "text": "            &gt;",
+            "lineNumber": 237
+          },
+          {
+            "text": "              &lt;div size-4 i-lucide:trash-2 aria-hidden=\"true\" /&gt;",
+            "lineNumber": 238
+          },
+          {
+            "text": "            &lt;/button&gt;",
+            "lineNumber": 239
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 240
+          },
+          {
+            "text": "        &lt;/div&gt;",
+            "lineNumber": 241
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 242
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 243
+          },
+          {
+            "text": "  &lt;/div&gt;",
+            "lineNumber": 244
+          },
+          {
+            "text": "&lt;/template&gt;",
+            "lineNumber": 245
+          }
+        ]
+      },
+      "score": 0.1787627935409546
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./shared/types/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 17,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 33,
+            "column": 1
+          }
+        },
+        "contents": "export interface ServiceHistroy {\n  uptime: number | null\n  /** latest latency */\n  latency: number | null\n  /** date by day */\n  date: Temporal.ZonedDateTime\n  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]\n}\n\nexport interface ServiceOverview {\n  service: Service\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export interface ServiceHistroy {",
+            "lineNumber": 20,
+            "isSignature": true
+          },
+          {
+            "text": "  uptime: number | null",
+            "lineNumber": 21
+          },
+          {
+            "text": "  /** latest latency */",
+            "lineNumber": 22
+          },
+          {
+            "text": "  latency: number | null",
+            "lineNumber": 23
+          },
+          {
+            "text": "  /** date by day */",
+            "lineNumber": 24
+          },
+          {
+            "text": "  date: Temporal.ZonedDateTime",
+            "lineNumber": 25
+          },
+          {
+            "text": "  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]",
+            "lineNumber": 26
+          },
+          {
+            "text": "}",
+            "lineNumber": 27,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "export interface ServiceOverview {",
+            "lineNumber": 29,
+            "isSignature": true
+          },
+          {
+            "text": "  service: Service",
+            "lineNumber": 30
+          },
+          {
+            "text": "}",
+            "lineNumber": 34,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.17576390504837036
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/components/modules/home/service-card.vue",
+        "range": {
+          "startPosition": {
+            "line": 90
+          },
+          "endPosition": {
+            "line": 152
+          }
+        },
+        "contents": "&lt;template&gt;\n  &lt;div\n    bg=\"white dark:zinc-900\"\n    border=\"xl zinc-200 dark:zinc-800\"\n    overflow-hidden shadow-sm hover:shadow-md\n    transition-all duration-300\n  &gt;\n    &lt;div p-5 flex=\"~ grow col\"&gt;\n      &lt;div flex=\"~ justify-between items-start\" data-part=\"header\"&gt;\n        &lt;div flex=\"~ 1 items-center gap-x-3\"&gt;\n          &lt;div relative&gt;\n            &lt;div\n              size-3 rounded-full\n              :class=\"[\n                getStatusColor(overview.service.status),\n                overview.service.status === ServiceStatus.Operational &amp;&amp; 'animate-pulse',\n              ]\"\n            /&gt;\n            &lt;div\n              v-if=\"overview.service.status === ServiceStatus.Operational\"\n              absolute top-0 left-0 size-3\n              rounded-full bg-emerald-500 opacity-50 animate-ping\n            /&gt;\n          &lt;/div&gt;\n          &lt;div&gt;\n            &lt;h3 un-text=\"lg zinc-800 dark:zinc-100\" font-bold leading-tight transition-colors&gt;\n              {{ overview.service.name }}\n            &lt;/h3&gt;\n            &lt;NuxtLink\n              v-if=\"overview.service.url\"\n              :href=\"overview.service.url\"\n              external\n              rel=\"noopener noreferrer\"\n              un-text=\"sm zinc-500 dark:zinc-400 hover:indigo-600 dark:hover:indigo-400\"\n              flex=\"~ items-center gap-1\"\n              mt-0.5\n              transition-colors\n            &gt;\n              {{ overview.service.url }}\n              &lt;div size-4 i-lucide:external-link /&gt;\n            &lt;/NuxtLink&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n        &lt;span\n          p=\"x3 y1\"\n          rounded-full\n          un-text=\"xs white\"\n          font-medium\n          :class=\"getStatusColor(overview.service.status)\"\n        &gt;\n          {{ getStatusText(overview.service.status) }}\n        &lt;/span&gt;\n      &lt;/div&gt;\n\n      &lt;div\n        mt-4 pt-3\n        border=\"t zinc-100 dark:zinc-800 dashed\"\n        flex=\"~ items-center justify-between gap-4\"\n        data-part=\"information\"\n      &gt;\n        &lt;div\n          v-if=\"overview.service.tags &amp;&amp; overview.service.tags.length &gt; 0\"",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "&lt;template&gt;",
+            "lineNumber": 91
+          },
+          {
+            "text": "  &lt;div",
+            "lineNumber": 92
+          },
+          {
+            "text": "    bg=\"white dark:zinc-900\"",
+            "lineNumber": 93
+          },
+          {
+            "text": "    border=\"xl zinc-200 dark:zinc-800\"",
+            "lineNumber": 94
+          },
+          {
+            "text": "    overflow-hidden shadow-sm hover:shadow-md",
+            "lineNumber": 95
+          },
+          {
+            "text": "    transition-all duration-300",
+            "lineNumber": 96
+          },
+          {
+            "text": "  &gt;",
+            "lineNumber": 97
+          },
+          {
+            "text": "    &lt;div p-5 flex=\"~ grow col\"&gt;",
+            "lineNumber": 98
+          },
+          {
+            "text": "      &lt;div flex=\"~ justify-between items-start\" data-part=\"header\"&gt;",
+            "lineNumber": 99
+          },
+          {
+            "text": "        &lt;div flex=\"~ 1 items-center gap-x-3\"&gt;",
+            "lineNumber": 100
+          },
+          {
+            "text": "          &lt;div relative&gt;",
+            "lineNumber": 101
+          },
+          {
+            "text": "            &lt;div",
+            "lineNumber": 102
+          },
+          {
+            "text": "              size-3 rounded-full",
+            "lineNumber": 103
+          },
+          {
+            "text": "              :class=\"[",
+            "lineNumber": 104
+          },
+          {
+            "text": "                getStatusColor(overview.service.status),",
+            "lineNumber": 105
+          },
+          {
+            "text": "                overview.service.status === ServiceStatus.Operational &amp;&amp; 'animate-pulse',",
+            "lineNumber": 106
+          },
+          {
+            "text": "              ]\"",
+            "lineNumber": 107
+          },
+          {
+            "text": "            /&gt;",
+            "lineNumber": 108
+          },
+          {
+            "text": "            &lt;div",
+            "lineNumber": 109
+          },
+          {
+            "text": "              v-if=\"overview.service.status === ServiceStatus.Operational\"",
+            "lineNumber": 110
+          },
+          {
+            "text": "              absolute top-0 left-0 size-3",
+            "lineNumber": 111
+          },
+          {
+            "text": "              rounded-full bg-emerald-500 opacity-50 animate-ping",
+            "lineNumber": 112
+          },
+          {
+            "text": "            /&gt;",
+            "lineNumber": 113
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 114
+          },
+          {
+            "text": "          &lt;div&gt;",
+            "lineNumber": 115
+          },
+          {
+            "text": "            &lt;h3 un-text=\"lg zinc-800 dark:zinc-100\" font-bold leading-tight transition-colors&gt;",
+            "lineNumber": 116
+          },
+          {
+            "text": "              {{ overview.service.name }}",
+            "lineNumber": 117
+          },
+          {
+            "text": "            &lt;/h3&gt;",
+            "lineNumber": 118
+          },
+          {
+            "text": "            &lt;NuxtLink",
+            "lineNumber": 119
+          },
+          {
+            "text": "              v-if=\"overview.service.url\"",
+            "lineNumber": 120
+          },
+          {
+            "text": "              :href=\"overview.service.url\"",
+            "lineNumber": 121
+          },
+          {
+            "text": "              external",
+            "lineNumber": 122
+          },
+          {
+            "text": "              rel=\"noopener noreferrer\"",
+            "lineNumber": 123
+          },
+          {
+            "text": "              un-text=\"sm zinc-500 dark:zinc-400 hover:indigo-600 dark:hover:indigo-400\"",
+            "lineNumber": 124
+          },
+          {
+            "text": "              flex=\"~ items-center gap-1\"",
+            "lineNumber": 125
+          },
+          {
+            "text": "              mt-0.5",
+            "lineNumber": 126
+          },
+          {
+            "text": "              transition-colors",
+            "lineNumber": 127
+          },
+          {
+            "text": "            &gt;",
+            "lineNumber": 128
+          },
+          {
+            "text": "              {{ overview.service.url }}",
+            "lineNumber": 129
+          },
+          {
+            "text": "              &lt;div size-4 i-lucide:external-link /&gt;",
+            "lineNumber": 130
+          },
+          {
+            "text": "            &lt;/NuxtLink&gt;",
+            "lineNumber": 131
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 132
+          },
+          {
+            "text": "        &lt;/div&gt;",
+            "lineNumber": 133
+          },
+          {
+            "text": "        &lt;span",
+            "lineNumber": 134
+          },
+          {
+            "text": "          p=\"x3 y1\"",
+            "lineNumber": 135
+          },
+          {
+            "text": "          rounded-full",
+            "lineNumber": 136
+          },
+          {
+            "text": "          un-text=\"xs white\"",
+            "lineNumber": 137
+          },
+          {
+            "text": "          font-medium",
+            "lineNumber": 138
+          },
+          {
+            "text": "          :class=\"getStatusColor(overview.service.status)\"",
+            "lineNumber": 139
+          },
+          {
+            "text": "        &gt;",
+            "lineNumber": 140
+          },
+          {
+            "text": "          {{ getStatusText(overview.service.status) }}",
+            "lineNumber": 141
+          },
+          {
+            "text": "        &lt;/span&gt;",
+            "lineNumber": 142
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 143
+          },
+          {
+            "lineNumber": 144
+          },
+          {
+            "text": "      &lt;div",
+            "lineNumber": 145
+          },
+          {
+            "text": "        mt-4 pt-3",
+            "lineNumber": 146
+          },
+          {
+            "text": "        border=\"t zinc-100 dark:zinc-800 dashed\"",
+            "lineNumber": 147
+          },
+          {
+            "text": "        flex=\"~ items-center justify-between gap-4\"",
+            "lineNumber": 148
+          },
+          {
+            "text": "        data-part=\"information\"",
+            "lineNumber": 149
+          },
+          {
+            "text": "      &gt;",
+            "lineNumber": 150
+          },
+          {
+            "text": "        &lt;div",
+            "lineNumber": 151
+          },
+          {
+            "text": "          v-if=\"overview.service.tags &amp;&amp; overview.service.tags.length &gt; 0\"",
+            "lineNumber": 152
+          }
+        ]
+      },
+      "score": 0.1658419370651245
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./wrangler.jsonc",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 29
+          }
+        },
+        "contents": "{\n  \"$schema\": \"node_modules/wrangler/config-schema.json\",\n  \"observability\": {\n    \"logs\": {\n      \"enabled\": true,\n      \"head_sampling_rate\": 1,\n      \"persist\": true,\n      \"invocation_logs\": true\n    },\n    \"traces\": {\n      \"enabled\": true,\n      \"head_sampling_rate\": 1,\n      \"persist\": true\n    }\n  },\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_id\": \"1388bb76-e986-4e0a-bf1d-46bbb0ecfc4d\",\n      \"migrations_table\": \"_hub_migrations\",\n      \"migrations_dir\": \".output/server/db/migrations/sqlite/\"\n    }\n  ],\n  \"triggers\": {\n    \"crons\": [\n      \"* * * * *\"\n    ]\n  }\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "{",
+            "lineNumber": 1
+          },
+          {
+            "text": "  \"$schema\": \"node_modules/wrangler/config-schema.json\",",
+            "lineNumber": 2
+          },
+          {
+            "text": "  \"observability\": {",
+            "lineNumber": 3
+          },
+          {
+            "text": "    \"logs\": {",
+            "lineNumber": 4
+          },
+          {
+            "text": "      \"enabled\": true,",
+            "lineNumber": 5
+          },
+          {
+            "text": "      \"head_sampling_rate\": 1,",
+            "lineNumber": 6
+          },
+          {
+            "text": "      \"persist\": true,",
+            "lineNumber": 7
+          },
+          {
+            "text": "      \"invocation_logs\": true",
+            "lineNumber": 8
+          },
+          {
+            "text": "    },",
+            "lineNumber": 9
+          },
+          {
+            "text": "    \"traces\": {",
+            "lineNumber": 10
+          },
+          {
+            "text": "      \"enabled\": true,",
+            "lineNumber": 11
+          },
+          {
+            "text": "      \"head_sampling_rate\": 1,",
+            "lineNumber": 12
+          },
+          {
+            "text": "      \"persist\": true",
+            "lineNumber": 13
+          },
+          {
+            "text": "    }",
+            "lineNumber": 14
+          },
+          {
+            "text": "  },",
+            "lineNumber": 15
+          },
+          {
+            "text": "  \"d1_databases\": [",
+            "lineNumber": 16
+          },
+          {
+            "text": "    {",
+            "lineNumber": 17
+          },
+          {
+            "text": "      \"binding\": \"DB\",",
+            "lineNumber": 18
+          },
+          {
+            "text": "      \"database_id\": \"1388bb76-e986-4e0a-bf1d-46bbb0ecfc4d\",",
+            "lineNumber": 19
+          },
+          {
+            "text": "      \"migrations_table\": \"_hub_migrations\",",
+            "lineNumber": 20
+          },
+          {
+            "text": "      \"migrations_dir\": \".output/server/db/migrations/sqlite/\"",
+            "lineNumber": 21
+          },
+          {
+            "text": "    }",
+            "lineNumber": 22
+          },
+          {
+            "text": "  ],",
+            "lineNumber": 23
+          },
+          {
+            "text": "  \"triggers\": {",
+            "lineNumber": 24
+          },
+          {
+            "text": "    \"crons\": [",
+            "lineNumber": 25
+          },
+          {
+            "text": "      \"* * * * *\"",
+            "lineNumber": 26
+          },
+          {
+            "text": "    ]",
+            "lineNumber": 27
+          },
+          {
+            "text": "  }",
+            "lineNumber": 28
+          },
+          {
+            "text": "}",
+            "lineNumber": 29
+          }
+        ]
+      },
+      "score": 0.16461029648780823
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/components/modules/home/service-card.vue",
+        "range": {
+          "startPosition": {
+            "line": 148
+          },
+          "endPosition": {
+            "line": 194,
+            "column": 8
+          }
+        },
+        "contents": "        data-part=\"information\"\n      &gt;\n        &lt;div\n          v-if=\"overview.service.tags &amp;&amp; overview.service.tags.length &gt; 0\"\n          flex=\"~ item-center 1 gap-1.5\"\n          min-w-0 overflow-x-auto\n          class=\"[scrollbar-width:none] [-ms-overflow-style:none] [&amp;::-webkit-scrollbar]:hidden mask-linear-fade\"\n        &gt;\n          &lt;span\n            v-for=\"tag in overview.service.tags\"\n            :key=\"tag\"\n            flex=\"inline items-center shrink-0\"\n            p=\"x2 y0.5\"\n            un-text=\"[10px] zinc-600 dark:zinc-400\"\n            font-medium\n            bg=\"zinc-100 dark:zinc-800\"\n            border=\"rounded zinc-200 dark:zinc-700/50\"\n            whitespace-nowrap\n          &gt;\n            {{ tag }}\n          &lt;/span&gt;\n        &lt;/div&gt;\n\n        &lt;div\n          flex=\"~ items-center gap-3 shrink-0\"\n          un-text=\"xs zinc-500 dark:zinc-400\"\n          font-medium ml-auto pl-2\n          bg=\"white dark:zinc-900\"\n          class=\"shadow-[-8px_0_4px_-4px_rgba(255,255,255,0.8)] dark:shadow-[-8px_0_4px_-4px_rgba(24,24,27,0.8)]\"\n        &gt;\n          &lt;div flex=\"~ items-center gap-1.5\" title=\"实时延迟\"&gt;\n            &lt;div size-13px i-lucide:zap :class=\"latencyColor\" aria-hidden=\"true\" /&gt;\n            &lt;span&gt;{{ latestLatency }}ms&lt;/span&gt;\n          &lt;/div&gt;\n          &lt;div w-px h-3 bg=\"zinc-200 dark:zinc-700\" /&gt;\n          &lt;div flex=\"~ items-center gap-1.5\" title=\"最后更新\"&gt;\n            &lt;div size-13px i-lucide:clock un-text=\"zinc-600 dark:zinc-400\" aria-hidden=\"true\" /&gt;\n            &lt;span tabular-nums&gt;{{ lastCheckTime }}&lt;/span&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n\n    &lt;!-- Bottom Section: Uptime Percentage and History --&gt;\n    &lt;div data-part=\"visualizer\" p=\"x5 b5\" mt-auto&gt;\n      &lt;div pt-2 border=\"t zinc-100 dark:zinc-800/50\"&gt;\n        ",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "        data-part=\"information\"",
+            "lineNumber": 149
+          },
+          {
+            "text": "      &gt;",
+            "lineNumber": 150
+          },
+          {
+            "text": "        &lt;div",
+            "lineNumber": 151
+          },
+          {
+            "text": "          v-if=\"overview.service.tags &amp;&amp; overview.service.tags.length &gt; 0\"",
+            "lineNumber": 152
+          },
+          {
+            "text": "          flex=\"~ item-center 1 gap-1.5\"",
+            "lineNumber": 153
+          },
+          {
+            "text": "          min-w-0 overflow-x-auto",
+            "lineNumber": 154
+          },
+          {
+            "text": "          class=\"[scrollbar-width:none] [-ms-overflow-style:none] [&amp;::-webkit-scrollbar]:hidden mask-linear-fade\"",
+            "lineNumber": 155
+          },
+          {
+            "text": "        &gt;",
+            "lineNumber": 156
+          },
+          {
+            "text": "          &lt;span",
+            "lineNumber": 157
+          },
+          {
+            "text": "            v-for=\"tag in overview.service.tags\"",
+            "lineNumber": 158
+          },
+          {
+            "text": "            :key=\"tag\"",
+            "lineNumber": 159
+          },
+          {
+            "text": "            flex=\"inline items-center shrink-0\"",
+            "lineNumber": 160
+          },
+          {
+            "text": "            p=\"x2 y0.5\"",
+            "lineNumber": 161
+          },
+          {
+            "text": "            un-text=\"[10px] zinc-600 dark:zinc-400\"",
+            "lineNumber": 162
+          },
+          {
+            "text": "            font-medium",
+            "lineNumber": 163
+          },
+          {
+            "text": "            bg=\"zinc-100 dark:zinc-800\"",
+            "lineNumber": 164
+          },
+          {
+            "text": "            border=\"rounded zinc-200 dark:zinc-700/50\"",
+            "lineNumber": 165
+          },
+          {
+            "text": "            whitespace-nowrap",
+            "lineNumber": 166
+          },
+          {
+            "text": "          &gt;",
+            "lineNumber": 167
+          },
+          {
+            "text": "            {{ tag }}",
+            "lineNumber": 168
+          },
+          {
+            "text": "          &lt;/span&gt;",
+            "lineNumber": 169
+          },
+          {
+            "text": "        &lt;/div&gt;",
+            "lineNumber": 170
+          },
+          {
+            "lineNumber": 171
+          },
+          {
+            "text": "        &lt;div",
+            "lineNumber": 172
+          },
+          {
+            "text": "          flex=\"~ items-center gap-3 shrink-0\"",
+            "lineNumber": 173
+          },
+          {
+            "text": "          un-text=\"xs zinc-500 dark:zinc-400\"",
+            "lineNumber": 174
+          },
+          {
+            "text": "          font-medium ml-auto pl-2",
+            "lineNumber": 175
+          },
+          {
+            "text": "          bg=\"white dark:zinc-900\"",
+            "lineNumber": 176
+          },
+          {
+            "text": "          class=\"shadow-[-8px_0_4px_-4px_rgba(255,255,255,0.8)] dark:shadow-[-8px_0_4px_-4px_rgba(24,24,27,0.8)]\"",
+            "lineNumber": 177
+          },
+          {
+            "text": "        &gt;",
+            "lineNumber": 178
+          },
+          {
+            "text": "          &lt;div flex=\"~ items-center gap-1.5\" title=\"实时延迟\"&gt;",
+            "lineNumber": 179
+          },
+          {
+            "text": "            &lt;div size-13px i-lucide:zap :class=\"latencyColor\" aria-hidden=\"true\" /&gt;",
+            "lineNumber": 180
+          },
+          {
+            "text": "            &lt;span&gt;{{ latestLatency }}ms&lt;/span&gt;",
+            "lineNumber": 181
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 182
+          },
+          {
+            "text": "          &lt;div w-px h-3 bg=\"zinc-200 dark:zinc-700\" /&gt;",
+            "lineNumber": 183
+          },
+          {
+            "text": "          &lt;div flex=\"~ items-center gap-1.5\" title=\"最后更新\"&gt;",
+            "lineNumber": 184
+          },
+          {
+            "text": "            &lt;div size-13px i-lucide:clock un-text=\"zinc-600 dark:zinc-400\" aria-hidden=\"true\" /&gt;",
+            "lineNumber": 185
+          },
+          {
+            "text": "            &lt;span tabular-nums&gt;{{ lastCheckTime }}&lt;/span&gt;",
+            "lineNumber": 186
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 187
+          },
+          {
+            "text": "        &lt;/div&gt;",
+            "lineNumber": 188
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 189
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 190
+          },
+          {
+            "lineNumber": 191
+          },
+          {
+            "text": "    &lt;!-- Bottom Section: Uptime Percentage and History --&gt;",
+            "lineNumber": 192
+          },
+          {
+            "text": "    &lt;div data-part=\"visualizer\" p=\"x5 b5\" mt-auto&gt;",
+            "lineNumber": 193
+          },
+          {
+            "text": "      &lt;div pt-2 border=\"t zinc-100 dark:zinc-800/50\"&gt;",
+            "lineNumber": 194
+          },
+          {
+            "text": "        ",
+            "lineNumber": 195
+          }
+        ]
+      },
+      "score": 0.15963613986968994
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/project-overview.mdc",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 27
+          }
+        },
+        "contents": "---\nalwaysApply: true\n---\n# Overview\n\nThis is an uptime monitoring website built with Nuxt 4 and Nuxthub, and styling with unocss.\n\n## NPM package manager\n\nShould be pnpm, but alway install package with &#96;[ni](https://github.com/antfu-collective/ni)&#96; and related command.\n\n## How to use Nuxthub?\n\nNuxthub is a Nuxt module provider a complete backend experience on top of the framework that can deploy on many cloud providers, allowing developers to build full-stack applications.\n\n### Database\n\n- **Database Dialect**: The database dialect is set in the &#96;nuxt.config.ts&#96; file, within the &#96;hub.db&#96; option or &#96;hub.db.dialect&#96; property.\n- **Drizzle Config**: Don't generate the &#96;drizzle.config.ts&#96; file manually, it is generated automatically by NuxtHub.\n- **Generate Migrations**: Use &#96;npx nuxt db generate&#96; to automatically generate database migrations from schema changes\n- **Never Write Manual Migrations**: Do not manually create SQL migration files in the &#96;server/db/migrations/&#96; directory\n- **Workflow**:\n  1. Create or modify the database schema in &#96;server/db/schema.ts&#96; or any other schema file in the &#96;server/db/schema/&#96; directory\n  2. Run &#96;npx nuxt db generate&#96; to generate the migration\n  3. Run &#96;npx nuxt db migrate&#96; to apply the migration to the database, or run &#96;npx nuxt dev&#96; to apply the migration during development\n- **Access the database**: Use the &#96;db&#96; instance from &#96;hub:db&#96; to query the database, it is a Drizzle ORM instance.\n- **Access the database schema**: Use the &#96;schema&#96; from &#96;hub:db&#96; to access the schemas.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "---",
+            "lineNumber": 1
+          },
+          {
+            "text": "alwaysApply: true",
+            "lineNumber": 2
+          },
+          {
+            "text": "---",
+            "lineNumber": 3
+          },
+          {
+            "text": "# Overview",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "This is an uptime monitoring website built with Nuxt 4 and Nuxthub, and styling with unocss.",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "## NPM package manager",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "Should be pnpm, but alway install package with &#96;[ni](https://github.com/antfu-collective/ni)&#96; and related command.",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "## How to use Nuxthub?",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "Nuxthub is a Nuxt module provider a complete backend experience on top of the framework that can deploy on many cloud providers, allowing developers to build full-stack applications.",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "### Database",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "- **Database Dialect**: The database dialect is set in the &#96;nuxt.config.ts&#96; file, within the &#96;hub.db&#96; option or &#96;hub.db.dialect&#96; property.",
+            "lineNumber": 18
+          },
+          {
+            "text": "- **Drizzle Config**: Don't generate the &#96;drizzle.config.ts&#96; file manually, it is generated automatically by NuxtHub.",
+            "lineNumber": 19
+          },
+          {
+            "text": "- **Generate Migrations**: Use &#96;npx nuxt db generate&#96; to automatically generate database migrations from schema changes",
+            "lineNumber": 20
+          },
+          {
+            "text": "- **Never Write Manual Migrations**: Do not manually create SQL migration files in the &#96;server/db/migrations/&#96; directory",
+            "lineNumber": 21
+          },
+          {
+            "text": "- **Workflow**:",
+            "lineNumber": 22
+          },
+          {
+            "text": "  1. Create or modify the database schema in &#96;server/db/schema.ts&#96; or any other schema file in the &#96;server/db/schema/&#96; directory",
+            "lineNumber": 23
+          },
+          {
+            "text": "  2. Run &#96;npx nuxt db generate&#96; to generate the migration",
+            "lineNumber": 24
+          },
+          {
+            "text": "  3. Run &#96;npx nuxt db migrate&#96; to apply the migration to the database, or run &#96;npx nuxt dev&#96; to apply the migration during development",
+            "lineNumber": 25
+          },
+          {
+            "text": "- **Access the database**: Use the &#96;db&#96; instance from &#96;hub:db&#96; to query the database, it is a Drizzle ORM instance.",
+            "lineNumber": 26
+          },
+          {
+            "text": "- **Access the database schema**: Use the &#96;schema&#96; from &#96;hub:db&#96; to access the schemas.",
+            "lineNumber": 27
+          }
+        ]
+      },
+      "score": 0.15108460187911987
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./server/utils/service.ts",
+        "range": {
+          "startPosition": {
+            "line": 71
+          },
+          "endPosition": {
+            "line": 121,
+            "column": 1
+          }
+        },
+        "contents": "export interface ServiceLogsByDays {\n\n  latency: number | null\n  logs: typeof schema.serviceLogs.$inferSelect[]\n  uptime: number\n  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]\n}\n\nexport function manageServiceLogsByDays(\n  logs: typeof schema.serviceLogs.$inferSelect[],\n) {\n  const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')\n\n  const serviceLogsByDays = new Map(\n    Array.from({ length: 30 }, (_, i) =&gt; {\n      const date = now.subtract(Temporal.Duration.from({ days: i }))\n        .startOfDay()\n        .toString()\n      const logsByDay: ServiceLogsByDays = {\n        get total() {\n          return this.logs.length\n        },\n        get upCount() {\n          return this.logs.filter(log =&gt; log.status === 'up').length\n        },\n        get uptime() {\n          return this.upCount / this.total * 100\n        },\n        logs: [],\n        get latency() {\n          return this.logs.at(-1)?.latency ?? null\n        },\n        get outages() {\n          return getOutages(this.logs)\n        },\n      }\n      return [date, logsByDay]\n    }),\n  )\n\n  for (const log of logs) {\n    const date = log.timestamp.toTemporalInstant().toZonedDateTimeISO('UTC').startOfDay()\n    const serviceLogsByDay = serviceLogsByDays.get(date.toString())\n    if (serviceLogsByDay) {\n      serviceLogsByDay.logs.push(log)\n    }\n  }\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export interface ServiceLogsByDays {",
+            "lineNumber": 72,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "  latency: number | null",
+            "lineNumber": 75
+          },
+          {
+            "text": "  logs: typeof schema.serviceLogs.$inferSelect[]",
+            "lineNumber": 76
+          },
+          {
+            "text": "  uptime: number",
+            "lineNumber": 77
+          },
+          {
+            "text": "  outages: { from: Temporal.ZonedDateTime, duration: Temporal.Duration }[]",
+            "lineNumber": 78
+          },
+          {
+            "text": "}",
+            "lineNumber": 79,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "text": "export function manageServiceLogsByDays(",
+            "lineNumber": 81,
+            "isSignature": true
+          },
+          {
+            "text": "  logs: typeof schema.serviceLogs.$inferSelect[],",
+            "lineNumber": 82,
+            "isSignature": true
+          },
+          {
+            "text": ") {",
+            "lineNumber": 83,
+            "isSignature": true
+          },
+          {
+            "text": "  const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "  const serviceLogsByDays = new Map(",
+            "lineNumber": 86
+          },
+          {
+            "text": "    Array.from({ length: 30 }, (_, i) =&gt; {",
+            "lineNumber": 87
+          },
+          {
+            "text": "      const date = now.subtract(Temporal.Duration.from({ days: i }))",
+            "lineNumber": 88
+          },
+          {
+            "text": "        .startOfDay()",
+            "lineNumber": 89
+          },
+          {
+            "text": "        .toString()",
+            "lineNumber": 90
+          },
+          {
+            "text": "      const logsByDay: ServiceLogsByDays = {",
+            "lineNumber": 91
+          },
+          {
+            "text": "        get total() {",
+            "lineNumber": 92
+          },
+          {
+            "text": "          return this.logs.length",
+            "lineNumber": 93
+          },
+          {
+            "text": "        },",
+            "lineNumber": 94
+          },
+          {
+            "text": "        get upCount() {",
+            "lineNumber": 95
+          },
+          {
+            "text": "          return this.logs.filter(log =&gt; log.status === 'up').length",
+            "lineNumber": 96
+          },
+          {
+            "text": "        },",
+            "lineNumber": 97
+          },
+          {
+            "text": "        get uptime() {",
+            "lineNumber": 98
+          },
+          {
+            "text": "          return this.upCount / this.total * 100",
+            "lineNumber": 99
+          },
+          {
+            "text": "        },",
+            "lineNumber": 100
+          },
+          {
+            "text": "        logs: [],",
+            "lineNumber": 101
+          },
+          {
+            "text": "        get latency() {",
+            "lineNumber": 102
+          },
+          {
+            "text": "          return this.logs.at(-1)?.latency ?? null",
+            "lineNumber": 103
+          },
+          {
+            "text": "        },",
+            "lineNumber": 104
+          },
+          {
+            "text": "        get outages() {",
+            "lineNumber": 105
+          },
+          {
+            "text": "          return getOutages(this.logs)",
+            "lineNumber": 106
+          },
+          {
+            "text": "        },",
+            "lineNumber": 107
+          },
+          {
+            "text": "      }",
+            "lineNumber": 108
+          },
+          {
+            "text": "      return [date, logsByDay]",
+            "lineNumber": 109
+          },
+          {
+            "text": "    }),",
+            "lineNumber": 110
+          },
+          {
+            "text": "  )",
+            "lineNumber": 111
+          },
+          {
+            "lineNumber": 112
+          },
+          {
+            "text": "  for (const log of logs) {",
+            "lineNumber": 113
+          },
+          {
+            "text": "    const date = log.timestamp.toTemporalInstant().toZonedDateTimeISO('UTC').startOfDay()",
+            "lineNumber": 114
+          },
+          {
+            "text": "    const serviceLogsByDay = serviceLogsByDays.get(date.toString())",
+            "lineNumber": 115
+          },
+          {
+            "text": "    if (serviceLogsByDay) {",
+            "lineNumber": 116
+          },
+          {
+            "text": "      serviceLogsByDay.logs.push(log)",
+            "lineNumber": 117
+          },
+          {
+            "text": "    }",
+            "lineNumber": 118
+          },
+          {
+            "text": "  }",
+            "lineNumber": 119
+          },
+          {
+            "text": "}",
+            "lineNumber": 122,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.1500568389892578
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/api/services/[id].delete.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+检查是否有更新服务的 API：
+
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **0** result in **1** directory</summary>
+
+Directory: **undefined** (0 file)
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **0** result in **1** directory</summary>
+
+Directory: **undefined** (0 file)
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] 在 schema 中为 services 和 serviceLogs 表添加 deletedAt 字段
+- [x] 生成数据库迁移文件
+- [x] 修改删除操作，改为软删除（更新 deletedAt）
+- [x] 修改所有查询操作，过滤掉已删除的记录
+- [x] 修改外键约束，移除 cascade delete
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+检查 lint 错误：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "server/db/schema.ts",
+    "server/api/services/[id].delete.ts",
+    "server/api/services/index.get.ts",
+    "server/api/services/overviews.get.ts",
+    "server/api/services/[id]/logs.get.ts",
+    "server/utils/service.ts",
+    "server/tasks/check.ts"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "server/db/schema.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/api/services/[id].delete.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/api/services/index.get.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/api/services/overviews.get.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/api/services/[id]/logs.get.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/utils/service.ts"
+    },
+    {
+      "relativeWorkspacePath": "server/tasks/check.ts"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+检查是否还有其他地方需要修改：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "schema\\.(services|serviceLogs)",
+  "path": "server",
+  "caseInsensitive": false
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "schema\\.(services|serviceLogs)",
+    "path": "server",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Volumes/External/Projects/nuxt-pulse": {
+        "content": {
+          "matches": [
+            {
+              "file": "server/api/services/[id]/logs.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 35,
+                  "content": "    .from(schema.services)"
+                },
+                {
+                  "lineNumber": 38,
+                  "content": "        eq(schema.services.id, serviceId),"
+                },
+                {
+                  "lineNumber": 39,
+                  "content": "        isNull(schema.services.deletedAt),"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/[id].delete.ts",
+              "matches": [
+                {
+                  "lineNumber": 36,
+                  "content": "    .from(schema.services)"
+                },
+                {
+                  "lineNumber": 39,
+                  "content": "        eq(schema.services.id, serviceId),"
+                },
+                {
+                  "lineNumber": 40,
+                  "content": "        isNull(schema.services.deletedAt),"
+                },
+                {
+                  "lineNumber": 55,
+                  "content": "    .update(schema.services)"
+                },
+                {
+                  "lineNumber": 57,
+                  "content": "    .where(eq(schema.services.id, serviceId))"
+                },
+                {
+                  "lineNumber": 61,
+                  "content": "    .update(schema.serviceLogs)"
+                },
+                {
+                  "lineNumber": 63,
+                  "content": "    .where(eq(schema.serviceLogs.serviceId, serviceId))"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/index.post.ts",
+              "matches": [
+                {
+                  "lineNumber": 41,
+                  "content": "  const [newService] = await db.insert(schema.services).values({"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/overviews.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 7,
+                  "content": "    .from(schema.services)"
+                },
+                {
+                  "lineNumber": 8,
+                  "content": "    .where(isNull(schema.services.deletedAt))"
+                },
+                {
+                  "lineNumber": 18,
+                  "content": "      .from(schema.serviceLogs)"
+                },
+                {
+                  "lineNumber": 21,
+                  "content": "          eq(schema.serviceLogs.serviceId, service.id),"
+                },
+                {
+                  "lineNumber": 22,
+                  "content": "          gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),"
+                },
+                {
+                  "lineNumber": 23,
+                  "content": "          isNull(schema.serviceLogs.deletedAt),"
+                },
+                {
+                  "lineNumber": 26,
+                  "content": "      .orderBy(schema.serviceLogs.timestamp)"
+                }
+              ]
+            },
+            {
+              "file": "server/tasks/check.ts",
+              "matches": [
+                {
+                  "lineNumber": 14,
+                  "content": "      .from(schema.services)"
+                },
+                {
+                  "lineNumber": 15,
+                  "content": "      .where(isNull(schema.services.deletedAt))"
+                }
+              ]
+            },
+            {
+              "file": "server/utils/service.ts",
+              "matches": [
+                {
+                  "lineNumber": 4,
+                  "content": "export async function checkService(service: typeof schema.services.$inferSelect) {"
+                },
+                {
+                  "lineNumber": 42,
+                  "content": "  await db.insert(schema.serviceLogs).values({"
+                },
+                {
+                  "lineNumber": 60,
+                  "content": "    .from(schema.serviceLogs)"
+                },
+                {
+                  "lineNumber": 63,
+                  "content": "        eq(schema.serviceLogs.serviceId, serviceId),"
+                },
+                {
+                  "lineNumber": 64,
+                  "content": "        isNull(schema.serviceLogs.deletedAt),"
+                },
+                {
+                  "lineNumber": 67,
+                  "content": "    .orderBy(desc(schema.serviceLogs.timestamp))"
+                },
+                {
+                  "lineNumber": 76,
+                  "content": "  logs: typeof schema.serviceLogs.$inferSelect[]"
+                },
+                {
+                  "lineNumber": 82,
+                  "content": "  logs: typeof schema.serviceLogs.$inferSelect[],"
+                },
+                {
+                  "lineNumber": 125,
+                  "content": "  logs: typeof schema.serviceLogs.$inferSelect[],"
+                },
+                {
+                  "lineNumber": 158,
+                  "content": "export function getOutages(histories: typeof schema.serviceLogs.$inferSelect[]) {"
+                }
+              ]
+            },
+            {
+              "file": "server/api/services/index.get.ts",
+              "matches": [
+                {
+                  "lineNumber": 15,
+                  "content": "    .from(schema.services)"
+                },
+                {
+                  "lineNumber": 16,
+                  "content": "    .where(isNull(schema.services.deletedAt))"
+                }
+              ]
+            }
+          ],
+          "totalLines": 32,
+          "totalMatchedLines": 32
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+所有修改已完成。总结如下：
+
+## 完成的修改
+
+1. **Schema 更新**：
+   - 在 `services` 表添加 `deletedAt` 字段
+   - 在 `serviceLogs` 表添加 `deletedAt` 字段
+   - 移除了 `serviceLogs` 外键的 `onDelete: 'cascade'` 约束
+
+2. **数据库迁移**：
+   - 已生成迁移文件 `0001_chilly_queen_noir.sql`
+
+3. **删除操作改为软删除**：
+   - 修改 `server/api/services/[id].delete.ts`，将硬删除改为软删除（设置 `deletedAt` 时间戳）
+   - 删除服务时，同时软删除相关的 service logs
+
+4. **查询操作过滤已删除记录**：
+   - `server/api/services/index.get.ts` - 获取所有服务列表
+   - `server/api/services/overviews.get.ts` - 获取服务概览
+   - `server/api/services/[id]/logs.get.ts` - 获取服务日志
+   - `server/utils/service.ts` - `getServiceLogs` 函数
+   - `server/tasks/check.ts` - 定时检查任务
+
+所有查询现在都会过滤掉 `deletedAt IS NULL` 的记录，确保已软删除的数据不会出现在正常查询中。
+
+运行 `npx nuxt db migrate` 或 `npx nuxt dev` 来应用迁移。
+
+---
+
+_**User**_
+
+service_logs 表似乎可以不需要删除的功能
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+
+
+---
+
+
+移除 `service_logs` 表的软删除功能，仅保留 `services` 表的软删除。更新相关代码：
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/db/schema.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Volumes/External/Projects/nuxt-pulse/server/api/services/[id].delete.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+移除 `service_logs` 表的软删除功能：
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "16ac8a19-10ee-4cc1-9e4b-bdc4460dd8fd"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "6e836031-b1f8-4d6f-b4fa-f297b405ee1b"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "de0edec7-cd0f-4bff-9cfa-e9ca57f6c7a2"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "b980e2e9-4e0a-4f23-bd7a-2dfaa7fe24dd"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="edit_file_v2">
+<details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+Additional data:
+
+```json
+{
+  "codeblockId": "c29e6f68-5ae5-425c-abfe-7a4ba8522f34"
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+

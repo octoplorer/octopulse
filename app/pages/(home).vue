@@ -1,7 +1,10 @@
 <script setup lang="ts">
-const { data } = useQuery({
+const { data, isLoading } = useQuery({
   key: ['overview'],
-  query: () => $fetch('/api/services/overviews'),
+  query: async () => {
+    await new Promise(r => setTimeout(r, 1000))
+    return $fetch('/api/services/overviews')
+  },
 })
 </script>
 
@@ -14,12 +17,20 @@ const { data } = useQuery({
       </h2>
     </div>
     <div w-full grid="~ cols-1 md:cols-2 lg:cols-3 gap-6">
-      <div
-        v-for="overview in data?.overviews"
-        :key="overview.service.id"
-      >
-        <HomeServiceCard :overview="overview" />
-      </div>
+      <template v-if="isLoading">
+        //TODO
+      </template>
+      <template v-else>
+        <div v-if="data?.overviews.length === 0" class="col-span-full py-12 text-center text-zinc-500 bg-white dark:bg-zinc-900 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+          目前没有监控任何服务。请登录后台添加。
+        </div>
+        <div
+          v-for="overview in data?.overviews"
+          :key="overview.service.id"
+        >
+          <HomeServiceCard :overview="overview" />
+        </div>
+      </template>
     </div>
   </section>
 </template>

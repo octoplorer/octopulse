@@ -20,7 +20,6 @@ export default defineEventHandler(async () => {
         and(
           eq(schema.serviceLogs.serviceId, service.id),
           gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),
-          isNull(schema.serviceLogs.deletedAt),
         ),
       )
       .orderBy(schema.serviceLogs.timestamp)
