@@ -79,7 +79,6 @@ export default defineNuxtConfig({
         },
       },
     },
-    moduleSideEffects: ['temporal-polyfill/global'],
     minify: false,
   },
   typescript: {
