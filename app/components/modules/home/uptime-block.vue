@@ -95,8 +95,8 @@ const datetime = computed(() => {
             relative
             class="bg-white dark:bg-zinc-700 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-zinc-200 dark:border-zinc-600"
           >
-            <div flex="~ col gap-y-1.5" divide="y zinc-200 dark:zinc-600">
-              <p class="text-zinc-900 dark:text-zinc-300 font-semibold" pb-1.5>
+            <div flex="~ col">
+              <p className="font-semibold pb-1 mb-1.5" border="b zinc-700 dark:zinc-600">
                 <NuxtTime
                   :datetime="datetime"
                   year="numeric"
@@ -105,7 +105,7 @@ const datetime = computed(() => {
                 />
               </p>
 
-              <div pb-1.5 flex="~ items-center gap-2">
+              <div flex="~ items-center gap-2" mb-1>
                 <div v-if="history.uptime" flex="~ items-center gap-2">
                   <span class="text-zinc-900 dark:text-zinc-300" i-lucide:clock-arrow-up size-4 />
                   <span class="font-medium" :class="uptimeTextColor">{{ history.uptime.toFixed(2) }}%</span>
@@ -121,7 +121,7 @@ const datetime = computed(() => {
                 </div>
               </div>
 
-              <div v-if="outages.length > 0" pb-1.5>
+              <div v-if="outages.length > 0" mt-2 pt-2 border="t zinc-700 dark:zinc-600">
                 <div class="flex justify-between items-center mb-1">
                   <span class="text-rose-600 dark:text-rose-300 font-medium">中断时段</span>
                 </div>
