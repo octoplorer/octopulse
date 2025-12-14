@@ -1,6 +1,11 @@
 <script setup lang="ts">
 const password = ref('')
-const { fetch } = useUserSession()
+const { loggedIn, fetch } = useUserSession()
+
+if (loggedIn.value) {
+  await navigateTo('/admin')
+}
+
 const { error, isLoading, mutateAsync } = useMutation({
   mutation(vars: string) {
     return $fetch('/api/login', {
