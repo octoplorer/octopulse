@@ -4,8 +4,8 @@ import 'temporal-polyfill/global'
 useHead({
   titleTemplate(title) {
     if (!title)
-      return `NuxtPulse`
-    return `${title} - NuxtPulse`
+      return `Octopulse`
+    return `${title} - Octopulse`
   },
 })
 </script>
