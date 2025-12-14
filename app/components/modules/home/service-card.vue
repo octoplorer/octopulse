@@ -91,7 +91,7 @@ const latencyColor = computed(() => {
 <template>
   <div
     bg="white dark:zinc-900"
-    border="xl zinc-200 dark:zinc-800"
+    border="xl zinc-200 dark:zinc-800 rounded-lg"
     overflow-hidden shadow-sm hover:shadow-md
     transition-all duration-300
   >
