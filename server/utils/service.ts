@@ -16,7 +16,7 @@ export async function checkService(service: typeof schema.services.$inferSelect)
     timeout: 30000,
     retry: 3,
     onRequest() {
-      startTime = Date.now()
+      startTime = performance.now()
     },
     onRequestError({ error }) {
       status = 'error'
@@ -36,7 +36,7 @@ export async function checkService(service: typeof schema.services.$inferSelect)
 
   const statusCode = response.status
 
-  const latency = Date.now() - startTime
+  const latency = Math.round(performance.now() - startTime)
 
   // Create log entry
   await db.insert(schema.serviceLogs).values({
