@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 /**
  * DELETE /monitors/:id
  * Delete monitor (authentication required)
- * Related logs will be deleted automatically due to cascade delete
+ * Soft delete: sets deletedAt timestamp instead of removing the record
  */
 export default defineEventHandler(async (event) => {
   // Verify authentication
@@ -30,8 +30,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Check if monitor exists
-  const existingService = await db.select().from(schema.services).where(eq(schema.services.id, serviceId)).limit(1)
+  // Check if monitor exists and is not deleted
+  const existingService = await db
+    .select()
+    .from(schema.services)
+    .where(
+      and(
+        eq(schema.services.id, serviceId),
+        isNull(schema.services.deletedAt),
+      ),
+    )
+    .limit(1)
 
   if (existingService.length === 0) {
     throw createError({
@@ -41,8 +50,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Delete service (logs will be deleted automatically due to cascade)
-  await db.delete(schema.services).where(eq(schema.services.id, serviceId))
+  // Soft delete service: set deletedAt timestamp
+  await db
+    .update(schema.services)
+    .set({ deletedAt: new Date() })
+    .where(eq(schema.services.id, serviceId))
+
+  // Soft delete related service logs
+  await db
+    .update(schema.serviceLogs)
+    .set({ deletedAt: new Date() })
+    .where(eq(schema.serviceLogs.serviceId, serviceId))
 
   return {
     success: true,

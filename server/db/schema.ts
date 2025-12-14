@@ -31,13 +31,14 @@ export const services = sqliteTable('services', {
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch('now'))`)
     .notNull(),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 })
 
 export const serviceLogs = sqliteTable('service_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   serviceId: integer('service_id')
     .notNull()
-    .references(() => services.id, { onDelete: 'cascade' }),
+    .references(() => services.id),
 
   status: text('status', { enum: ['up', 'timeout', 'error'] })
     .notNull(),
@@ -49,6 +50,7 @@ export const serviceLogs = sqliteTable('service_logs', {
 
   statusCode: integer('status_code'),
   errorMessage: text('error_message'),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 })
 
 export const incidents = sqliteTable('incidents', {

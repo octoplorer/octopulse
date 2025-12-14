@@ -1,8 +1,11 @@
-import { and, eq, gte } from 'drizzle-orm'
+import { and, eq, gte, isNull } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 export default defineEventHandler(async () => {
-  const services = await db.select().from(schema.services)
+  const services = await db
+    .select()
+    .from(schema.services)
+    .where(isNull(schema.services.deletedAt))
   const overviews: ServiceOverview[] = []
 
   const now = Temporal.Now.instant().toZonedDateTimeISO('UTC')
@@ -17,6 +20,7 @@ export default defineEventHandler(async () => {
         and(
           eq(schema.serviceLogs.serviceId, service.id),
           gte(schema.serviceLogs.timestamp, thirtyDaysAgoDate),
+          isNull(schema.serviceLogs.deletedAt),
         ),
       )
       .orderBy(schema.serviceLogs.timestamp)

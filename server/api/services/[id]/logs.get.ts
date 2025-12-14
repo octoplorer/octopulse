@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 
 /**
@@ -29,8 +29,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Check if monitor exists
-  const existingService = await db.select().from(schema.services).where(eq(schema.services.id, serviceId)).limit(1)
+  // Check if monitor exists and is not deleted
+  const existingService = await db
+    .select()
+    .from(schema.services)
+    .where(
+      and(
+        eq(schema.services.id, serviceId),
+        isNull(schema.services.deletedAt),
+      ),
+    )
+    .limit(1)
 
   if (existingService.length === 0) {
     throw createError({

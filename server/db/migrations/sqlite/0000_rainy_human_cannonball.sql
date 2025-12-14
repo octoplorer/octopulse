@@ -17,7 +17,8 @@ CREATE TABLE `service_logs` (
 	`timestamp` integer DEFAULT (unixepoch('now')) NOT NULL,
 	`status_code` integer,
 	`error_message` text,
-	FOREIGN KEY (`service_id`) REFERENCES `services`(`id`) ON UPDATE no action ON DELETE cascade
+	`deleted_at` integer,
+	FOREIGN KEY (`service_id`) REFERENCES `services`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `services` (
@@ -28,5 +29,6 @@ CREATE TABLE `services` (
 	`url` text NOT NULL,
 	`method` text DEFAULT 'GET' NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch('now')) NOT NULL,
-	`created_at` integer DEFAULT (unixepoch('now')) NOT NULL
+	`created_at` integer DEFAULT (unixepoch('now')) NOT NULL,
+	`deleted_at` integer
 );

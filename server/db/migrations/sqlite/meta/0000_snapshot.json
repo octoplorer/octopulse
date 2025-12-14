@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2622f0ce-895d-4b5e-b662-00fe8559dab8",
+  "id": "d621911f-e56b-47f4-9dd2-c5a298546eb8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "incidents": {
@@ -129,6 +129,13 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -143,7 +150,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -213,6 +220,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(unixepoch('now'))"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},

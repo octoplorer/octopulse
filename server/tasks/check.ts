@@ -1,3 +1,4 @@
+import { isNull } from 'drizzle-orm'
 import { db, schema } from 'hub:db'
 import { checkService } from '~~/server/utils/service'
 
@@ -7,8 +8,11 @@ export default defineTask({
     description: 'Check status for all services',
   },
   async run() {
-    // Fetch all services from database
-    const services = await db.select().from(schema.services)
+    // Fetch all services from database (excluding soft-deleted)
+    const services = await db
+      .select()
+      .from(schema.services)
+      .where(isNull(schema.services.deletedAt))
 
     // Process each service
     for (const service of services) {
