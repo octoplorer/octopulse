@@ -16,20 +16,30 @@ function onThemeToggle() {
     class="sticky top-0 z-30 transition-colors duration-300"
   >
     <div
-      flex="~ items-center justify-end"
+      flex="~ items-center justify-between"
       max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16
     >
+      <NuxtLink to="/" flex="~ items-center gap-3" class="group">
+        <div
+          size-1.5 rounded-full
+          bg="zinc-900 dark:white"
+          class="shadow-[0_0_10px_rgba(0,0,0,0.1)] group-hover:scale-125 transition-transform duration-300"
+        />
+        <span un-text="xs zinc-900 dark:white" class="font-bold tracking-tight">
+          NuxtPulse
+        </span>
+      </NuxtLink>
       <div flex="~ items-center gap-4">
         <div flex="md:~ col items-end" mr-2hidden>
           <span
-            un-text="xs zinc-500 dark:zinc-400"
+            un-text="xs zinc-900 dark:white"
             uppercase font-semibold tracking-wider
           >
             最后更新
           </span>
           <span
-            un-text="zinc-900 dark:zinc-200"
-            text-sm font-medium tabular-nums
+            un-text="xs zinc-500 dark:zinc-400"
+            text-xs font-medium tabular-nums
           >
             <NuxtTime
               v-if="data" :datetime="data.timestamp"

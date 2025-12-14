@@ -173,8 +173,6 @@ const latencyColor = computed(() => {
           flex="~ items-center gap-3 shrink-0"
           un-text="xs zinc-500 dark:zinc-400"
           font-medium ml-auto pl-2
-          bg="white dark:zinc-900"
-          class="shadow-[-8px_0_4px_-4px_rgba(255,255,255,0.8)] dark:shadow-[-8px_0_4px_-4px_rgba(24,24,27,0.8)]"
         >
           <div flex="~ items-center gap-1.5" title="实时延迟">
             <div size-13px i-lucide:zap :class="latencyColor" aria-hidden="true" />
