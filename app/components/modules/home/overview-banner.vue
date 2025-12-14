@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { data } = useQuery({
-  key: ['overview'],
-  query: () => $fetch('/api/services/overviews'),
-})
+const { data } = useOverview()
 
 const isSystemHealthy = computed(() => data.value?.overviews.every(overview => overview.service.status === ServiceStatus.Operational))
 

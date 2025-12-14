@@ -37,6 +37,10 @@ export default defineNuxtConfig({
     ],
   },
 
+  imports: {
+    dirs: ['queries'],
+  },
+
   hub: {
     db: 'sqlite',
   },

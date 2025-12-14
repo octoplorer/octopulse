@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { data, isLoading } = useQuery({
-  key: ['overview'],
-  query: () => $fetch('/api/services/overviews'),
-})
+const { data, isLoading } = useOverview()
 const queryCache = useQueryCache()
 const colorMode = useColorMode()
 const { loggedIn, clear } = useUserSession()
