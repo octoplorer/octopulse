@@ -11,8 +11,10 @@ const totalServices = computed(() => data.value?.overviews.length ?? 0)
 
 const averageUptime = computed(() => {
   const uptimes = data.value?.overviews.reduce((acc, overview) => {
-    const serviceUptime = overview.histories.reduce((acc, history) => acc + (history.uptime ?? 0), 0) ?? 0
-    return acc + serviceUptime
+    const availableHistories = overview.histories.filter(h => h.uptime !== null)
+    const serviceUptimes = availableHistories.reduce((acc, h) => acc + h.uptime!, 0)
+    const averageServiceUptime = serviceUptimes / availableHistories.length
+    return acc + averageServiceUptime
   }, 0) ?? 0
 
   return (uptimes / totalServices.value).toFixed(2)
