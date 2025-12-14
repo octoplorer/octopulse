@@ -26,7 +26,7 @@ function onThemeToggle() {
           class="shadow-[0_0_10px_rgba(0,0,0,0.1)] group-hover:scale-125 transition-transform duration-300"
         />
         <span un-text="xs zinc-900 dark:white" class="font-bold tracking-tight">
-          NuxtPulse
+          Octopulse
         </span>
       </NuxtLink>
       <div flex="~ items-center gap-4">

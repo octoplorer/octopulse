@@ -28,7 +28,7 @@ useHead({
         un-text="xs zinc-500 dark:zinc-400"
       >
         <div flex="~ items-center gap-4">
-          <span font-mono>Powered By NuxtPulse</span>
+          <span font-mono>Powered By Octopulse</span>
         </div>
       </div>
     </footer>
