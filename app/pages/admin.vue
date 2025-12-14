@@ -8,6 +8,8 @@ const serviceName = ref('')
 const serviceUrl = ref('')
 const serviceTags = ref('')
 
+const queryCache = useQueryCache()
+
 // Fetch services
 const { data: servicesData, isLoading, refetch } = useQuery({
   key: ['admin-services'],
@@ -36,8 +38,10 @@ const { mutateAsync: createService, isLoading: isCreating } = useMutation({
     serviceName.value = ''
     serviceUrl.value = ''
     serviceTags.value = ''
-    // Refresh services list
-    await refetch()
+    await Promise.all([
+      queryCache.invalidateQueries({ key: ['admin-services'] }),
+      queryCache.invalidateQueries({ key: ['overview'] }),
+    ])
   },
 })
 
