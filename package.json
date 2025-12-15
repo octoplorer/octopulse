@@ -2,7 +2,7 @@
   "name": "octopulse",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.25.0",
+  "packageManager": "pnpm@10.26.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -16,7 +16,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.80",
+    "@iconify-json/lucide": "^1.2.81",
     "@libsql/client": "^0.15.15",
     "@nuxthub/core": "^0.10.1",
     "@pinia/colada": "^0.18.1",
@@ -31,10 +31,11 @@
     "temporal-polyfill": "^0.3.0",
     "unstorage": "^1.17.3",
     "vue": "^3.5.25",
-    "vue-router": "^4.6.3",
-    "zod": "^4.1.13"
+    "vue-router": "^4.6.4",
+    "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.7.1",
     "@nuxt/eslint": "^1.12.1",
     "@nuxtjs/color-mode": "^4.0.0",
     "@pinia/nuxt": "^0.11.3",

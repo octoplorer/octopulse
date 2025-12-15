@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SerializeObject } from 'nitropack'
+import { TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 
 const props = defineProps<{
   history: SerializeObject<ServiceHistroy>
