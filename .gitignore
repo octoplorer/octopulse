@@ -1,0 +1,16 @@
+# Go
+/bin/
+bench/dist/
+
+# Node / frontend
+node_modules/
+dist/
+.output/
+.nuxt/
+*.tsbuildinfo
+
+# Runtime data and secrets
+*.db
+*.db-wal
+*.db-shm
+.env

@@ -1,0 +1,7 @@
+# Emulates the runtime image shape of the combo probe: one static binary on
+# distroless static, non-root, no shell, no package manager.
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY dist/combo-linux-arm64 /octopulse
+USER nonroot:nonroot
+EXPOSE 18080
+ENTRYPOINT ["/octopulse"]

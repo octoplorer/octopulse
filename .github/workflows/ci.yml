@@ -1,0 +1,55 @@
+# Scope: toolchain + benchmark probes only.
+# Image build / multi-arch / SBOM / signing / release jobs land in a later PR,
+# once the Go service and its Dockerfile exist.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  toolchain-and-bench:
+    name: Toolchain (mise) + bench probes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+        with:
+          # Pinned to the developer machine's version so mise.lock is generated
+          # and verified by the same mise. Revisit deliberately, not by drift.
+          version: 2026.6.10
+          install: false
+          cache: true
+
+      - name: Verify mise.lock covers the CI platform
+        run: |
+          mise run env:lock
+          git diff --exit-code -- mise.lock
+
+      - name: Install toolchain from mise.toml (lockfile enforced)
+        run: mise install --locked
+
+      - name: Build probes for linux/amd64 + linux/arm64
+        run: mise run bench:build
+
+      - name: Report probe sizes and sha256
+        run: mise run bench:size
+
+      - name: Upload probes
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-probes
+          path: bench/dist/
+          if-no-files-found: error
+          retention-days: 14

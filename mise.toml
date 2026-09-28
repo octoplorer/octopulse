@@ -1,0 +1,36 @@
+[tools]
+go = "1.25.7"
+node = "26.3.0"
+pnpm = "10.26.0"
+
+[tasks."env:lock"]
+description = "Refresh mise.lock for local + CI platforms (run after changing [tools])"
+run = "mise lock -p linux-x64,linux-arm64,macos-arm64"
+
+[tasks."bench:build"]
+description = "Cross-compile the resource/size probes for linux/amd64 + linux/arm64"
+run = """
+set -euo pipefail
+cd bench
+rm -rf dist && mkdir -p dist
+for arch in amd64 arm64; do
+  for cmd in base combo sched; do
+    GOOS=linux GOARCH="$arch" CGO_ENABLED=0 \
+      go build -trimpath -ldflags="-s -w" -o "dist/${cmd}-linux-${arch}" "./cmd/${cmd}"
+  done
+done
+"""
+
+[tasks."bench:size"]
+description = "Print uncompressed probe sizes and sha256"
+run = """
+set -euo pipefail
+cd bench/dist
+for f in base-linux-arm64 base-linux-amd64 combo-linux-arm64 combo-linux-amd64; do
+  printf '%-22s %9d bytes  %s\\n' "$f" "$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f")" "$(sha256sum "$f" 2>/dev/null | cut -c1-8 || shasum -a 256 "$f" | cut -c1-8)"
+done
+"""
+
+[tasks.check]
+description = "What CI runs: everything that must build without a product feature existing yet"
+depends = ["bench:build"]
