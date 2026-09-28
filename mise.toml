@@ -1,36 +1,39 @@
+# Single source of truth for the toolchain.
+#
+# The Go version is not a free choice: github.com/nicholas-fedor/shoutrrr
+# declares `go 1.27` in its go.mod from v0.20.0 on, so any older toolchain is
+# rejected as soon as that dependency enters the module graph.
 [tools]
-go = "1.25.7"
+go = "1.27.0"
 node = "26.3.0"
 pnpm = "10.26.0"
+
+[env]
+# Fail loudly instead of silently fetching a second toolchain mid-build, which
+# is what GOTOOLCHAIN=auto does and how a go.mod ends up stamped with a version
+# nobody chose.
+GOTOOLCHAIN = "local"
 
 [tasks."env:lock"]
 description = "Refresh mise.lock for local + CI platforms (run after changing [tools])"
 run = "mise lock -p linux-x64,linux-arm64,macos-arm64"
 
+# Task bodies call scripts instead of inlining multi-line shell: mise runs
+# multi-line bodies with `sh`, where `set -o pipefail` is not available (the
+# first CI run failed exactly there).
 [tasks."bench:build"]
-description = "Cross-compile the resource/size probes for linux/amd64 + linux/arm64"
-run = """
-set -euo pipefail
-cd bench
-rm -rf dist && mkdir -p dist
-for arch in amd64 arm64; do
-  for cmd in base combo sched; do
-    GOOS=linux GOARCH="$arch" CGO_ENABLED=0 \
-      go build -trimpath -ldflags="-s -w" -o "dist/${cmd}-linux-${arch}" "./cmd/${cmd}"
-  done
-done
-"""
+description = "Cross-compile the size and resource probes for linux/amd64 + linux/arm64"
+run = "bash bench/scripts/build.sh"
 
 [tasks."bench:size"]
-description = "Print uncompressed probe sizes and sha256"
-run = """
-set -euo pipefail
-cd bench/dist
-for f in base-linux-arm64 base-linux-amd64 combo-linux-arm64 combo-linux-amd64; do
-  printf '%-22s %9d bytes  %s\\n' "$f" "$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f")" "$(sha256sum "$f" 2>/dev/null | cut -c1-8 || shasum -a 256 "$f" | cut -c1-8)"
-done
-"""
+description = "Print uncompressed probe sizes and sha256 prefixes"
+run = "bash bench/scripts/size.sh"
+
+[tasks."bench:mem"]
+description = "Measure container memory of the scheduler probe (needs Docker; not run in CI)"
+run = "bash bench/scripts/mem.sh"
 
 [tasks.check]
-description = "What CI runs: everything that must build without a product feature existing yet"
+description = "What CI runs today: the lockfile is valid and every probe compiles"
 depends = ["bench:build"]
+
