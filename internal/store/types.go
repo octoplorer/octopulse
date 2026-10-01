@@ -109,13 +109,14 @@ type PageBinding struct {
 }
 
 type Aggregate struct {
-	MonitorID      string `json:"monitorId"`
-	BucketAt       int64  `json:"bucketAt"`
-	WidthMS        int64  `json:"widthMs"`
-	UpMS           int64  `json:"upMs"`
-	DownMS         int64  `json:"downMs"`
-	UnknownMS      int64  `json:"unknownMs"`
-	ExcludedMS     int64  `json:"excludedMs"`
-	LatencyTotalMS int64  `json:"latencyTotalMs"`
-	RoundCount     int64  `json:"roundCount"`
+	MonitorID            string `json:"monitorId"`
+	BucketAt             int64  `json:"bucketAt"`
+	WidthMS              int64  `json:"widthMs"`
+	UpMS                 int64  `json:"upMs"`
+	DownMS               int64  `json:"downMs"`
+	UnknownMS            int64  `json:"unknownMs"`
+	ExcludedMS           int64  `json:"excludedMs"`
+	LatencyTotalMS       int64  `json:"latencyTotalMs"`
+	RoundCount           int64  `json:"roundCount"`
+	SuccessfulRoundCount int64  `json:"successfulRoundCount"`
 }

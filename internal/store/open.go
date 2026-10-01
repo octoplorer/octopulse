@@ -18,7 +18,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const SchemaVersion int64 = 1
+const SchemaVersion int64 = 2
 
 // Open takes a runtime lock before applying migrations. It never logs the DSN.
 func Open(ctx context.Context, cfg Config) (_ *Store, err error) {

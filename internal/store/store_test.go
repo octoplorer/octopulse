@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
 	"os/exec"
@@ -13,6 +14,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/octoplorer/octopulse/db"
+	"github.com/pressly/goose/v3"
 )
 
 func TestStoreContract(t *testing.T) {
@@ -106,6 +110,61 @@ func TestStoreContract(t *testing.T) {
 					t.Fatalf("orphan round: %v", err)
 				}
 			})
+			t.Run("transactional_monitor_configuration_lock", func(t *testing.T) {
+				m := seedMonitor(t, s, "locking")
+				locked := make(chan struct{})
+				release := make(chan struct{})
+				firstDone := make(chan error, 1)
+				secondDone := make(chan error, 1)
+				secondRead := make(chan struct{})
+				go func() {
+					firstDone <- s.WithTx(ctx, func(tx *Tx) error {
+						current, err := tx.GetMonitor(ctx, m.ID)
+						if err != nil {
+							return err
+						}
+						close(locked)
+						<-release
+						current.Generation++
+						return tx.PutMonitor(ctx, current)
+					})
+				}()
+				select {
+				case <-locked:
+				case <-time.After(time.Second):
+					t.Fatal("first transaction failed to lock")
+				}
+				go func() {
+					secondDone <- s.WithTx(ctx, func(tx *Tx) error {
+						current, err := tx.GetMonitor(ctx, m.ID)
+						if err != nil {
+							return err
+						}
+						close(secondRead)
+						current.ConfigVersion++
+						current.Generation++
+						current.ConfigJSON = json.RawMessage(`{"name":"edited"}`)
+						return tx.PutMonitor(ctx, current)
+					})
+				}()
+				select {
+				case <-secondRead:
+					close(release)
+					t.Fatal("configuration read escaped held monitor lock")
+				case <-time.After(30 * time.Millisecond):
+				}
+				close(release)
+				if err := <-firstDone; err != nil {
+					t.Fatal(err)
+				}
+				if err := <-secondDone; err != nil {
+					t.Fatal(err)
+				}
+				current, err := s.GetMonitor(ctx, m.ID)
+				if err != nil || current.Generation != 3 || current.ConfigVersion != 2 || string(current.ConfigJSON) != `{"name":"edited"}` {
+					t.Fatal(current, err)
+				}
+			})
 			t.Run("unique_page_bindings_rollback", func(t *testing.T) {
 				if err = s.BindPage(ctx, PageBinding{PageID: "p1", Slug: "Status1", Domains: []string{"Status1.Example.com."}}); err != nil {
 					t.Fatal(err)
@@ -138,6 +197,14 @@ func TestStoreContract(t *testing.T) {
 				first, err := s.ClaimDeliveries(ctx, 100, 50, 10, "worker-a")
 				if err != nil || len(first) != 1 {
 					t.Fatal(first, err)
+				}
+				flights, err := s.InFlightDeliveries(ctx, m.ID, "mail")
+				if err != nil || len(flights) != 1 || flights[0].ID != "lease-job" {
+					t.Fatal(flights, err)
+				}
+				flights, err = s.InFlightDeliveries(ctx, m.ID, "other")
+				if err != nil || len(flights) != 0 {
+					t.Fatal("wrong channel in flight", flights, err)
 				}
 				before, err := s.ClaimDeliveries(ctx, 120, 50, 10, "worker-b")
 				if err != nil || len(before) != 0 {
@@ -177,6 +244,10 @@ func TestStoreContract(t *testing.T) {
 				if err != nil || d.State != "sent" {
 					t.Fatal(d, err)
 				}
+				flights, err = s.InFlightDeliveries(ctx, m.ID, "mail")
+				if err != nil || len(flights) != 0 {
+					t.Fatal("completed job in flight", flights, err)
+				}
 			})
 			t.Run("aggregate_watermark_and_retention", func(t *testing.T) {
 				m := seedMonitor(t, s, "aggregate")
@@ -186,7 +257,7 @@ func TestStoreContract(t *testing.T) {
 							return err
 						}
 					}
-					if err := tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, UpMS: 150, DownMS: 50, RoundCount: 1}); err != nil {
+					if err := tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, UpMS: 150, DownMS: 50, RoundCount: 1, SuccessfulRoundCount: 1}); err != nil {
 						return err
 					}
 					return tx.PutWatermark(ctx, "aggregate", 150)
@@ -218,7 +289,7 @@ func TestStoreContract(t *testing.T) {
 					t.Fatal("pruned beyond watermark", rounds, err)
 				}
 				aggs, err := s.Aggregates(ctx, m.ID, 0, 300000, 300000)
-				if err != nil || len(aggs) != 1 || aggs[0].UpMS != 150 {
+				if err != nil || len(aggs) != 1 || aggs[0].UpMS != 150 || aggs[0].SuccessfulRoundCount != 1 {
 					t.Fatal(aggs, err)
 				}
 			})
@@ -348,6 +419,56 @@ func TestStoreContract(t *testing.T) {
 					}
 				})
 			}
+			t.Run("schema_one_upgrade_preserves_successful_round_count", func(t *testing.T) {
+				m := seedMonitor(t, s, "upgrade")
+				if err := s.WithTx(ctx, func(tx *Tx) error {
+					if err := tx.PutRound(ctx, Round{ID: "upgrade-success", MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: 10, FinishedAt: 20, Success: true, LatencyMS: 10}); err != nil {
+						return err
+					}
+					if err := tx.PutRound(ctx, Round{ID: "upgrade-failure", MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: 30, FinishedAt: 40, LatencyMS: 10}); err != nil {
+						return err
+					}
+					return tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, RoundCount: 2, SuccessfulRoundCount: 1, LatencyTotalMS: 20})
+				}); err != nil {
+					t.Fatal(err)
+				}
+				if err := s.Close(); err != nil {
+					t.Fatal(err)
+				}
+				driver, dsn := "pgx", cfg.DSN
+				dialect := goose.DialectPostgres
+				dir := "postgres/migrations"
+				if backend == "sqlite" {
+					driver = "sqlite"
+					path, _ := sqlitePath(cfg.DSN)
+					dsn = sqliteDSN(path, false)
+					dialect = goose.DialectSQLite3
+					dir = "sqlite/migrations"
+				}
+				pool, err := sql.Open(driver, dsn)
+				if err != nil {
+					t.Fatal(err)
+				}
+				migrations, _ := fs.Sub(db.Migrations, dir)
+				provider, err := goose.NewProvider(dialect, pool, migrations)
+				if err != nil {
+					pool.Close()
+					t.Fatal(err)
+				}
+				if _, err = provider.DownTo(ctx, 1); err != nil {
+					pool.Close()
+					t.Fatal(err)
+				}
+				pool.Close()
+				s, err = Open(ctx, cfg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				aggs, err := s.Aggregates(ctx, m.ID, 0, 300000, 300000)
+				if err != nil || len(aggs) != 1 || aggs[0].SuccessfulRoundCount != 1 || aggs[0].RoundCount != 2 {
+					t.Fatal(aggs, err)
+				}
+			})
 			// A newer program may have upgraded the DB. Older binaries fail closed.
 			if err = s.Close(); err != nil {
 				t.Fatal(err)
@@ -362,7 +483,7 @@ func TestStoreContract(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = pool.ExecContext(ctx, `INSERT INTO goose_db_version(version_id,is_applied) VALUES(2,TRUE)`)
+			_, err = pool.ExecContext(ctx, fmt.Sprintf(`INSERT INTO goose_db_version(version_id,is_applied) VALUES(%d,TRUE)`, SchemaVersion+1))
 			pool.Close()
 			if err != nil {
 				t.Fatal(err)

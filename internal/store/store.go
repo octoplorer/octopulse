@@ -68,6 +68,15 @@ func (s *Store) GetMonitor(ctx context.Context, id string) (Monitor, error) {
 	return s.getMonitor(ctx, s.read, id)
 }
 func (t *Tx) GetMonitor(ctx context.Context, id string) (Monitor, error) {
+	if t.s.driver == "postgres" {
+		var m Monitor
+		var enabled int64
+		var payload string
+		err := t.tx.QueryRowContext(ctx, `SELECT id,config_version,generation,kind,enabled,interval_ms,config_json FROM monitors WHERE id=$1 FOR UPDATE`, id).Scan(&m.ID, &m.ConfigVersion, &m.Generation, &m.Kind, &enabled, &m.IntervalMS, &payload)
+		m.Enabled = enabled != 0
+		m.ConfigJSON = json.RawMessage(payload)
+		return m, mapError(err)
+	}
 	return t.s.getMonitor(ctx, t.tx, id)
 }
 func (s *Store) GetRuntime(ctx context.Context, id string) (Runtime, error) {

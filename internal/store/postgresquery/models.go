@@ -9,15 +9,16 @@ import (
 )
 
 type Aggregate struct {
-	MonitorID      string `json:"monitor_id"`
-	BucketAt       int64  `json:"bucket_at"`
-	WidthMs        int64  `json:"width_ms"`
-	UpMs           int64  `json:"up_ms"`
-	DownMs         int64  `json:"down_ms"`
-	UnknownMs      int64  `json:"unknown_ms"`
-	ExcludedMs     int64  `json:"excluded_ms"`
-	LatencyTotalMs int64  `json:"latency_total_ms"`
-	RoundCount     int64  `json:"round_count"`
+	MonitorID            string `json:"monitor_id"`
+	BucketAt             int64  `json:"bucket_at"`
+	WidthMs              int64  `json:"width_ms"`
+	UpMs                 int64  `json:"up_ms"`
+	DownMs               int64  `json:"down_ms"`
+	UnknownMs            int64  `json:"unknown_ms"`
+	ExcludedMs           int64  `json:"excluded_ms"`
+	LatencyTotalMs       int64  `json:"latency_total_ms"`
+	RoundCount           int64  `json:"round_count"`
+	SuccessfulRoundCount int64  `json:"successful_round_count"`
 }
 
 type Attempt struct {

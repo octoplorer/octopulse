@@ -8,12 +8,12 @@ import (
 )
 
 func (t *Tx) PutAggregate(ctx context.Context, a Aggregate) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO aggregates(monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(monitor_id,bucket_at,width_ms) DO UPDATE SET up_ms=excluded.up_ms,down_ms=excluded.down_ms,unknown_ms=excluded.unknown_ms,excluded_ms=excluded.excluded_ms,latency_total_ms=excluded.latency_total_ms,round_count=excluded.round_count`), a.MonitorID, a.BucketAt, a.WidthMS, a.UpMS, a.DownMS, a.UnknownMS, a.ExcludedMS, a.LatencyTotalMS, a.RoundCount)
+	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO aggregates(monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count,successful_round_count) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(monitor_id,bucket_at,width_ms) DO UPDATE SET up_ms=excluded.up_ms,down_ms=excluded.down_ms,unknown_ms=excluded.unknown_ms,excluded_ms=excluded.excluded_ms,latency_total_ms=excluded.latency_total_ms,round_count=excluded.round_count,successful_round_count=excluded.successful_round_count`), a.MonitorID, a.BucketAt, a.WidthMS, a.UpMS, a.DownMS, a.UnknownMS, a.ExcludedMS, a.LatencyTotalMS, a.RoundCount, a.SuccessfulRoundCount)
 	return mapError(err)
 }
 
 func (s *Store) Aggregates(ctx context.Context, monitorID string, start, end, widthMS int64) ([]Aggregate, error) {
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count FROM aggregates WHERE monitor_id=? AND bucket_at>=? AND bucket_at<? AND width_ms=? ORDER BY bucket_at`), monitorID, start, end, widthMS)
+	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count,successful_round_count FROM aggregates WHERE monitor_id=? AND bucket_at>=? AND bucket_at<? AND width_ms=? ORDER BY bucket_at`), monitorID, start, end, widthMS)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -21,7 +21,7 @@ func (s *Store) Aggregates(ctx context.Context, monitorID string, start, end, wi
 	result := []Aggregate{}
 	for rows.Next() {
 		var a Aggregate
-		if err = rows.Scan(&a.MonitorID, &a.BucketAt, &a.WidthMS, &a.UpMS, &a.DownMS, &a.UnknownMS, &a.ExcludedMS, &a.LatencyTotalMS, &a.RoundCount); err != nil {
+		if err = rows.Scan(&a.MonitorID, &a.BucketAt, &a.WidthMS, &a.UpMS, &a.DownMS, &a.UnknownMS, &a.ExcludedMS, &a.LatencyTotalMS, &a.RoundCount, &a.SuccessfulRoundCount); err != nil {
 			return nil, err
 		}
 		result = append(result, a)

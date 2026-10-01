@@ -91,6 +91,26 @@ func (s *Store) ListDeliveries(ctx context.Context, limit int) ([]Delivery, erro
 	return result, mapError(rows.Err())
 }
 
+// InFlightDeliveries returns all active sending jobs for one monitor/channel.
+// The worker interprets the cycle payload and lease deadline; this query does
+// not truncate the list or infer notification policy from JSON in the database.
+func (s *Store) InFlightDeliveries(ctx context.Context, monitorID, channelID string) ([]Delivery, error) {
+	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT d.id,d.event_id,d.channel_id,d.generation,d.state,d.due_at,d.attempts,d.lease_token,d.lease_until,d.last_error,d.payload FROM deliveries d JOIN events e ON e.id=d.event_id WHERE e.monitor_id=? AND d.channel_id=? AND d.state='sending' ORDER BY d.due_at,d.id`), monitorID, channelID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	defer rows.Close()
+	result := []Delivery{}
+	for rows.Next() {
+		d, err := scanDelivery(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, d)
+	}
+	return result, mapError(rows.Err())
+}
+
 // ClaimDeliveries atomically leases pending or abandoned jobs. A unique token
 // must be supplied per worker batch; completion checks both token and deadline.
 func (s *Store) ClaimDeliveries(ctx context.Context, now, leaseMS int64, limit int, token string) ([]Delivery, error) {
