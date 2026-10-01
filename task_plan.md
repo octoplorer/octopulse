@@ -32,4 +32,6 @@ Establish package/domain interfaces and delegate independent probe, persistence 
 
 ## Errors
 
-None at initialization. Tool discovery found no aube or Docker executable; install project-managed tools and find a real PostgreSQL test runtime without changing the accepted scope.
+Tool discovery found no aube or Docker executable; aube installed via mise and real PostgreSQL18.6 isolated test cluster created. Docker delivery still requires verification.
+
+- A patch adding certificate notification fields did not match a gofmt-aligned line. Verified it made no partial edits, then reapplied against the current line.
