@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+web/dist/
+bin/
+.data/
+.cache/
+*.db
+*.db-wal
+*.db-shm
+coverage.out
+playwright-report/
+test-results/
