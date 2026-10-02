@@ -1,4 +1,4 @@
-import { t } from './preferences'
+import { t } from './i18n'
 import type {
   Monitor,
   TLSConfig,
@@ -10,11 +10,11 @@ import type {
   CertificateConfig,
 } from './types'
 export const monitorTypes = [
-  { value: 'http', zh: 'HTTP / HTTPS', en: 'HTTP / HTTPS' },
-  { value: 'tcp', zh: 'TCP 连接', en: 'TCP connection' },
-  { value: 'dns', zh: 'DNS 解析', en: 'DNS resolution' },
-  { value: 'heartbeat', zh: '被动心跳', en: 'Heartbeat' },
-  { value: 'certificate', zh: '证书到期', en: 'Certificate expiry' },
+  { value: 'http', label: 'monitorTypes.httpHttps' },
+  { value: 'tcp', label: 'monitorTypes.tcpConnection' },
+  { value: 'dns', label: 'monitorTypes.dnsResolution' },
+  { value: 'heartbeat', label: 'monitorTypes.heartbeat' },
+  { value: 'certificate', label: 'monitorTypes.certificateExpiry' },
 ]
 export const emptyTLS = (): TLSConfig => ({
   enabled: false,
@@ -138,6 +138,6 @@ export function targetOf(m: Monitor) {
     (m.tcp ? `${m.tcp.host}:${m.tcp.port}` : '') ||
     m.dns?.name ||
     (m.certificate ? `${m.certificate.host}:${m.certificate.port}` : '') ||
-    'Heartbeat'
+    t('monitorTypes.heartbeat')
   )
 }

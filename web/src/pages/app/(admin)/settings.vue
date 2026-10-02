@@ -1,17 +1,20 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { reactive, ref, onMounted } from 'vue'
-import { Save, Settings, UserRound } from '@lucide/vue'
+import { Save } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { response, isAdmin, currentUser } from '../../../lib/api'
 import * as sdk from '../../../client/sdk.gen'
 import type { Settings as OrganizationSettings, User } from '../../../lib/types'
-import { t, locale, theme, timezone } from '../../../lib/preferences'
+import { resolveLocale, languageOptions } from '../../../lib/i18n'
+import { theme, timezone } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'
 import AsyncState from '../../../components/AsyncState.vue'
+const { t, locale } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: ['设置', 'Settings'] } })
+definePage({ meta: { title: 'common.settings' } })
 
 const loading = ref(true),
   saving = ref(false),
@@ -27,7 +30,7 @@ const loading = ref(true),
   }),
   profile = reactive({
     name: currentUser.value?.name || '',
-    locale: currentUser.value?.locale || locale.value,
+    locale: currentUser.value?.locale || resolveLocale(locale.value),
     timezone: currentUser.value?.timezone || timezone.value,
     oldPassword: '',
     password: '',
@@ -57,7 +60,7 @@ async function saveOrganization() {
       form,
       await response<OrganizationSettings>(sdk.updateSettings({ body: form, throwOnError: true })),
     )
-    notify(t('组织设置已保存', 'Organization settings saved'))
+    notify(t('settings.organizationSettingsSaved'))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -85,7 +88,7 @@ async function saveProfile() {
     timezone.value = profile.timezone
     profile.password = ''
     profile.oldPassword = ''
-    notify(t('个人设置已保存', 'Personal settings saved'))
+    notify(t('settings.personalSettingsSaved'))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -95,75 +98,67 @@ async function saveProfile() {
 </script>
 <template>
   <PageHeader
-    :title="t('设置', 'Settings')"
-    :description="
-      t(
-        '为组织与自己的工作习惯配置空间。',
-        'Configure the workspace for your organization and your preferences.',
-      )
-    "
+    :title="t('common.settings')"
+    :description="t('settings.configureTheWorkspaceForYourOrganizationAndYour')"
   /><AsyncState :pending="loading"
     ><div v-if="error" class="validation-error" role="alert">{{ error }}</div>
     <section class="card" un-max-w="4xl">
       <Tabs.Root v-model="tab"
         ><Tabs.List class="tabs-list"
           ><Tabs.Trigger class="tabs-trigger" value="personal">{{
-            t('个人偏好', 'Personal preferences')
+            t('settings.personalPreferences')
           }}</Tabs.Trigger
           ><Tabs.Trigger class="tabs-trigger" value="organization">{{
-            t('组织设置', 'Organization settings')
+            t('settings.organizationSettings')
           }}</Tabs.Trigger
           ><Tabs.Trigger v-if="isAdmin()" class="tabs-trigger" value="retention">{{
-            t('数据留存', 'Data retention')
+            t('settings.dataRetention')
           }}</Tabs.Trigger></Tabs.List
         ><Tabs.Content value="personal"
           ><form @submit.prevent="saveProfile">
             <div class="form-section">
-              <h2>{{ t('显示偏好', 'Display preferences') }}</h2>
+              <h2>{{ t('settings.displayPreferences') }}</h2>
               <p class="muted">
-                {{
-                  t(
-                    '个人时区用于展示，不改变探测与存储的 UTC 时间。',
-                    'Your display time zone does not change UTC collection or storage.',
-                  )
-                }}
+                {{ t('settings.yourDisplayTimeZoneDoesNotChangeUtc') }}
               </p>
               <div class="form-grid">
-                <Field :label="t('显示名称', 'Display name')"
-                  ><input v-model="profile.name" /></Field
-                ><Field :label="t('语言', 'Language')"
+                <Field :label="t('common.displayName')"><input v-model="profile.name" /></Field
+                ><Field :label="t('common.language')"
                   ><select v-model="profile.locale">
-                    <option value="zh-CN">简体中文</option>
-                    <option value="en">English</option>
+                    <option
+                      v-for="language in languageOptions"
+                      :key="language.value"
+                      :value="language.value"
+                    >
+                      {{ language.label }}
+                    </option>
                   </select></Field
-                ><Field :label="t('显示时区', 'Display time zone')"
+                ><Field :label="t('common.displayTimeZone')"
                   ><input v-model="profile.timezone" placeholder="Asia/Shanghai" required /></Field
-                ><Field :label="t('后台深浅色', 'Admin color scheme')"
+                ><Field :label="t('settings.adminColorScheme')"
                   ><select v-model="theme">
-                    <option value="system">{{ t('跟随系统', 'System') }}</option>
-                    <option value="light">{{ t('浅色', 'Light') }}</option>
-                    <option value="dark">{{ t('深色', 'Dark') }}</option>
+                    <option value="system">{{ t('common.system') }}</option>
+                    <option value="light">{{ t('common.light') }}</option>
+                    <option value="dark">{{ t('common.dark') }}</option>
                   </select></Field
                 >
               </div>
             </div>
             <div class="form-section">
-              <h2>{{ t('修改密码', 'Change password') }}</h2>
+              <h2>{{ t('settings.changePassword') }}</h2>
               <p class="muted">
-                {{ t('留空表示保留当前密码。', 'Leave empty to keep your password.') }}
+                {{ t('settings.leaveEmptyToKeepYourPassword') }}
               </p>
               <div class="form-grid">
-                <Field :label="t('当前密码', 'Current password')"
+                <Field :label="t('settings.currentPassword')"
                   ><input
                     v-model="profile.oldPassword"
                     type="password"
                     autocomplete="current-password"
                     :required="!!profile.password" /></Field
                 ><Field
-                  :label="t('新密码', 'New password')"
-                  :hint="
-                    t('至少 12 字符，最多 72 字节。', 'At least 12 characters, up to 72 bytes.')
-                  "
+                  :label="t('settings.newPassword')"
+                  :hint="t('common.atLeast12CharactersUpTo72Bytes')"
                   ><input
                     v-model="profile.password"
                     type="password"
@@ -174,7 +169,7 @@ async function saveProfile() {
               </div>
               <div class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('保存个人设置', 'Save preferences') }}
+                  <Save :size="14" />{{ t('settings.savePreferences') }}
                 </button>
               </div>
             </div>
@@ -182,39 +177,29 @@ async function saveProfile() {
         ><Tabs.Content value="organization"
           ><form @submit.prevent="saveOrganization">
             <div class="form-section">
-              <h2>{{ t('组织信息', 'Organization') }}</h2>
+              <h2>{{ t('settings.organization') }}</h2>
               <p class="muted">
-                {{
-                  t(
-                    '新账号与维护配置以组织设置为默认值。',
-                    'Organization settings provide defaults for accounts and maintenance.',
-                  )
-                }}
+                {{ t('settings.organizationSettingsProvideDefaultsForAccountsAndMaintenance') }}
               </p>
               <div class="form-grid">
-                <Field :label="t('组织名称', 'Organization name')"
+                <Field :label="t('common.organizationName')"
                   ><input v-model="form.organizationName" :disabled="!isAdmin()" required /></Field
-                ><Field :label="t('组织时区', 'Organization time zone')"
+                ><Field :label="t('common.organizationTimeZone')"
                   ><input v-model="form.timezone" :disabled="!isAdmin()" required /></Field
-                ><Field :label="t('默认语言', 'Default language')"
+                ><Field :label="t('settings.defaultLanguage')"
                   ><select v-model="form.locale" :disabled="!isAdmin()">
-                    <option value="zh-CN">简体中文</option>
-                    <option value="en">English</option>
+                    <option
+                      v-for="language in languageOptions"
+                      :key="language.value"
+                      :value="language.value"
+                    >
+                      {{ language.label }}
+                    </option>
                   </select></Field
                 ><Field
                   class="span-full"
-                  :label="
-                    t(
-                      '可绑定状态页的域名（每行一个）',
-                      'Allowed status page domains (one per line)',
-                    )
-                  "
-                  :hint="
-                    t(
-                      '仅主机名，不含协议和路径；先设置 DNS 与反代 HTTPS。',
-                      'Hostnames only, without scheme or path. Configure DNS and reverse-proxy HTTPS first.',
-                    )
-                  "
+                  :label="t('settings.allowedStatusPageDomainsOnePerLine')"
+                  :hint="t('settings.hostnamesOnlyWithoutSchemeOrPathConfigureDns')"
                 >
                   <textarea
                     v-model="domains"
@@ -225,7 +210,7 @@ async function saveProfile() {
               </div>
               <div v-if="isAdmin()" class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('保存组织设置', 'Save organization') }}
+                  <Save :size="14" />{{ t('settings.saveOrganization') }}
                 </button>
               </div>
             </div>
@@ -233,38 +218,30 @@ async function saveProfile() {
         ><Tabs.Content v-if="isAdmin()" value="retention"
           ><form @submit.prevent="saveOrganization">
             <div class="form-section">
-              <h2>{{ t('历史数据留存', 'History retention') }}</h2>
+              <h2>{{ t('settings.historyRetention') }}</h2>
               <p class="muted">
-                {{
-                  t(
-                    '调整原始记录与聚合数据的保存窗口。清理任务分批运行。',
-                    'Configure raw and aggregated history windows. Cleanup runs in batches.',
-                  )
-                }}
+                {{ t('settings.configureRawAndAggregatedHistoryWindowsCleanupRuns') }}
               </p>
               <div class="form-grid">
-                <Field :label="t('原始轮次（天）', 'Raw rounds (days)')"
+                <Field :label="t('settings.rawRoundsDays')"
                   ><input
                     v-model.number="form.retention.roundDays"
                     type="number"
                     min="1"
                     required /></Field
-                ><Field :label="t('探测尝试（天）', 'Attempt details (days)')"
+                ><Field :label="t('settings.attemptDetailsDays')"
                   ><input
                     v-model.number="form.retention.attemptDays"
                     type="number"
                     min="1"
                     required /></Field
-                ><Field :label="t('5 分钟聚合（天）', '5-minute aggregates (days)')"
+                ><Field :label="t('settings.5MinuteAggregatesDays')"
                   ><input
                     v-model.number="form.retention.fiveMinuteDays"
                     type="number"
                     min="1"
                     required /></Field
-                ><Field
-                  :label="
-                    t('小时聚合与状态区间（月）', 'Hourly aggregates & state intervals (months)')
-                  "
+                ><Field :label="t('settings.hourlyAggregatesStateIntervalsMonths')"
                   ><input
                     v-model.number="form.retention.historyMonths"
                     type="number"
@@ -273,16 +250,11 @@ async function saveProfile() {
                 /></Field>
               </div>
               <p class="note" un-mt="6">
-                {{
-                  t(
-                    '默认不保存完整请求/响应正文或秘密头。聚合保留时间权重与覆盖信息，统计不能用样本数替代状态时长。',
-                    'Complete request/response bodies and secret headers are not stored by default. Aggregates retain time weights and coverage instead of substituting sample counts for duration.',
-                  )
-                }}
+                {{ t('settings.completeRequestResponseBodiesAndSecretHeadersAre') }}
               </p>
               <div class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('保存留存策略', 'Save retention') }}
+                  <Save :size="14" />{{ t('settings.saveRetention') }}
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -22,7 +23,7 @@ import * as sdk from '../../../../../client/sdk.gen'
 import { getMonitorQuery, getMonitorHistoryQuery } from '../../../../../client/@pinia/colada.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { targetOf } from '../../../../../lib/monitor'
-import { t, formatDate, formatPercent, duration } from '../../../../../lib/preferences'
+import { formatDate, formatPercent, duration } from '../../../../../lib/preferences'
 import { notify, errorText } from '../../../../../lib/notices'
 import { useIntervalFn, useClipboard } from '@vueuse/core'
 import PageHeader from '../../../../../components/PageHeader.vue'
@@ -31,8 +32,9 @@ import AsyncState from '../../../../../components/AsyncState.vue'
 import Sparkline from '../../../../../components/Sparkline.vue'
 import EmptyState from '../../../../../components/EmptyState.vue'
 import Modal from '../../../../../components/Modal.vue'
+const { t, n } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: ['监控详情', 'Monitor details'] } })
+definePage({ meta: { title: 'navigation.monitorDetails' } })
 
 const route = useRoute('/app/(admin)/monitors/[id]/'),
   router = useRouter(),
@@ -71,19 +73,14 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
   try {
     if (action === 'check') {
       await sdk.checkMonitor({ path: { id: monitor.value.id }, throwOnError: true })
-      notify(
-        t(
-          '检查请求已接受，结果将在完成后更新。',
-          'Check request accepted. Results update when the round finishes.',
-        ),
-      )
+      notify(t('monitorDetails.checkRequestAcceptedResultsUpdateWhenTheRound'))
     } else if (action === 'toggle') {
       await sdk.updateMonitor({
         path: { id: monitor.value.id },
         body: { ...monitor.value, enabled: !monitor.value.enabled },
         throwOnError: true,
       })
-      notify(t('监控状态已更新', 'Monitor updated'))
+      notify(t('monitorDetails.monitorUpdated'))
     } else if (action === 'rotate') {
       const data = await response<{ token: string; url: string }>(
         sdk.rotateHeartbeat({ path: { id: monitor.value.id }, throwOnError: true }),
@@ -93,10 +90,10 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
         data.url || `/api/heartbeat/${monitor.value.id}/${data.token}`,
         location.origin,
       ).href
-      notify(t('新密钥只在此显示一次，请保存。', 'Save this token. It is shown only once.'))
+      notify(t('monitorDetails.saveThisTokenItIsShownOnlyOnce'))
     } else {
       await sdk.deleteMonitor({ path: { id: monitor.value.id }, throwOnError: true })
-      notify(t('监控项已删除', 'Monitor deleted'))
+      notify(t('monitorDetails.monitorDeleted'))
       router.push('/app/monitors')
       return
     }
@@ -118,27 +115,29 @@ function viewRound(round: Round) {
     ><template v-if="monitor"
       ><PageHeader :title="monitor.name" :description="targetOf(monitor)"
         ><RouterLink to="/app/monitors" class="button ghost"
-          ><ArrowLeft :size="14" />{{ t('列表', 'All monitors') }}</RouterLink
+          ><ArrowLeft :size="14" />{{ t('monitorDetails.allMonitors') }}</RouterLink
         ><template v-if="canEdit()"
           ><button class="button" :disabled="busy" @click="act('toggle')">
             <Pause v-if="monitor.enabled" :size="14" /><Play v-else :size="14" />{{
-              monitor.enabled ? t('暂停', 'Pause') : t('启用', 'Enable')
+              monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
             }}</button
           ><RouterLink :to="`/app/monitors/${monitor.id}/edit`" class="button"
-            ><Pencil :size="14" />{{ t('编辑', 'Edit') }}</RouterLink
+            ><Pencil :size="14" />{{ t('common.edit') }}</RouterLink
           ><button
             v-if="monitor.type !== 'heartbeat'"
             class="button primary"
             :disabled="busy || !monitor.enabled"
             @click="act('check')"
           >
-            <RefreshCw :size="14" />{{ t('立即检查', 'Check now') }}
+            <RefreshCw :size="14" />{{ t('monitorDetails.checkNow') }}
           </button></template
         ></PageHeader
       >
       <div class="stats-grid">
         <div class="card stat-card">
-          <div class="stat-label">{{ t('当前状态', 'Current state') }}<Activity :size="15" /></div>
+          <div class="stat-label">
+            {{ t('monitorDetails.currentState') }}<Activity :size="15" />
+          </div>
           <div un-mt="5" un-mb="4">
             <StateBadge
               :state="monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state"
@@ -151,8 +150,8 @@ function viewRound(round: Round) {
           <div class="stat-label">
             {{
               monitor.certificate
-                ? t('证书到期时间', 'Certificate expires')
-                : t('有效时长可用率', 'Duration uptime')
+                ? t('common.certificateExpires')
+                : t('monitorDetails.durationUptime')
             }}<CheckCircle2 :size="15" />
           </div>
           <div class="stat-value" :style="monitor.certificate ? { fontSize: '16px' } : undefined">
@@ -164,10 +163,10 @@ function viewRound(round: Round) {
           </div>
           <p class="stat-meta">
             <template v-if="monitor.certificate">{{
-              t('证书风险不计入可用率', 'Certificate risk is excluded from uptime')
+              t('common.certificateRiskIsExcludedFromUptime')
             }}</template
             ><template v-else
-              >{{ t('有效统计时长', 'Effective duration') }}
+              >{{ t('monitorDetails.effectiveDuration') }}
               {{ duration(availability?.effectiveMs) }}</template
             >
           </p>
@@ -176,15 +175,15 @@ function viewRound(round: Round) {
           <div class="stat-label">
             {{
               monitor.certificate
-                ? t('剩余有效期', 'Days remaining')
-                : t('观测覆盖率', 'Observation coverage')
+                ? t('monitorDetails.daysRemaining')
+                : t('monitorDetails.observationCoverage')
             }}<ShieldCheck :size="15" />
           </div>
           <div class="stat-value">
             {{
               monitor.certificate
                 ? monitor.certificate.expiresAt
-                  ? monitor.certificate.daysRemaining.toFixed(1)
+                  ? n(monitor.certificate.daysRemaining, 'decimal')
                   : '—'
                 : formatPercent(availability?.coverage)
             }}
@@ -192,15 +191,17 @@ function viewRound(round: Round) {
           <p class="stat-meta">
             {{
               monitor.certificate
-                ? t('提醒阈值（天）', 'Warning thresholds (days)') +
-                  ': ' +
-                  (monitor.certificate.warningDays || []).join(', ')
-                : t('不将缺失数据计作正常', 'Missing data never counts as Up')
+                ? t('monitorDetails.warningThresholdsSummary', {
+                    thresholds: (monitor.certificate.warningDays || [])
+                      .map((days) => n(days))
+                      .join(', '),
+                  })
+                : t('monitorDetails.missingDataNeverCountsAsUp')
             }}
           </p>
         </div>
         <div class="card stat-card">
-          <div class="stat-label">{{ t('最近延迟', 'Latest latency') }}<Clock :size="15" /></div>
+          <div class="stat-label">{{ t('monitorDetails.latestLatency') }}<Clock :size="15" /></div>
           <div class="stat-value">
             {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
           </div>
@@ -213,8 +214,8 @@ function viewRound(round: Round) {
             s
             {{
               monitor.type === 'heartbeat'
-                ? t('预期周期', 'expected period')
-                : t('检查间隔', 'check interval')
+                ? t('monitorDetails.expectedPeriod')
+                : t('monitorDetails.checkInterval')
             }}
           </p>
         </div>
@@ -222,47 +223,41 @@ function viewRound(round: Round) {
       <div v-if="monitor.type === 'heartbeat'" class="card card-body" un-mb="6">
         <div un-flex="~ items-center justify-between gap-4">
           <div>
-            <h2>{{ t('心跳上报', 'Heartbeat reporting') }}</h2>
+            <h2>{{ t('monitorDetails.heartbeatReporting') }}</h2>
             <p class="muted" un-mt="2">
-              {{
-                t(
-                  '密钥不会回读。轮换后旧密钥立即失效。',
-                  'Tokens cannot be read back. Rotation invalidates the previous token.',
-                )
-              }}
+              {{ t('monitorDetails.tokensCannotBeReadBackRotationInvalidatesThe') }}
             </p>
           </div>
           <button v-if="canEdit()" class="button" :disabled="busy" @click="act('rotate')">
-            <KeyRound :size="14" />{{ t('生成 / 轮换密钥', 'Generate / rotate token') }}
+            <KeyRound :size="14" />{{ t('monitorDetails.generateRotateToken') }}
           </button>
         </div>
         <div v-if="monitor.heartbeat?.lastReceivedAt" class="note" un-mt="4">
-          {{ t('最近上报', 'Last report') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
-          {{ monitor.heartbeat.lastSuccess ? t('成功', 'Up') : t('失败', 'Down') }}
+          {{ t('monitorDetails.lastReport') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
+          {{ monitor.heartbeat.lastSuccess ? t('monitorDetails.up') : t('monitorDetails.down') }}
           <p v-if="monitor.heartbeat.description" un-mt="2">{{ monitor.heartbeat.description }}</p>
         </div>
         <div v-if="heartbeatToken" class="heartbeat-url">
           <code>{{ heartbeatUrl }}</code
           ><button class="button small ghost" @click="copy(heartbeatUrl)">
-            <Copy :size="13" />{{ copied ? t('已复制', 'Copied') : t('复制', 'Copy') }}
+            <Copy :size="13" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
           </button>
           <p class="muted" un-mt="3">
-            {{
-              t(
-                'POST 上报：成功 {"status":"up"}；失败 {"status":"down"}，可附 description。',
-                'POST reports: {"status":"up"} or {"status":"down"}, with optional description.',
-              )
-            }}
+            {{ t('monitorDetails.postReportsStatusUpOrStatusDownWith') }}
           </p>
         </div>
       </div>
       <div v-if="monitor.certificate" class="alert-strip">
         <ShieldCheck :size="16" /><span
-          >{{ t('证书到期时间', 'Certificate expires') }}
-          {{ formatDate(monitor.certificate.expiresAt) }} · {{ t('剩余', 'Remaining') }}
-          {{ monitor.certificate.expiresAt ? monitor.certificate.daysRemaining.toFixed(1) : '—' }}
-          {{ t('天', 'days') }} ·
-          {{ t('证书风险不计入可用率', 'Certificate risk is excluded from uptime') }}</span
+          >{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
+          {{
+            t('monitorDetails.remainingDays', {
+              days: monitor.certificate.expiresAt
+                ? n(monitor.certificate.daysRemaining, 'decimal')
+                : '—',
+            })
+          }}
+          · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span
         >
       </div>
       <div class="detail-layout">
@@ -270,26 +265,26 @@ function viewRound(round: Round) {
           <Tabs.Root v-model="tab"
             ><Tabs.List class="tabs-list"
               ><Tabs.Trigger class="tabs-trigger" value="history">{{
-                t('历史与趋势', 'History & trends')
+                t('monitorDetails.historyTrends')
               }}</Tabs.Trigger
               ><Tabs.Trigger class="tabs-trigger" value="configuration">{{
-                t('配置摘要', 'Configuration')
+                t('monitorDetails.configuration')
               }}</Tabs.Trigger>
               <div un-ml="auto" class="historical-period">
                 <select
                   v-model="period"
                   un-w="auto!"
-                  :aria-label="t('统计窗口', 'Statistics window')"
+                  :aria-label="t('monitorDetails.statisticsWindow')"
                 >
-                  <option value="24h">24 {{ t('小时', 'hours') }}</option>
-                  <option value="7d">7 {{ t('天', 'days') }}</option>
-                  <option value="30d">30 {{ t('天', 'days') }}</option>
+                  <option value="24h">{{ t('counts.hours', { count: 24 }, 24) }}</option>
+                  <option value="7d">{{ t('counts.days', { count: 7 }, 7) }}</option>
+                  <option value="30d">{{ t('counts.days', { count: 30 }, 30) }}</option>
                 </select>
               </div></Tabs.List
             ><Tabs.Content value="history"
               ><div class="card-body">
                 <div un-flex="~ justify-between items-center" un-mb="4">
-                  <h3>{{ t('响应延迟', 'Response latency') }}</h3>
+                  <h3>{{ t('monitorDetails.responseLatency') }}</h3>
                   <span class="mini-label">ms</span>
                 </div>
                 <Sparkline
@@ -299,12 +294,7 @@ function viewRound(round: Round) {
                   :height="125"
                 />
                 <p class="field-hint" un-mt="2">
-                  {{
-                    t(
-                      '来源：实际检查轮次；缺失观测不插值。',
-                      'Source: actual check rounds. Missing observations are not interpolated.',
-                    )
-                  }}
+                  {{ t('monitorDetails.sourceActualCheckRoundsMissingObservationsAreNot') }}
                 </p>
               </div>
               <AsyncState
@@ -313,22 +303,17 @@ function viewRound(round: Round) {
                 @retry="history.refresh()"
                 ><EmptyState
                   v-if="!history.data.value?.rounds.length"
-                  :title="t('暂无检查记录', 'No check records yet')"
-                  :description="
-                    t(
-                      '首次检查完成后显示轮次与诊断。',
-                      'Rounds and diagnostics appear after the first check.',
-                    )
-                  "
+                  :title="t('monitorDetails.noCheckRecordsYet')"
+                  :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')"
                 />
                 <div v-else class="table-wrap">
                   <table class="data-table">
                     <thead>
                       <tr>
-                        <th>{{ t('检查时间', 'Checked at') }}</th>
-                        <th>{{ t('结果', 'Result') }}</th>
-                        <th>{{ t('尝试', 'Attempts') }}</th>
-                        <th>{{ t('耗时', 'Duration') }}</th>
+                        <th>{{ t('monitorDetails.checkedAt') }}</th>
+                        <th>{{ t('monitorDetails.result') }}</th>
+                        <th>{{ t('monitorDetails.attempts') }}</th>
+                        <th>{{ t('monitorDetails.duration') }}</th>
                         <th />
                       </tr>
                     </thead>
@@ -340,7 +325,7 @@ function viewRound(round: Round) {
                         <td>{{ duration(round.latencyMs) }}</td>
                         <td>
                           <button class="button small ghost" @click="viewRound(round)">
-                            {{ t('诊断', 'Diagnostics') }}
+                            {{ t('monitorDetails.diagnostics') }}
                           </button>
                         </td>
                       </tr>
@@ -357,44 +342,44 @@ function viewRound(round: Round) {
         </section>
         <aside>
           <section class="card card-body">
-            <h2 un-mb="6">{{ t('监控信息', 'Monitor information') }}</h2>
+            <h2 un-mb="6">{{ t('monitorDetails.monitorInformation') }}</h2>
             <dl class="definition-list">
               <div>
-                <dt>{{ t('类型', 'Type') }}</dt>
+                <dt>{{ t('monitorDetails.type') }}</dt>
                 <dd>{{ monitor.type.toUpperCase() }}</dd>
               </div>
               <div>
-                <dt>{{ t('分组', 'Group') }}</dt>
+                <dt>{{ t('common.group') }}</dt>
                 <dd>{{ monitor.group || '—' }}</dd>
               </div>
               <div v-if="monitor.type !== 'heartbeat'">
-                <dt>{{ t('检查间隔', 'Check interval') }}</dt>
+                <dt>{{ t('monitorDetails.checkInterval2') }}</dt>
                 <dd>{{ monitor.intervalSeconds }} s</dd>
               </div>
               <div v-if="monitor.type !== 'heartbeat'">
-                <dt>{{ t('探测超时', 'Attempt timeout') }}</dt>
+                <dt>{{ t('monitorDetails.attemptTimeout') }}</dt>
                 <dd>{{ monitor.timeoutSeconds }} s</dd>
               </div>
               <div v-if="['http', 'tcp', 'dns'].includes(monitor.type)">
-                <dt>{{ t('追加重试上限', 'Additional retry limit') }}</dt>
+                <dt>{{ t('monitorDetails.additionalRetryLimit') }}</dt>
                 <dd>{{ monitor.retries }}</dd>
               </div>
               <div v-if="['http', 'tcp', 'dns'].includes(monitor.type)">
-                <dt>{{ t('失败 / 恢复阈值', 'Failure / recovery threshold') }}</dt>
+                <dt>{{ t('monitorDetails.failureRecoveryThreshold') }}</dt>
                 <dd>{{ monitor.failureThreshold }} / {{ monitor.recoveryThreshold }}</dd>
               </div>
               <template v-if="monitor.heartbeat"
                 ><div>
-                  <dt>{{ t('预期周期', 'Expected period') }}</dt>
+                  <dt>{{ t('monitorDetails.expectedPeriod2') }}</dt>
                   <dd>{{ monitor.heartbeat.periodSeconds }} s</dd>
                 </div>
                 <div>
-                  <dt>{{ t('宽限时间', 'Grace period') }}</dt>
+                  <dt>{{ t('monitorDetails.gracePeriod') }}</dt>
                   <dd>{{ monitor.heartbeat.graceSeconds }} s</dd>
                 </div></template
               >
               <div>
-                <dt>{{ t('创建时间', 'Created') }}</dt>
+                <dt>{{ t('common.created') }}</dt>
                 <dd>{{ formatDate(monitor.createdAt) }}</dd>
               </div>
             </dl>
@@ -404,35 +389,25 @@ function viewRound(round: Round) {
             </div>
           </section>
           <p class="note" un-mt="5">
-            {{
-              t(
-                '可用率基于确认后的状态时长。Unknown、暂停和维护时间被排除，零有效数据时不会显示 100%。',
-                'Uptime uses confirmed state duration. Unknown, paused, and maintenance time are excluded; zero observations never show 100%.',
-              )
-            }}
+            {{ t('monitorDetails.uptimeUsesConfirmedStateDurationUnknownPausedAnd') }}
           </p>
           <button v-if="canEdit()" class="button danger" un-mt="5" @click="confirmDelete = true">
-            <Trash2 :size="14" />{{ t('删除监控项', 'Delete monitor') }}
+            <Trash2 :size="14" />{{ t('common.deleteMonitor') }}
           </button>
         </aside>
       </div></template
     ></AsyncState
   ><Modal
     v-model:open="confirmDelete"
-    :title="t('删除监控项', 'Delete monitor')"
-    :description="
-      t(
-        '此操作会删除监控配置。请先确认状态页和通知中不再需要它。',
-        'This deletes the monitor configuration. Confirm it is no longer needed on status pages or notifications.',
-      )
-    "
+    :title="t('common.deleteMonitor')"
+    :description="t('monitorDetails.thisDeletesTheMonitorConfigurationConfirmItIs')"
     ><template #footer
-      ><button class="button" @click="confirmDelete = false">{{ t('取消', 'Cancel') }}</button
+      ><button class="button" @click="confirmDelete = false">{{ t('common.cancel') }}</button
       ><button class="button danger" :disabled="busy" @click="act('delete')">
-        {{ t('确认删除', 'Delete') }}
+        {{ t('monitorDetails.delete') }}
       </button></template
     ></Modal
-  ><Modal v-model:open="diagnosticsOpen" :title="t('检查轮次诊断', 'Round diagnostics')" wide
+  ><Modal v-model:open="diagnosticsOpen" :title="t('monitorDetails.roundDiagnostics')" wide
     ><template v-if="selectedRound"
       ><p class="muted" un-mb="4">
         {{ formatDate(selectedRound.startedAt) }} · {{ duration(selectedRound.latencyMs) }}
@@ -444,7 +419,7 @@ function viewRound(round: Round) {
         un-mb="4"
       >
         <div un-flex="~ items-center justify-between">
-          <h3>{{ t('尝试', 'Attempt') }} {{ attempt.number }}</h3>
+          <h3>{{ t('monitorDetails.attemptNumber', { number: n(attempt.number) }) }}</h3>
           <StateBadge :state="attempt.success ? 'up' : 'down'" />
         </div>
         <p v-if="attempt.error" class="inline-error">{{ attempt.error }}</p>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { Plus, X } from '@lucide/vue'
 import type { NameValue, Secret } from '../lib/types'
-import { t } from '../lib/preferences'
+
 import SecretSelect from './SecretSelect.vue'
+const { t } = useI18n({ useScope: 'global' })
+
 const values = defineModel<NameValue[]>({ required: true })
 defineProps<{ secrets: Secret[]; nameLabel?: string }>()
 </script>
@@ -17,27 +20,25 @@ defineProps<{ secrets: Secret[]; nameLabel?: string }>()
     >
       <input
         v-model="item.name"
-        :placeholder="nameLabel || t('名称', 'Name')"
-        :aria-label="t('名称', 'Name')"
+        :placeholder="nameLabel || t('common.name')"
+        :aria-label="t('common.name')"
       /><input
         v-if="!item.secretRef"
         v-model="item.value"
-        :placeholder="t('值', 'Value')"
-        :aria-label="t('值', 'Value')"
-      /><span v-else class="note" un-text="10px">{{
-        t('值来自秘密引用', 'Value from secret')
-      }}</span
+        :placeholder="t('common.value')"
+        :aria-label="t('common.value')"
+      /><span v-else class="note" un-text="10px">{{ t('keyValues.valueFromSecret') }}</span
       ><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
         type="button"
         class="icon-button"
         @click="values.splice(index, 1)"
-        :aria-label="t('移除字段', 'Remove field')"
+        :aria-label="t('keyValues.removeField')"
       >
         <X :size="15" />
       </button>
     </div>
     <button type="button" class="button small ghost" @click="values.push({ name: '', value: '' })">
-      <Plus :size="13" />{{ t('添加字段', 'Add field') }}
+      <Plus :size="13" />{{ t('keyValues.addField') }}
     </button>
   </div>
 </template>

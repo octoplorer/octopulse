@@ -2,7 +2,8 @@ import { ref } from 'vue'
 import { client } from '../client/client.gen'
 import * as sdk from '../client/sdk.gen'
 import { normalizeCollections } from './normalize'
-import { locale, timezone } from './preferences'
+import { timezone } from './preferences'
+import { locale, t } from './i18n'
 import type { User } from './types'
 export const currentUser = ref<User | null>(null)
 let csrfToken = ''
@@ -37,7 +38,7 @@ client.interceptors.error.use((error) => {
     title?: string
     errors?: { message?: string; location?: string }[]
   }
-  let message = problem.detail || problem.title || 'Request failed'
+  let message = problem.detail || problem.title || t('errors.requestFailed')
   if (problem.errors?.length)
     message += `: ${problem.errors.map((e) => `${e.location || ''} ${e.message || ''}`).join('; ')}`
   return new Error(message)

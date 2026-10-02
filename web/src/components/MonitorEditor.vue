@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Save, ArrowLeft, Plus, X, Upload } from '@lucide/vue'
+import { Save, ArrowLeft, X, Upload } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { response, canEdit } from '../lib/api'
 import * as sdk from '../client/sdk.gen'
@@ -16,7 +17,7 @@ import {
   emptyCertificate,
 } from '../lib/monitor'
 import { clone, parseJSON, splitValues, defaults } from '../lib/form'
-import { t } from '../lib/preferences'
+
 import { errorText, notify } from '../lib/notices'
 import PageHeader from './PageHeader.vue'
 import Field from './Field.vue'
@@ -26,6 +27,8 @@ import SecretSelect from './SecretSelect.vue'
 import TLSFields from './TLSFields.vue'
 import ConnectionFields from './ConnectionFields.vue'
 import AsyncState from './AsyncState.vue'
+const { t } = useI18n({ useScope: 'global' })
+
 const route = useRoute<'/app/(admin)/monitors/new' | '/app/(admin)/monitors/[id]/edit'>(),
   router = useRouter(),
   id = computed(() => ('id' in route.params ? route.params.id : undefined)),
@@ -134,22 +137,17 @@ async function save() {
       a.textContains = contains.value.split('\n').filter(Boolean)
       a.textNotContains = notContains.value.split('\n').filter(Boolean)
       a.regex = regex.value.split('\n').filter(Boolean)
-      a.headers = parseJSON(headerAssertions.value, t('响应头断言', 'Header assertions'))
-      a.json = parseJSON(jsonAssertions.value, t('JSON 断言', 'JSON assertions'))
+      a.headers = parseJSON(headerAssertions.value, t('monitorEditor.headerAssertions'))
+      a.json = parseJSON(jsonAssertions.value, t('monitorEditor.jsonAssertions'))
     }
     if (new Blob([JSON.stringify(payload)]).size > 8 * 1024 * 1024)
-      throw new Error(
-        t(
-          '监控配置请求总量不能超过 8 MiB',
-          'The monitor configuration request may not exceed 8 MiB',
-        ),
-      )
+      throw new Error(t('monitorEditor.theMonitorConfigurationRequestMayNotExceed8'))
     const result = await response<Monitor>(
       editing.value
         ? sdk.updateMonitor({ path: { id: form.id }, body: payload, throwOnError: true })
         : sdk.createMonitor({ body: payload, throwOnError: true }),
     )
-    notify(t('监控项已保存', 'Monitor saved'))
+    notify(t('monitorEditor.monitorSaved'))
     router.push(`/app/monitors/${result.id}`)
   } catch (e) {
     error.value = errorText(e)
@@ -166,10 +164,7 @@ async function addFile(event: Event) {
       0,
     )
     if (file.size + existingBytes > 4 * 1024 * 1024) {
-      notify(
-        t('Multipart 文件原始总量最多 4 MiB', 'Multipart files may total at most 4 MiB'),
-        'error',
-      )
+      notify(t('monitorEditor.multipartFilesMayTotalAtMost4Mib'), 'error')
       continue
     }
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -202,73 +197,51 @@ const charsetOptions = [
 </script>
 <template>
   <PageHeader
-    :title="editing ? t('编辑监控项', 'Edit monitor') : t('创建监控项', 'Create monitor')"
-    :description="
-      t(
-        '定义检查目标、成功条件与故障确认策略。',
-        'Define the target, success criteria, and confirmation policy.',
-      )
-    "
+    :title="editing ? t('monitorEditor.editMonitor') : t('common.createMonitor')"
+    :description="t('monitorEditor.defineTheTargetSuccessCriteriaAndConfirmationPolicy')"
     ><RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'" class="button"
-      ><ArrowLeft :size="15" />{{ t('返回', 'Back') }}</RouterLink
+      ><ArrowLeft :size="15" />{{ t('monitorEditor.back') }}</RouterLink
     ><button class="button primary" :disabled="saving || !canEdit()" form="monitor-form">
-      <Save :size="15" />{{ saving ? t('保存中…', 'Saving…') : t('保存监控项', 'Save monitor') }}
+      <Save :size="15" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
     </button></PageHeader
   ><AsyncState :pending="loading"
     ><form id="monitor-form" @submit.prevent="save">
       <div v-if="error" class="validation-error" role="alert">{{ error }}</div>
       <section class="card" un-mb="6">
         <div class="form-section">
-          <h2>{{ t('基本信息', 'Basic information') }}</h2>
+          <h2>{{ t('monitorEditor.basicInformation') }}</h2>
           <p class="muted">
-            {{
-              t(
-                '使用容易辨识的名称，将相关服务整理到同一分组。',
-                'Use a recognizable name and group related services together.',
-              )
-            }}
+            {{ t('monitorEditor.useARecognizableNameAndGroupRelatedServices') }}
           </p>
           <div class="form-grid">
-            <Field :label="t('显示名称', 'Display name')"
+            <Field :label="t('common.displayName')"
               ><input
                 v-model="form.name"
                 required
                 maxlength="200"
-                placeholder="Production API" /></Field
+                :placeholder="t('monitorEditor.namePlaceholder')" /></Field
             ><Field
-              :label="t('监控类型', 'Monitor type')"
+              :label="t('monitorEditor.monitorType')"
               :hint="
-                editing
-                  ? t(
-                      '监控类型创建后固定；切换类型请新建监控项。',
-                      'The monitor type is fixed after creation. Create a new monitor to switch type.',
-                    )
-                  : undefined
+                editing ? t('monitorEditor.theMonitorTypeIsFixedAfterCreationCreate') : undefined
               "
               ><select v-model="form.type" :disabled="editing">
                 <option v-for="type in monitorTypes" :key="type.value" :value="type.value">
-                  {{ t(type.zh, type.en) }}
+                  {{ t(type.label) }}
                 </option>
               </select></Field
-            ><Field :label="t('分组', 'Group')"
-              ><input
-                v-model="form.group"
-                :placeholder="t('例如：生产服务', 'e.g. Production')" /></Field
-            ><Field :label="t('标签', 'Tags')" :hint="t('使用逗号分隔。', 'Separate with commas.')"
+            ><Field :label="t('common.group')"
+              ><input v-model="form.group" :placeholder="t('monitorEditor.eGProduction')" /></Field
+            ><Field :label="t('monitorEditor.tags')" :hint="t('monitorEditor.separateWithCommas')"
               ><input v-model="tags" placeholder="production, api" /></Field
-            ><Field class="span-full" :label="t('备注', 'Description')">
+            ><Field class="span-full" :label="t('monitorEditor.description')">
               <textarea v-model="form.description" rows="2" />
             </Field>
             <div class="span-full">
               <Toggle
                 v-model="form.enabled"
-                :label="t('启用监控', 'Enable monitor')"
-                :description="
-                  t(
-                    '暂停时停止采集，并从可用率统计中排除暂停时长。',
-                    'Pausing stops collection and excludes paused time from uptime.',
-                  )
-                "
+                :label="t('monitorEditor.enableMonitor')"
+                :description="t('monitorEditor.pausingStopsCollectionAndExcludesPausedTimeFrom')"
               />
             </div>
           </div>
@@ -278,34 +251,29 @@ const charsetOptions = [
         <Tabs.Root v-model="activeTab"
           ><Tabs.List class="tabs-list"
             ><Tabs.Trigger class="tabs-trigger" value="target">{{
-              t('检查目标', 'Check target')
+              t('monitorEditor.checkTarget')
             }}</Tabs.Trigger
             ><Tabs.Trigger v-if="form.type !== 'heartbeat'" class="tabs-trigger" value="schedule">{{
-              t('时间与重试', 'Schedule & retries')
+              t('monitorEditor.scheduleRetries')
             }}</Tabs.Trigger
             ><Tabs.Trigger class="tabs-trigger" value="notifications">{{
-              t('通知策略', 'Notifications')
+              t('monitorEditor.notifications')
             }}</Tabs.Trigger></Tabs.List
           ><Tabs.Content value="target"
             ><template v-if="form.type === 'http' && form.http"
               ><div class="form-section">
-                <h2>{{ t('HTTP 请求', 'HTTP request') }}</h2>
+                <h2>{{ t('monitorEditor.httpRequest') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '所有请求方法使用相同的轮次重试配置。',
-                      'All request methods use the same round retry configuration.',
-                    )
-                  }}
+                  {{ t('monitorEditor.allRequestMethodsUseTheSameRoundRetry') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('目标 URL', 'Target URL')" class="span-full"
+                  <Field :label="t('monitorEditor.targetUrl')" class="span-full"
                     ><input
                       v-model="form.http.url"
                       type="url"
                       required
                       placeholder="https://api.example.com/health" /></Field
-                  ><Field :label="t('请求方法', 'Request method')"
+                  ><Field :label="t('monitorEditor.requestMethod')"
                     ><input v-model="form.http.method" list="http-methods" required /><datalist
                       id="http-methods"
                     >
@@ -324,33 +292,28 @@ const charsetOptions = [
                         {{ method }}
                       </option>
                     </datalist></Field
-                  ><Field :label="t('Host 覆盖', 'Host override')"
+                  ><Field :label="t('monitorEditor.hostOverride')"
                     ><input v-model="form.http.host" placeholder="api.example.com"
                   /></Field>
                   <div class="span-full">
-                    <label class="field-label">{{ t('查询参数', 'Query parameters') }}</label
+                    <label class="field-label">{{ t('monitorEditor.queryParameters') }}</label
                     ><KeyValues v-model="form.http.query" :secrets="secrets" un-mt="2" />
                   </div>
                   <div class="span-full">
                     <label class="field-label">{{
-                      t('请求头（支持重复名称）', 'Request headers (repeated names supported)')
+                      t('monitorEditor.requestHeadersRepeatedNamesSupported')
                     }}</label
                     ><KeyValues v-model="form.http.headers" :secrets="secrets" un-mt="2" />
                   </div>
                 </div>
               </div>
               <div class="form-section">
-                <h2>{{ t('请求体', 'Request body') }}</h2>
+                <h2>{{ t('monitorEditor.requestBody') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '请求体格式、字符编码和传输压缩分别设置。',
-                      'Configure format, character encoding, and compression separately.',
-                    )
-                  }}
+                  {{ t('monitorEditor.configureFormatCharacterEncodingAndCompressionSeparately') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('请求体格式', 'Body format')"
+                  <Field :label="t('monitorEditor.bodyFormat')"
                     ><select v-model="form.http.body.format">
                       <option
                         v-for="format in ['none', 'json', 'form', 'multipart', 'text', 'raw']"
@@ -362,7 +325,7 @@ const charsetOptions = [
                     </select></Field
                   ><Field
                     v-if="!['none', 'json'].includes(form.http.body.format)"
-                    :label="t('字符编码', 'Character encoding')"
+                    :label="t('common.characterEncoding')"
                     ><select v-model="form.http.body.charset">
                       <option v-for="charset in charsetOptions" :key="charset">
                         {{ charset }}
@@ -370,21 +333,21 @@ const charsetOptions = [
                     </select></Field
                   ><Field
                     v-if="['json', 'text', 'raw'].includes(form.http.body.format)"
-                    :label="t('正文秘密引用', 'Body secret reference')"
+                    :label="t('monitorEditor.bodySecretReference')"
                     ><SecretSelect
                       v-model="form.http.body.secretRef"
                       :secrets="secrets"
                       optional /></Field
                   ><Field
                     v-if="['text', 'raw'].includes(form.http.body.format)"
-                    :label="t('Content-Type', 'Content-Type')"
+                    :label="t('monitorEditor.contentType')"
                     ><input v-model="form.http.body.contentType" placeholder="text/plain" /></Field
                   ><Field
                     v-if="
                       ['json', 'text'].includes(form.http.body.format) && !form.http.body.secretRef
                     "
                     class="span-full"
-                    :label="t('正文内容', 'Body content')"
+                    :label="t('monitorEditor.bodyContent')"
                   >
                     <textarea
                       v-model="form.http.body.text"
@@ -395,7 +358,7 @@ const charsetOptions = [
                   ><Field
                     v-if="form.http.body.format === 'raw' && !form.http.body.secretRef"
                     class="span-full"
-                    :label="t('原始字节（Base64）', 'Raw bytes (Base64)')"
+                    :label="t('monitorEditor.rawBytesBase64')"
                   >
                     <textarea v-model="form.http.body.base64" spellcheck="false" />
                   </Field>
@@ -403,11 +366,11 @@ const charsetOptions = [
                     v-if="['form', 'multipart'].includes(form.http.body.format)"
                     class="span-full"
                   >
-                    <label class="field-label">{{ t('表单字段', 'Form fields') }}</label
+                    <label class="field-label">{{ t('monitorEditor.formFields') }}</label
                     ><KeyValues v-model="form.http.body.fields" :secrets="secrets" un-mt="2" />
                   </div>
                   <div v-if="form.http.body.format === 'multipart'" class="span-full">
-                    <label class="field-label">{{ t('文件', 'Files') }}</label>
+                    <label class="field-label">{{ t('monitorEditor.files') }}</label>
                     <div
                       v-for="(file, index) in form.http.body.files"
                       :key="index"
@@ -417,118 +380,101 @@ const charsetOptions = [
                     >
                       <input
                         v-model="file.field"
-                        :aria-label="t('字段名称', 'Field name')"
+                        :aria-label="t('monitorEditor.fieldName')"
                         placeholder="file"
                       /><span>{{ file.filename }}</span
                       ><button
                         type="button"
                         class="icon-button"
                         @click="form.http.body.files.splice(index, 1)"
-                        :aria-label="t('移除文件', 'Remove file')"
+                        :aria-label="t('monitorEditor.removeFile')"
                       >
                         <X :size="15" />
                       </button>
                     </div>
                     <label class="button small" un-mt="3"
-                      ><Upload :size="13" />{{ t('添加文件', 'Add files')
+                      ><Upload :size="13" />{{ t('monitorEditor.addFiles')
                       }}<input type="file" multiple un-hidden="" @change="addFile"
                     /></label>
                     <p class="field-hint" un-mt="2">
                       {{
-                        t(
-                          'Multipart boundary 和 Content-Type 自动生成；文件总量最多 4 MiB。',
-                          'Multipart boundary and Content-Type are generated automatically. Files may total at most 4 MiB.',
-                        )
+                        t('monitorEditor.multipartBoundaryAndContentTypeAreGeneratedAutomatically')
                       }}
                     </p>
                   </div>
                 </div>
               </div>
               <div class="form-section">
-                <h2>{{ t('认证', 'Authentication') }}</h2>
+                <h2>{{ t('monitorEditor.authentication') }}</h2>
                 <p class="muted">
-                  {{
-                    t('凭据只通过已有秘密引用使用。', 'Credentials use existing secret references.')
-                  }}
+                  {{ t('monitorEditor.credentialsUseExistingSecretReferences') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('认证类型', 'Authentication type')"
+                  <Field :label="t('monitorEditor.authenticationType')"
                     ><select v-model="form.http.auth.type">
-                      <option value="none">{{ t('无认证', 'None') }}</option>
+                      <option value="none">{{ t('monitorEditor.none') }}</option>
                       <option value="basic">Basic</option>
                       <option value="bearer">Bearer</option>
-                      <option value="header">API Key / Header</option>
+                      <option value="header">{{ t('monitorEditor.apiKeyHeader') }}</option>
                     </select></Field
                   ><Field
                     v-if="form.http.auth.type !== 'none'"
-                    :label="t('密码 / Token 秘密', 'Password / token secret')"
+                    :label="t('monitorEditor.passwordTokenSecret')"
                     ><SecretSelect v-model="form.http.auth.secretRef" :secrets="secrets" /></Field
-                  ><Field v-if="form.http.auth.type === 'basic'" :label="t('用户名', 'Username')"
+                  ><Field v-if="form.http.auth.type === 'basic'" :label="t('common.username')"
                     ><input v-model="form.http.auth.username" /></Field
                   ><Field
                     v-if="form.http.auth.type === 'basic'"
-                    :label="t('用户名秘密引用（可选）', 'Username secret (optional)')"
+                    :label="t('monitorEditor.usernameSecretOptional')"
                     ><SecretSelect
                       v-model="form.http.auth.usernameSecretRef"
                       :secrets="secrets"
                       optional /></Field
                   ><Field
                     v-if="form.http.auth.type === 'header'"
-                    :label="t('认证头名称', 'Authentication header')"
+                    :label="t('monitorEditor.authenticationHeader')"
                     ><input v-model="form.http.auth.header" /></Field
                   ><Field
                     v-if="form.http.auth.type === 'header'"
-                    :label="t('值前缀', 'Value prefix')"
+                    :label="t('monitorEditor.valuePrefix')"
                     ><input v-model="form.http.auth.prefix" placeholder="Bearer "
                   /></Field>
                 </div>
               </div>
               <div class="form-section">
-                <h2>{{ t('成功断言', 'Success assertions') }}</h2>
+                <h2>{{ t('monitorEditor.successAssertions') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '所有已配置断言都通过后，才确认本次尝试成功。',
-                      'Every configured assertion must pass for a successful attempt.',
-                    )
-                  }}
+                  {{ t('monitorEditor.everyConfiguredAssertionMustPassForASuccessful') }}
                 </p>
                 <div class="form-grid">
                   <Field
-                    :label="t('状态码', 'Status codes')"
-                    :hint="
-                      t(
-                        '逗号分隔；与状态码区间共同接受。',
-                        'Comma-separated; accepted together with ranges.',
-                      )
-                    "
+                    :label="t('monitorEditor.statusCodes')"
+                    :hint="t('monitorEditor.commaSeparatedAcceptedTogetherWithRanges')"
                     ><input v-model="statusCodes" placeholder="200, 204" /></Field
-                  ><Field :label="t('状态码区间', 'Status ranges')"
+                  ><Field :label="t('monitorEditor.statusRanges')"
                     ><input v-model="statusRanges" placeholder="200-299, 300-399" /></Field
-                  ><Field :label="t('包含文本（每行一项）', 'Text contains (one per line)')">
+                  ><Field :label="t('monitorEditor.textContainsOnePerLine')">
                     <textarea v-model="contains" /></Field
-                  ><Field :label="t('不包含文本（每行一项）', 'Text excludes (one per line)')">
+                  ><Field :label="t('monitorEditor.textExcludesOnePerLine')">
                     <textarea v-model="notContains" /></Field
-                  ><Field :label="t('正文正则（每行一项）', 'Body regex (one per line)')">
+                  ><Field :label="t('monitorEditor.bodyRegexOnePerLine')">
                     <textarea v-model="regex" spellcheck="false" /></Field
                   ><Field
-                    :label="t('响应时间上限（毫秒）', 'Maximum response time (ms)')"
-                    :hint="t('0 表示不增加延迟断言。', '0 disables this assertion.')"
+                    :label="t('monitorEditor.maximumResponseTimeMs')"
+                    :hint="t('monitorEditor.0DisablesThisAssertion')"
                     ><input
                       v-model.number="form.http.assertions.maxLatencyMs"
                       type="number"
                       min="0" /></Field
                   ><Field
                     class="span-full"
-                    :label="t('响应头断言', 'Response header assertions')"
+                    :label="t('monitorEditor.responseHeaderAssertions')"
                     :hint="headerHint"
                   >
                     <textarea v-model="headerAssertions" rows="4" spellcheck="false" /></Field
                   ><Field
                     class="span-full"
-                    :label="
-                      t('JSON 字段断言（JSON Pointer）', 'JSON field assertions (JSON Pointer)')
-                    "
+                    :label="t('monitorEditor.jsonFieldAssertionsJsonPointer')"
                     :hint="jsonHint"
                   >
                     <textarea v-model="jsonAssertions" rows="4" spellcheck="false" />
@@ -537,47 +483,46 @@ const charsetOptions = [
               </div>
               <details class="form-section">
                 <summary class="advanced-summary">
-                  {{ t('高级：TLS、连接与传输', 'Advanced: TLS, connections & transport') }}
+                  {{ t('monitorEditor.advancedTlsConnectionsTransport') }}
                 </summary>
                 <h3 un-mb="4">TLS</h3>
                 <TLSFields v-model="form.http.tls" :secrets="secrets" />
                 <div class="section-divider" />
-                <h3 un-mb="4">{{ t('网络连接', 'Network connection') }}</h3>
+                <h3 un-mb="4">{{ t('monitorEditor.networkConnection') }}</h3>
                 <ConnectionFields v-model="form.http.connection" :secrets="secrets" />
                 <div class="section-divider" />
                 <div class="form-grid">
                   <div class="span-full">
                     <Toggle
                       v-model="form.http.redirects.enabled"
-                      :label="t('跟随重定向', 'Follow redirects')"
+                      :label="t('monitorEditor.followRedirects')"
                     />
                   </div>
-                  <Field :label="t('最大重定向次数', 'Maximum redirects')"
+                  <Field :label="t('monitorEditor.maximumRedirects')"
                     ><input
                       v-model.number="form.http.redirects.maxHops"
                       type="number"
                       min="1"
                       max="20" /></Field
-                  ><Field :label="t('重定向范围', 'Redirect scope')"
+                  ><Field :label="t('monitorEditor.redirectScope')"
                     ><select v-model="form.http.redirects.scope">
-                      <option value="same-origin">{{ t('同源', 'Same origin') }}</option>
-                      <option value="same-host">{{ t('同主机', 'Same host') }}</option>
-                      <option value="any">{{ t('任意目标', 'Any target') }}</option>
+                      <option value="same-origin">{{ t('monitorEditor.sameOrigin') }}</option>
+                      <option value="same-host">{{ t('monitorEditor.sameHost') }}</option>
+                      <option value="any">{{ t('monitorEditor.anyTarget') }}</option>
                     </select></Field
-                  ><Field :label="t('Accept-Encoding', 'Accept-Encoding')"
+                  ><Field :label="t('monitorEditor.acceptEncoding')"
                     ><select v-model="form.http.acceptEncoding">
                       <option value="gzip">gzip</option>
                       <option value="identity">identity</option>
                     </select></Field
-                  ><Field :label="t('响应字符编码', 'Response charset')"
+                  ><Field :label="t('monitorEditor.responseCharset')"
                     ><select v-model="form.http.responseCharset">
-                      <option value="">{{ t('按响应声明检测', 'Detect from response') }}</option>
+                      <option value="">{{ t('monitorEditor.detectFromResponse') }}</option>
                       <option v-for="charset in charsetOptions" :key="charset">
                         {{ charset }}
                       </option>
                     </select></Field
-                  ><Field
-                    :label="t('解压后响应大小上限（字节）', 'Decompressed response limit (bytes)')"
+                  ><Field :label="t('monitorEditor.decompressedResponseLimitBytes')"
                     ><input
                       v-model.number="form.http.maxResponseBytes"
                       type="number"
@@ -587,51 +532,46 @@ const charsetOptions = [
                   <div>
                     <Toggle
                       v-model="form.http.requestGzip"
-                      :label="t('gzip 压缩请求体', 'gzip request body')"
+                      :label="t('monitorEditor.gzipRequestBody')"
                     />
                   </div>
                 </div></details></template
             ><template v-if="form.type === 'tcp' && form.tcp"
               ><div class="form-section">
-                <h2>{{ t('TCP 连接', 'TCP connection') }}</h2>
+                <h2>{{ t('monitorTypes.tcpConnection') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '仅测试连接，或配置发送内容和响应断言。',
-                      'Test a connection, or send a payload and assert the response.',
-                    )
-                  }}
+                  {{ t('monitorEditor.testAConnectionOrSendAPayloadAnd') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('主机', 'Host')"
+                  <Field :label="t('monitorEditor.host')"
                     ><input v-model="form.tcp.host" required placeholder="db.example.com" /></Field
-                  ><Field :label="t('端口', 'Port')"
+                  ><Field :label="t('common.port')"
                     ><input
                       v-model.number="form.tcp.port"
                       type="number"
                       min="1"
                       max="65535"
                       required /></Field
-                  ><Field :label="t('发送文本', 'Send text')">
+                  ><Field :label="t('monitorEditor.sendText')">
                     <textarea v-model="form.tcp.sendText" /></Field
-                  ><Field :label="t('发送字节（Base64）', 'Send bytes (Base64)')">
+                  ><Field :label="t('monitorEditor.sendBytesBase64')">
                     <textarea v-model="form.tcp.sendBase64" spellcheck="false" /></Field
-                  ><Field :label="t('发送内容秘密引用', 'Payload secret')"
+                  ><Field :label="t('monitorEditor.payloadSecret')"
                     ><SecretSelect
                       v-model="form.tcp.sendSecretRef"
                       :secrets="secrets"
                       optional /></Field
-                  ><Field :label="t('字符编码', 'Character encoding')"
+                  ><Field :label="t('common.characterEncoding')"
                     ><select v-model="form.tcp.charset">
                       <option v-for="charset in charsetOptions" :key="charset">
                         {{ charset }}
                       </option>
                     </select></Field
-                  ><Field :label="t('接收包含文本', 'Response contains')"
+                  ><Field :label="t('monitorEditor.responseContains')"
                     ><input v-model="form.tcp.receiveContains" /></Field
-                  ><Field :label="t('接收正则', 'Response regex')"
+                  ><Field :label="t('monitorEditor.responseRegex')"
                     ><input v-model="form.tcp.receiveRegex" /></Field
-                  ><Field :label="t('接收大小上限（字节）', 'Receive size limit (bytes)')"
+                  ><Field :label="t('monitorEditor.receiveSizeLimitBytes')"
                     ><input
                       v-model.number="form.tcp.maxReceiveBytes"
                       type="number"
@@ -642,7 +582,7 @@ const charsetOptions = [
               </div>
               <details class="form-section">
                 <summary class="advanced-summary">
-                  {{ t('TLS 与连接设置', 'TLS & connection settings') }}
+                  {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.tcp.tls" :secrets="secrets" allow-toggle />
                 <div class="section-divider" />
@@ -652,16 +592,14 @@ const charsetOptions = [
                 /></details></template
             ><template v-if="form.type === 'dns' && form.dns"
               ><div class="form-section">
-                <h2>{{ t('DNS 查询', 'DNS query') }}</h2>
+                <h2>{{ t('monitorEditor.dnsQuery') }}</h2>
                 <p class="muted">
-                  {{
-                    t('验证解析响应码和记录内容。', 'Validate response codes and record values.')
-                  }}
+                  {{ t('monitorEditor.validateResponseCodesAndRecordValues') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('查询域名', 'Query name')"
+                  <Field :label="t('monitorEditor.queryName')"
                     ><input v-model="form.dns.name" required placeholder="example.com" /></Field
-                  ><Field :label="t('记录类型', 'Record type')"
+                  ><Field :label="t('monitorEditor.recordType')"
                     ><select v-model="form.dns.recordType">
                       <option
                         v-for="record in [
@@ -682,20 +620,15 @@ const charsetOptions = [
                       </option>
                     </select></Field
                   ><Field
-                    :label="t('解析服务器', 'DNS server')"
-                    :hint="
-                      t(
-                        '留空使用系统解析服务器；填写主机:端口。',
-                        'Leave empty for system resolver, or enter host:port.',
-                      )
-                    "
+                    :label="t('monitorEditor.dnsServer')"
+                    :hint="t('monitorEditor.leaveEmptyForSystemResolverOrEnterHost')"
                     ><input v-model="form.dns.server" placeholder="1.1.1.1:53" /></Field
-                  ><Field :label="t('传输协议', 'Protocol')"
+                  ><Field :label="t('monitorEditor.protocol')"
                     ><select v-model="form.dns.protocol">
                       <option value="udp">UDP</option>
                       <option value="tcp">TCP</option>
                     </select></Field
-                  ><Field :label="t('期望响应码', 'Expected response code')"
+                  ><Field :label="t('monitorEditor.expectedResponseCode')"
                     ><select v-model="form.dns.expectedRCode">
                       <option
                         v-for="code in [
@@ -711,39 +644,31 @@ const charsetOptions = [
                         {{ code }}
                       </option>
                     </select></Field
-                  ><Field :label="t('记录匹配方式', 'Record matching')"
+                  ><Field :label="t('monitorEditor.recordMatching')"
                     ><select v-model="form.dns.matchMode">
                       <option value="contains">
-                        {{ t('包含期望记录', 'Contains expected records') }}
+                        {{ t('monitorEditor.containsExpectedRecords') }}
                       </option>
-                      <option value="exact">{{ t('完全一致', 'Exact set') }}</option>
+                      <option value="exact">{{ t('monitorEditor.exactSet') }}</option>
                     </select></Field
-                  ><Field
-                    class="span-full"
-                    :label="t('期望记录值（每行一项）', 'Expected values (one per line)')"
-                  >
+                  ><Field class="span-full" :label="t('monitorEditor.expectedValuesOnePerLine')">
                     <textarea v-model="dnsValues" />
                   </Field>
                 </div></div></template
             ><template v-if="form.type === 'heartbeat' && form.heartbeat"
               ><div class="form-section">
-                <h2>{{ t('被动心跳', 'Heartbeat') }}</h2>
+                <h2>{{ t('monitorTypes.heartbeat') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '服务定期上报心跳；超过预期周期和宽限后判定故障。',
-                      'Services report periodically. Missing a period plus grace marks the monitor down.',
-                    )
-                  }}
+                  {{ t('monitorEditor.servicesReportPeriodicallyMissingAPeriodPlusGrace') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('预期周期（秒）', 'Expected period (seconds)')"
+                  <Field :label="t('monitorEditor.expectedPeriodSeconds')"
                     ><input
                       v-model.number="form.heartbeat.periodSeconds"
                       type="number"
                       min="30"
                       required /></Field
-                  ><Field :label="t('宽限时间（秒）', 'Grace period (seconds)')"
+                  ><Field :label="t('monitorEditor.gracePeriodSeconds')"
                     ><input
                       v-model.number="form.heartbeat.graceSeconds"
                       type="number"
@@ -752,29 +677,19 @@ const charsetOptions = [
                   /></Field>
                 </div>
                 <div class="note" un-mt="5">
-                  {{
-                    t(
-                      '保存后可在详情页生成或轮换专属上报密钥。首次上报前显示等待数据，支持显式失败上报。',
-                      'After saving, generate or rotate the report token on the detail page. The initial state is Unknown; explicit failure reports are supported.',
-                    )
-                  }}
+                  {{ t('monitorEditor.afterSavingGenerateOrRotateTheReportToken') }}
                 </div>
               </div></template
             ><template v-if="form.type === 'certificate' && form.certificate"
               ><div class="form-section">
-                <h2>{{ t('证书到期检查', 'Certificate expiry') }}</h2>
+                <h2>{{ t('monitorEditor.certificateExpiry') }}</h2>
                 <p class="muted">
-                  {{
-                    t(
-                      '证书风险独立展示，不计入服务可用率。',
-                      'Certificate risk is displayed separately and excluded from service uptime.',
-                    )
-                  }}
+                  {{ t('monitorEditor.certificateRiskIsDisplayedSeparatelyAndExcludedFrom') }}
                 </p>
                 <div class="form-grid">
-                  <Field :label="t('TLS 主机', 'TLS host')"
+                  <Field :label="t('monitorEditor.tlsHost')"
                     ><input v-model="form.certificate.host" required /></Field
-                  ><Field :label="t('端口', 'Port')"
+                  ><Field :label="t('common.port')"
                     ><input
                       v-model.number="form.certificate.port"
                       type="number"
@@ -782,20 +697,15 @@ const charsetOptions = [
                       max="65535" /></Field
                   ><Field
                     class="span-full"
-                    :label="t('提醒阈值（天）', 'Warning thresholds (days)')"
-                    :hint="
-                      t(
-                        '逗号分隔；默认 30、14、7、1 天。',
-                        'Comma-separated. Defaults: 30, 14, 7, 1 days.',
-                      )
-                    "
+                    :label="t('common.warningThresholdsDays')"
+                    :hint="t('monitorEditor.commaSeparatedDefaults301471Days')"
                     ><input v-model="warningDays"
                   /></Field>
                 </div>
               </div>
               <details class="form-section">
                 <summary class="advanced-summary">
-                  {{ t('TLS 与连接设置', 'TLS & connection settings') }}
+                  {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.certificate.tls" :secrets="secrets" />
                 <div class="section-divider" />
@@ -805,25 +715,17 @@ const charsetOptions = [
                 /></details></template></Tabs.Content
           ><Tabs.Content v-if="form.type !== 'heartbeat'" value="schedule"
             ><div class="form-section">
-              <h2>{{ t('检查计划', 'Check schedule') }}</h2>
+              <h2>{{ t('monitorEditor.checkSchedule') }}</h2>
               <p class="muted">
-                {{
-                  t(
-                    '固定间隔运行，同一监控项的检查轮次不会重叠；整轮预算不超过间隔。',
-                    'Checks run on a fixed cadence without overlap. The entire round fits within the interval.',
-                  )
-                }}
+                {{ t('monitorEditor.checksRunOnAFixedCadenceWithoutOverlap') }}
               </p>
               <div class="form-grid">
                 <Field
-                  :label="t('检查间隔（秒）', 'Check interval (seconds)')"
+                  :label="t('monitorEditor.checkIntervalSeconds')"
                   :hint="
                     form.type === 'certificate'
-                      ? t(
-                          '证书默认每日检查（86400 秒）。',
-                          'Certificates default to daily checks (86400 seconds).',
-                        )
-                      : t('最小 30 秒。', 'Minimum 30 seconds.')
+                      ? t('monitorEditor.certificatesDefaultToDailyChecks86400Seconds')
+                      : t('monitorEditor.minimum30Seconds')
                   "
                   ><input
                     v-model.number="form.intervalSeconds"
@@ -831,7 +733,7 @@ const charsetOptions = [
                     min="30"
                     max="2592000"
                     required /></Field
-                ><Field :label="t('每次探测超时（秒）', 'Attempt timeout (seconds)')"
+                ><Field :label="t('monitorEditor.attemptTimeoutSeconds')"
                   ><input
                     v-model.number="form.timeoutSeconds"
                     type="number"
@@ -840,27 +742,22 @@ const charsetOptions = [
                     required /></Field
                 ><template v-if="['http', 'tcp', 'dns'].includes(form.type)"
                   ><Field
-                    :label="t('追加重试次数', 'Additional retries')"
-                    :hint="
-                      t(
-                        '默认 2；0 表示只进行首次尝试。',
-                        'Default 2. Zero means the first attempt only.',
-                      )
-                    "
+                    :label="t('monitorEditor.additionalRetries')"
+                    :hint="t('monitorEditor.default2ZeroMeansTheFirstAttemptOnly')"
                     ><input v-model.number="form.retries" type="number" min="0" max="10" /></Field
-                  ><Field :label="t('重试等待（秒）', 'Retry delay (seconds)')"
+                  ><Field :label="t('monitorEditor.retryDelaySeconds')"
                     ><input
                       v-model.number="form.retryDelaySeconds"
                       type="number"
                       min="0"
                       :max="form.intervalSeconds" /></Field
-                  ><Field :label="t('连续失败确认阈值', 'Consecutive failed rounds')"
+                  ><Field :label="t('monitorEditor.consecutiveFailedRounds')"
                     ><input
                       v-model.number="form.failureThreshold"
                       type="number"
                       min="1"
                       max="100" /></Field
-                  ><Field :label="t('连续成功恢复阈值', 'Consecutive successful rounds')"
+                  ><Field :label="t('monitorEditor.consecutiveSuccessfulRounds')"
                     ><input
                       v-model.number="form.recoveryThreshold"
                       type="number"
@@ -869,22 +766,16 @@ const charsetOptions = [
                 ></template>
               </div>
               <p class="note" un-mt="6">
-                {{
-                  t(
-                    '重试次数为上限。预算不足时会提前结束，并在诊断中记录实际尝试数。采集断档显示 Unknown。',
-                    'Retry count is a limit. Insufficient budget ends the round early and records the actual attempts. Collection gaps are Unknown.',
-                  )
-                }}
+                {{ t('monitorEditor.retryCountIsALimitInsufficientBudgetEnds') }}
               </p>
             </div></Tabs.Content
           ><Tabs.Content value="notifications"
             ><div class="form-section">
-              <h2>{{ t('通知渠道', 'Notification channels') }}</h2>
+              <h2>{{ t('monitorEditor.notificationChannels') }}</h2>
               <p class="muted">
                 {{
                   t(
-                    '选择管理员已配置的渠道，确认故障时逐渠道持久投递。',
-                    'Select administrator-configured channels. Confirmed failures create durable deliveries for each channel.',
+                    'monitorEditor.selectAdministratorConfiguredChannelsConfirmedFailuresCreateDurable',
                   )
                 }}
               </p>
@@ -896,46 +787,36 @@ const charsetOptions = [
                     :value="channel.id"
                   />{{ channel.name
                   }}<span v-if="!channel.enabled" class="muted">{{
-                    t('已停用', 'disabled')
+                    t('monitorEditor.disabled')
                   }}</span></label
                 >
               </div>
               <p v-if="!channels.length" class="muted">
-                {{
-                  t(
-                    '尚未配置通知渠道。管理员可在通知页面创建。',
-                    'No channels yet. An administrator can create one under Notifications.',
-                  )
-                }}
+                {{ t('monitorEditor.noChannelsYetAnAdministratorCanCreateOne') }}
               </p>
               <div class="section-divider" />
               <Toggle
                 v-if="form.type === 'certificate' && form.certificate"
                 v-model="form.certificate.notifyRenewal"
-                :label="t('证书续期时通知', 'Notify on certificate renewal')"
+                :label="t('monitorEditor.notifyOnCertificateRenewal')"
                 un-mb="5"
               /><Toggle
                 v-else
                 v-model="form.notifyRecovery"
-                :label="t('恢复时通知', 'Notify on recovery')"
+                :label="t('monitorEditor.notifyOnRecovery')"
                 un-mb="5"
               /><Field
                 v-if="form.type !== 'certificate'"
-                :label="t('持续故障提醒间隔（秒）', 'Repeated outage reminder (seconds)')"
-                :hint="
-                  t(
-                    '0 关闭重复提醒；启用时最小 30 秒。',
-                    '0 disables repeated reminders; minimum 30 seconds when enabled.',
-                  )
-                "
+                :label="t('monitorEditor.repeatedOutageReminderSeconds')"
+                :hint="t('monitorEditor.0DisablesRepeatedRemindersMinimum30SecondsWhen')"
                 ><input v-model.number="form.reminderSeconds" type="number" min="0"
               /></Field></div></Tabs.Content
         ></Tabs.Root>
       </section>
       <div class="form-actions">
-        <RouterLink to="/app/monitors" class="button">{{ t('取消', 'Cancel') }}</RouterLink
+        <RouterLink to="/app/monitors" class="button">{{ t('common.cancel') }}</RouterLink
         ><button type="submit" class="button primary" :disabled="saving || !canEdit()">
-          <Save :size="15" />{{ t('保存监控项', 'Save monitor') }}
+          <Save :size="15" />{{ t('common.saveMonitor') }}
         </button>
       </div>
     </form></AsyncState

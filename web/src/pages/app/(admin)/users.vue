@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { languageOptions } from '../../../lib/i18n'
 import { ref, reactive } from 'vue'
-import { Plus, Pencil, Users, Trash2 } from '@lucide/vue'
+import { Plus, Pencil, Trash2 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import type { User } from '../../../lib/types'
 import { isAdmin, currentUser } from '../../../lib/api'
 import * as sdk from '../../../client/sdk.gen'
 import { listUsersQuery } from '../../../client/@pinia/colada.gen'
-import { t, formatDate, timezone, statusLabel } from '../../../lib/preferences'
+import { formatDate, timezone, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -15,8 +17,9 @@ import Toggle from '../../../components/Toggle.vue'
 import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: ['成员与权限', 'Members'], roles: ['admin'] } })
+definePage({ meta: { title: 'navigation.members', roles: ['admin'] } })
 
 const query = useCollection<User>('users', listUsersQuery()),
   open = ref(false),
@@ -68,7 +71,7 @@ async function save() {
     form.password = ''
     open.value = false
     await query.refresh()
-    notify(t('成员已保存', 'Member saved'))
+    notify(t('users.memberSaved'))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -81,7 +84,7 @@ async function remove() {
     await sdk.deleteUser({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
-    notify(t('成员已删除', 'Member deleted'))
+    notify(t('users.memberDeleted'))
   } catch (e) {
     notify(errorText(e), 'error')
   }
@@ -97,28 +100,23 @@ function cancel() {
 </script>
 <template>
   <PageHeader
-    :title="t('成员与权限', 'Members')"
-    :description="
-      t(
-        '以管理员、操作员和只读角色协作管理。',
-        'Collaborate with administrator, operator, and viewer roles.',
-      )
-    "
+    :title="t('navigation.members')"
+    :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')"
     ><button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('添加成员', 'Add member') }}
+      <Plus :size="15" />{{ t('common.addMember') }}
     </button></PageHeader
   >
   <section class="card">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
-      ><EmptyState v-if="!query.data.value?.items.length" :title="t('暂无成员', 'No members')" />
+      ><EmptyState v-if="!query.data.value?.items.length" :title="t('users.noMembers')" />
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ t('成员', 'Member') }}</th>
-              <th>{{ t('角色', 'Role') }}</th>
-              <th>{{ t('状态', 'Status') }}</th>
-              <th>{{ t('创建时间', 'Created') }}</th>
+              <th>{{ t('users.member') }}</th>
+              <th>{{ t('common.role') }}</th>
+              <th>{{ t('common.status') }}</th>
+              <th>{{ t('common.created') }}</th>
               <th />
             </tr>
           </thead>
@@ -131,7 +129,7 @@ function cancel() {
                     ><span class="monitor-name">{{ user.name || user.username }}</span
                     ><span class="monitor-sub"
                       >{{ user.username
-                      }}{{ user.id === currentUser?.id ? ` · ${t('你', 'You')}` : '' }}</span
+                      }}{{ user.id === currentUser?.id ? ` · ${t('users.you')}` : '' }}</span
                     ></span
                   >
                 </div>
@@ -139,17 +137,17 @@ function cancel() {
               <td>
                 <span class="pill">{{ statusLabel(user.role) }}</span>
               </td>
-              <td>{{ user.enabled ? t('启用', 'Enabled') : t('停用', 'Disabled') }}</td>
+              <td>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</td>
               <td class="muted" un-text="10px">{{ formatDate(user.createdAt) }}</td>
               <td>
                 <div v-if="isAdmin()" un-flex="~ gap-2">
-                  <button class="icon-button" @click="edit(user)" :aria-label="t('编辑', 'Edit')">
+                  <button class="icon-button" @click="edit(user)" :aria-label="t('common.edit')">
                     <Pencil :size="14" /></button
                   ><button
                     class="icon-button"
                     :disabled="user.id === currentUser?.id"
                     @click="confirmDelete(user)"
-                    :aria-label="t('删除', 'Delete')"
+                    :aria-label="t('common.delete')"
                   >
                     <Trash2 :size="14" />
                   </button>
@@ -161,42 +159,36 @@ function cancel() {
     ></AsyncState>
   </section>
   <p class="note" un-mt="5">
-    {{
-      t(
-        '操作员可管理监控、维护和公开页面；管理员额外管理账号、秘密、通知渠道与系统。只读成员只能查看脱敏结果。',
-        'Operators manage monitors, maintenance, and public pages. Administrators also manage accounts, secrets, channels, and system settings. Viewers read redacted results.',
-      )
-    }}
+    {{ t('users.operatorsManageMonitorsMaintenanceAndPublicPagesAdministrators') }}
   </p>
-  <Modal
-    v-model:open="open"
-    :title="form.id ? t('编辑成员', 'Edit member') : t('添加成员', 'Add member')"
+  <Modal v-model:open="open" :title="form.id ? t('users.editMember') : t('common.addMember')"
     ><form id="user-form" @submit.prevent="save">
       <div class="form-grid">
-        <Field :label="t('用户名', 'Username')"
+        <Field :label="t('common.username')"
           ><input v-model="form.username" required :disabled="!!form.id" /></Field
-        ><Field :label="t('显示名称', 'Display name')"><input v-model="form.name" /></Field
-        ><Field :label="t('角色', 'Role')"
+        ><Field :label="t('common.displayName')"><input v-model="form.name" /></Field
+        ><Field :label="t('common.role')"
           ><select v-model="form.role">
-            <option value="admin">{{ t('管理员', 'Administrator') }}</option>
-            <option value="operator">{{ t('操作员', 'Operator') }}</option>
-            <option value="viewer">{{ t('只读', 'Viewer') }}</option>
+            <option value="admin">{{ t('users.administrator') }}</option>
+            <option value="operator">{{ t('users.operator') }}</option>
+            <option value="viewer">{{ t('users.viewer') }}</option>
           </select></Field
-        ><Field :label="t('语言', 'Language')"
+        ><Field :label="t('common.language')"
           ><select v-model="form.locale">
-            <option value="zh-CN">简体中文</option>
-            <option value="en">English</option>
+            <option
+              v-for="language in languageOptions"
+              :key="language.value"
+              :value="language.value"
+            >
+              {{ language.label }}
+            </option>
           </select></Field
-        ><Field class="span-full" :label="t('显示时区', 'Display time zone')"
+        ><Field class="span-full" :label="t('common.displayTimeZone')"
           ><input v-model="form.timezone" required /></Field
         ><Field
           class="span-full"
-          :label="
-            form.id
-              ? t('新密码（留空保留）', 'New password (leave empty to keep)')
-              : t('密码', 'Password')
-          "
-          :hint="t('至少 12 字符，最多 72 字节。', 'At least 12 characters, up to 72 bytes.')"
+          :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')"
+          :hint="t('common.atLeast12CharactersUpTo72Bytes')"
           ><input
             v-model="form.password"
             type="password"
@@ -206,23 +198,23 @@ function cancel() {
             autocomplete="new-password"
         /></Field>
         <div class="span-full">
-          <Toggle v-model="form.enabled" :label="t('启用账号', 'Enable account')" />
+          <Toggle v-model="form.enabled" :label="t('users.enableAccount')" />
         </div>
       </div>
       <p v-if="error" class="inline-error">{{ error }}</p>
     </form>
     <template #footer
       ><button class="button" @click="cancel">
-        {{ t('取消', 'Cancel') }}</button
+        {{ t('common.cancel') }}</button
       ><button class="button primary" form="user-form" :disabled="saving">
-        {{ t('保存成员', 'Save member') }}
+        {{ t('users.saveMember') }}
       </button></template
     ></Modal
-  ><Modal v-model:open="deleteOpen" :title="t('删除成员', 'Delete member')"
+  ><Modal v-model:open="deleteOpen" :title="t('users.deleteMember')"
     ><p>{{ deleteTarget?.name || deleteTarget?.username }}</p>
     <template #footer
-      ><button class="button" @click="deleteOpen = false">{{ t('取消', 'Cancel') }}</button
-      ><button class="button danger" @click="remove">{{ t('删除', 'Delete') }}</button></template
+      ><button class="button" @click="deleteOpen = false">{{ t('common.cancel') }}</button
+      ><button class="button danger" @click="remove">{{ t('common.delete') }}</button></template
     ></Modal
   >
 </template>

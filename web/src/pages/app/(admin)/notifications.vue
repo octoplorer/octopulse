@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ref, reactive } from 'vue'
 import { Plus, Bell, Send, Pencil, Trash2, RefreshCw } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useCollection } from '../../../lib/data'
@@ -12,7 +13,7 @@ import {
   listDeliveriesQuery,
   listMonitorsQuery,
 } from '../../../client/@pinia/colada.gen'
-import { t, formatDate, statusLabel } from '../../../lib/preferences'
+import { formatDate, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -22,8 +23,9 @@ import SecretSelect from '../../../components/SecretSelect.vue'
 import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: ['通知与投递', 'Notifications'] } })
+definePage({ meta: { title: 'navigation.notifications' } })
 
 const query = useCollection<Channel>('channels', listChannelsQuery()),
   secrets = useCollection<Secret>('secrets', listSecretsQuery()),
@@ -58,7 +60,7 @@ async function save() {
     else await sdk.createChannels({ body: form, throwOnError: true })
     open.value = false
     await query.refresh()
-    notify(t('通知渠道已保存', 'Channel saved'))
+    notify(t('notifications.channelSaved'))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -69,7 +71,7 @@ async function test(channel: Channel) {
   testing.value = channel.id
   try {
     await sdk.testChannel({ path: { id: channel.id }, throwOnError: true })
-    notify(t('测试通知已提交，请查看投递记录。', 'Test submitted. Check delivery history.'))
+    notify(t('notifications.testSubmittedCheckDeliveryHistory'))
   } catch (e) {
     notify(errorText(e), 'error')
   } finally {
@@ -83,7 +85,7 @@ async function remove() {
     await sdk.deleteChannels({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
-    notify(t('通知渠道已删除', 'Channel deleted'))
+    notify(t('notifications.channelDeleted'))
   } catch (e) {
     notify(errorText(e), 'error')
   }
@@ -99,27 +101,22 @@ function refresh() {
 </script>
 <template>
   <PageHeader
-    :title="t('通知与投递', 'Notifications')"
-    :description="
-      t(
-        '通过 Shoutrrr 连接渠道，持久记录每一次投递。',
-        'Connect channels through Shoutrrr and keep every delivery durable.',
-      )
-    "
+    :title="t('navigation.notifications')"
+    :description="t('notifications.connectChannelsThroughShoutrrrAndKeepEveryDelivery')"
     ><button class="button" @click="refresh">
-      <RefreshCw :size="14" />{{ t('刷新', 'Refresh') }}</button
+      <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('添加渠道', 'Add channel') }}
+      <Plus :size="15" />{{ t('notifications.addChannel') }}
     </button></PageHeader
   >
   <section class="card">
     <Tabs.Root v-model="tab"
       ><Tabs.List class="tabs-list"
         ><Tabs.Trigger class="tabs-trigger" value="channels">{{
-          t('通知渠道', 'Channels')
+          t('notifications.channels')
         }}</Tabs.Trigger
         ><Tabs.Trigger class="tabs-trigger" value="deliveries">{{
-          t('投递记录', 'Deliveries')
+          t('notifications.deliveries')
         }}</Tabs.Trigger></Tabs.List
       ><Tabs.Content value="channels"
         ><AsyncState
@@ -128,25 +125,20 @@ function refresh() {
           @retry="query.refresh()"
           ><EmptyState
             v-if="!query.data.value?.items.length"
-            :title="t('连接你的通知渠道', 'Connect a notification channel')"
-            :description="
-              t(
-                '先保存 Shoutrrr 服务 URL 为秘密，再在这里引用。',
-                'Store a Shoutrrr service URL as a secret, then reference it here.',
-              )
-            "
+            :title="t('notifications.connectANotificationChannel')"
+            :description="t('notifications.storeAShoutrrrServiceUrlAsASecret')"
             ><RouterLink v-if="isAdmin()" to="/app/secrets" class="button">{{
-              t('管理秘密', 'Manage secrets')
+              t('notifications.manageSecrets')
             }}</RouterLink></EmptyState
           >
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ t('渠道', 'Channel') }}</th>
-                  <th>{{ t('秘密引用', 'Secret reference') }}</th>
-                  <th>{{ t('状态', 'Status') }}</th>
-                  <th>{{ t('更新时间', 'Updated') }}</th>
+                  <th>{{ t('common.channel') }}</th>
+                  <th>{{ t('notifications.secretReference') }}</th>
+                  <th>{{ t('common.status') }}</th>
+                  <th>{{ t('common.updated') }}</th>
                   <th />
                 </tr>
               </thead>
@@ -165,7 +157,7 @@ function refresh() {
                   </td>
                   <td>
                     <span class="pill">{{
-                      channel.enabled ? t('启用', 'Enabled') : t('停用', 'Disabled')
+                      channel.enabled ? t('common.enabled') : t('common.disabled')
                     }}</span>
                   </td>
                   <td class="muted" un-text="10px">{{ formatDate(channel.updatedAt) }}</td>
@@ -176,17 +168,17 @@ function refresh() {
                         :disabled="testing === channel.id || !channel.enabled"
                         @click="test(channel)"
                       >
-                        <Send :size="12" />{{ t('测试', 'Test') }}</button
+                        <Send :size="12" />{{ t('notifications.test') }}</button
                       ><button
                         class="icon-button"
                         @click="edit(channel)"
-                        :aria-label="t('编辑', 'Edit')"
+                        :aria-label="t('common.edit')"
                       >
                         <Pencil :size="14" /></button
                       ><button
                         class="icon-button"
                         @click="confirmDelete(channel)"
-                        :aria-label="t('删除', 'Delete')"
+                        :aria-label="t('common.delete')"
                       >
                         <Trash2 :size="14" />
                       </button>
@@ -202,23 +194,18 @@ function refresh() {
           @retry="deliveries.refresh()"
           ><EmptyState
             v-if="!deliveries.data.value?.items.length"
-            :title="t('暂无投递记录', 'No deliveries yet')"
-            :description="
-              t(
-                '故障、恢复或渠道测试会创建独立的持久投递任务。',
-                'Outages, recoveries, and channel tests create durable delivery jobs.',
-              )
-            "
+            :title="t('notifications.noDeliveriesYet')"
+            :description="t('notifications.outagesRecoveriesAndChannelTestsCreateDurableDelivery')"
           />
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ t('通知', 'Notification') }}</th>
-                  <th>{{ t('渠道', 'Channel') }}</th>
-                  <th>{{ t('状态 / 尝试', 'Status / attempts') }}</th>
-                  <th>{{ t('创建时间', 'Created') }}</th>
-                  <th>{{ t('失败原因', 'Failure reason') }}</th>
+                  <th>{{ t('notifications.notification') }}</th>
+                  <th>{{ t('common.channel') }}</th>
+                  <th>{{ t('notifications.statusAttempts') }}</th>
+                  <th>{{ t('common.created') }}</th>
+                  <th>{{ t('notifications.failureReason') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,43 +243,33 @@ function refresh() {
     >
   </section>
   <p class="note" un-mt="5">
-    {{
-      t(
-        '失败投递按有限退避重试。已失效的故障消息会跳过；极端崩溃情形下可能重复发送。维护期间抑制服务故障与恢复通知。',
-        'Failed jobs use bounded backoff. Stale outage messages are skipped; an extreme crash can produce a duplicate. Maintenance suppresses outage and recovery notifications.',
-      )
-    }}
+    {{ t('notifications.failedJobsUseBoundedBackoffStaleOutageMessages') }}
   </p>
   <Modal
     v-model:open="open"
-    :title="form.id ? t('编辑通知渠道', 'Edit channel') : t('添加通知渠道', 'Add channel')"
+    :title="form.id ? t('notifications.editChannel') : t('notifications.addChannel2')"
     ><form id="channel-form" @submit.prevent="save">
-      <Field :label="t('显示名称', 'Display name')"><input v-model="form.name" required /></Field
-      ><Field :label="t('Shoutrrr 服务 URL 秘密', 'Shoutrrr service URL secret')" un-mt="5"
+      <Field :label="t('common.displayName')"><input v-model="form.name" required /></Field
+      ><Field :label="t('notifications.shoutrrrServiceUrlSecret')" un-mt="5"
         ><SecretSelect v-model="form.serviceUrlSecretId" :secrets="secrets.data.value?.items || []"
       /></Field>
       <p class="field-hint" un-mt="2">
-        {{
-          t(
-            '如 smtp://…、telegram://… 等，完整 URL 存储为秘密，不会回读。',
-            'For smtp://…, telegram://…, and other service URLs. The full URL stays in a secret and cannot be read back.',
-          )
-        }}
+        {{ t('notifications.forSmtpTelegramAndOtherServiceUrlsThe') }}
       </p>
-      <Toggle v-model="form.enabled" :label="t('启用渠道', 'Enable channel')" un-mt="5" />
+      <Toggle v-model="form.enabled" :label="t('notifications.enableChannel')" un-mt="5" />
       <p v-if="error" class="inline-error">{{ error }}</p>
     </form>
     <template #footer
-      ><button class="button" @click="open = false">{{ t('取消', 'Cancel') }}</button
+      ><button class="button" @click="open = false">{{ t('common.cancel') }}</button
       ><button class="button primary" form="channel-form" :disabled="saving">
-        {{ t('保存', 'Save') }}
+        {{ t('notifications.save') }}
       </button></template
     ></Modal
-  ><Modal v-model:open="deleteOpen" :title="t('删除通知渠道', 'Delete channel')"
+  ><Modal v-model:open="deleteOpen" :title="t('notifications.deleteChannel')"
     ><p>{{ deleteTarget?.name }}</p>
     <template #footer
-      ><button class="button" @click="deleteOpen = false">{{ t('取消', 'Cancel') }}</button
-      ><button class="button danger" @click="remove">{{ t('删除', 'Delete') }}</button></template
+      ><button class="button" @click="deleteOpen = false">{{ t('common.cancel') }}</button
+      ><button class="button danger" @click="remove">{{ t('common.delete') }}</button></template
     ></Modal
   >
 </template>

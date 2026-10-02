@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useLocalStorage, usePreferredDark } from '@vueuse/core'
-export const locale = useLocalStorage<'zh-CN' | 'en'>('octopulse.locale', 'zh-CN')
+import { i18n, t } from './i18n.ts'
 export const theme = useLocalStorage<'light' | 'dark' | 'system'>('octopulse.theme', 'system')
 export const timezone = useLocalStorage(
   'octopulse.timezone',
@@ -10,27 +10,30 @@ const prefersDark = usePreferredDark()
 export const dark = computed(
   () => theme.value === 'dark' || (theme.value === 'system' && prefersDark.value),
 )
-export const t = (zh: string, en: string) => (locale.value === 'zh-CN' ? zh : en)
-export function formatDate(value: number | string | undefined) {
-  if (!value) return '—'
+export function formatDate(value: number | string | undefined | null) {
+  if (value == null || value === '' || value === 0) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat(locale.value, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return i18n.global.d(date, {
+    key: 'short',
     timeZone: timezone.value,
-  }).format(date)
+  })
 }
 export function formatPercent(value: number | undefined | null) {
-  return value == null ? '—' : `${(value > 1 ? value : value * 100).toFixed(2)}%`
+  if (value == null || !Number.isFinite(value)) return '—'
+  return i18n.global.n(value > 1 ? value / 100 : value, 'percent')
 }
-export function duration(milliseconds: number | undefined) {
-  if (milliseconds == null) return '—'
-  if (milliseconds < 1000) return `${Math.round(milliseconds)} ms`
-  if (milliseconds < 60000) return `${(milliseconds / 1000).toFixed(1)} s`
-  if (milliseconds < 3600000) return `${Math.round(milliseconds / 60000)} min`
-  if (milliseconds < 86400000) return `${(milliseconds / 3600000).toFixed(1)} h`
-  return `${(milliseconds / 86400000).toFixed(1)} d`
+export function duration(milliseconds: number | undefined | null) {
+  if (milliseconds == null || !Number.isFinite(milliseconds)) return '—'
+  if (milliseconds < 1000)
+    return t('duration.milliseconds', { value: i18n.global.n(milliseconds, 'integer') })
+  if (milliseconds < 60000)
+    return t('duration.seconds', { value: i18n.global.n(milliseconds / 1000, 'decimal') })
+  if (milliseconds < 3600000)
+    return t('duration.minutes', { value: i18n.global.n(milliseconds / 60000, 'integer') })
+  if (milliseconds < 86400000)
+    return t('duration.hours', { value: i18n.global.n(milliseconds / 3600000, 'decimal') })
+  return t('duration.days', { value: i18n.global.n(milliseconds / 86400000, 'decimal') })
 }
 export function datetimeInput(value: number, tz = timezone.value) {
   if (!value) return ''
@@ -47,7 +50,7 @@ export function datetimeInput(value: number, tz = timezone.value) {
 }
 export function datetimeMilliseconds(value: string, tz = timezone.value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value)
-  if (!match) throw new Error(t('日期时间无效', 'Invalid date and time'))
+  if (!match) throw new Error(t('preferences.invalidDateAndTime'))
   const [, year, month, day, hour, minute] = match
   const target = Date.UTC(+year!, +month! - 1, +day!, +hour!, +minute!)
   let guess = target
@@ -67,39 +70,34 @@ export function datetimeMilliseconds(value: string, tz = timezone.value) {
     guess += target - local
   }
   if (datetimeInput(guess, tz) !== value.slice(0, 16))
-    throw new Error(
-      t(
-        '该时区中不存在此时间，请检查夏令时转换。',
-        'This wall-clock time does not exist in the selected time zone.',
-      ),
-    )
+    throw new Error(t('preferences.thisWallClockTimeDoesNotExistIn'))
   return guess
 }
 export function statusLabel(value: string) {
-  const labels: Record<string, [string, string]> = {
-    admin: ['管理员', 'Administrator'],
-    operator: ['操作员', 'Operator'],
-    viewer: ['只读', 'Viewer'],
-    investigating: ['调查中', 'Investigating'],
-    identified: ['已定位', 'Identified'],
-    monitoring: ['观察中', 'Monitoring'],
-    resolved: ['已解决', 'Resolved'],
-    none: ['仅信息', 'Informational'],
-    partial: ['部分影响', 'Partial impact'],
-    outage: ['全面故障', 'Major outage'],
-    pending: ['待投递', 'Pending'],
-    leased: ['投递中', 'Delivering'],
-    retry: ['等待重试', 'Retry pending'],
-    sent: ['已投递', 'Sent'],
-    delivered: ['已投递', 'Delivered'],
-    discarded: ['已跳过', 'Skipped'],
-    failed: ['失败', 'Failed'],
-    test: ['渠道测试', 'Channel test'],
-    down: ['故障', 'Down'],
-    up: ['正常', 'Up'],
-    certificate_expiring: ['证书即将到期', 'Certificate expiring'],
-    certificate_expired: ['证书已过期', 'Certificate expired'],
-    certificate_renewed: ['证书续期', 'Certificate renewed'],
+  const labels: Record<string, string> = {
+    admin: 'status.admin',
+    operator: 'status.operator',
+    viewer: 'status.viewer',
+    investigating: 'status.investigating',
+    identified: 'status.identified',
+    monitoring: 'status.monitoring',
+    resolved: 'status.resolved',
+    none: 'status.none',
+    partial: 'status.partial',
+    outage: 'status.outage',
+    pending: 'status.pending',
+    leased: 'status.leased',
+    retry: 'status.retry',
+    sent: 'status.sent',
+    delivered: 'status.delivered',
+    discarded: 'status.discarded',
+    failed: 'status.failed',
+    test: 'status.test',
+    down: 'status.down',
+    up: 'status.up',
+    certificate_expiring: 'status.certificate_expiring',
+    certificate_expired: 'status.certificate_expired',
+    certificate_renewed: 'status.certificate_renewed',
   }
-  return labels[value] ? t(...labels[value]!) : value
+  return Object.hasOwn(labels, value) ? t(labels[value]!) : value
 }

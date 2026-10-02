@@ -1,3 +1,5 @@
+import { t } from './i18n'
+
 export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
@@ -5,7 +7,7 @@ export function parseJSON<T>(value: string, label: string): T {
   try {
     return JSON.parse(value) as T
   } catch {
-    throw new Error(`${label}: JSON 格式无效 / Invalid JSON`)
+    throw new Error(t('errors.invalidJSON', { label }))
   }
 }
 export function splitValues(value: string): string[] {

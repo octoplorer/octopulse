@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, Pencil, Trash2, CalendarClock } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
@@ -10,13 +11,7 @@ import {
   listMonitorsQuery,
   listPagesQuery,
 } from '../../../client/@pinia/colada.gen'
-import {
-  t,
-  formatDate,
-  timezone,
-  datetimeInput,
-  datetimeMilliseconds,
-} from '../../../lib/preferences'
+import { formatDate, timezone, datetimeInput, datetimeMilliseconds } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -25,7 +20,9 @@ import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
 
-definePage({ meta: { title: ['计划维护', 'Maintenance'] } })
+const { t } = useI18n({ useScope: 'global' })
+
+definePage({ meta: { title: 'navigation.maintenance' } })
 
 const query = useCollection<Maintenance>('maintenance', listMaintenanceQuery()),
   monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
@@ -69,7 +66,7 @@ async function save() {
     if (form.id) await sdk.updateMaintenance({ path: { id: form.id }, body, throwOnError: true })
     else await sdk.createMaintenance({ body, throwOnError: true })
     open.value = false
-    notify(t('维护计划已保存', 'Maintenance saved'))
+    notify(t('maintenance.maintenanceSaved'))
     await query.refresh()
   } catch (e) {
     error.value = errorText(e)
@@ -82,7 +79,7 @@ async function remove() {
   try {
     await sdk.deleteMaintenance({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
-    notify(t('维护计划已删除', 'Maintenance deleted'))
+    notify(t('maintenance.maintenanceDeleted'))
     await query.refresh()
   } catch (e) {
     notify(errorText(e), 'error')
@@ -90,10 +87,10 @@ async function remove() {
 }
 function maintenanceStatus(window: Maintenance) {
   return window.endsAt < Date.now()
-    ? t('已结束', 'Completed')
+    ? t('maintenance.completed')
     : window.startsAt > Date.now()
-      ? t('计划中', 'Scheduled')
-      : t('进行中', 'In progress')
+      ? t('maintenance.scheduled')
+      : t('maintenance.inProgress')
 }
 function confirmDelete(value: Maintenance) {
   deleteTarget.value = value
@@ -102,36 +99,26 @@ function confirmDelete(value: Maintenance) {
 </script>
 <template>
   <PageHeader
-    :title="t('计划维护', 'Maintenance')"
-    :description="
-      t(
-        '计划内工作继续采集，排除统计时长并抑制故障与恢复通知。',
-        'Planned work keeps collection running, excludes duration, and suppresses outage/recovery notifications.',
-      )
-    "
+    :title="t('navigation.maintenance')"
+    :description="t('maintenance.plannedWorkKeepsCollectionRunningExcludesDurationAnd')"
     ><button v-if="canEdit()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('安排维护', 'Schedule maintenance') }}
+      <Plus :size="15" />{{ t('common.scheduleMaintenance') }}
     </button></PageHeader
   >
   <section class="card">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
       ><EmptyState
         v-if="!query.data.value?.items.length"
-        :title="t('暂无维护计划', 'No scheduled maintenance')"
-        :description="
-          t(
-            '安排升级窗口，并提前通知状态页访问者。',
-            'Plan an upgrade window and inform status-page visitors in advance.',
-          )
-        " />
+        :title="t('maintenance.noScheduledMaintenance')"
+        :description="t('maintenance.planAnUpgradeWindowAndInformStatusPage')" />
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ t('维护计划', 'Maintenance') }}</th>
-              <th>{{ t('时间窗口', 'Window') }}</th>
-              <th>{{ t('范围', 'Scope') }}</th>
-              <th>{{ t('状态', 'Status') }}</th>
+              <th>{{ t('maintenance.maintenance') }}</th>
+              <th>{{ t('maintenance.window') }}</th>
+              <th>{{ t('maintenance.scope') }}</th>
+              <th>{{ t('common.status') }}</th>
               <th />
             </tr>
           </thead>
@@ -145,18 +132,26 @@ function confirmDelete(value: Maintenance) {
               <td class="muted" un-text="10px">
                 {{ formatDate(window.startsAt) }}<br />{{ formatDate(window.endsAt) }}
               </td>
-              <td>{{ window.monitorIds.length }} {{ t('项监控', 'monitors') }}</td>
+              <td>
+                {{
+                  t(
+                    'counts.monitors',
+                    { count: window.monitorIds.length },
+                    window.monitorIds.length,
+                  )
+                }}
+              </td>
               <td>
                 <span class="pill">{{ maintenanceStatus(window) }}</span>
               </td>
               <td>
                 <div v-if="canEdit()" un-flex="~ gap-1">
-                  <button class="icon-button" @click="edit(window)" :aria-label="t('编辑', 'Edit')">
+                  <button class="icon-button" @click="edit(window)" :aria-label="t('common.edit')">
                     <Pencil :size="14" /></button
                   ><button
                     class="icon-button"
                     @click="confirmDelete(window)"
-                    :aria-label="t('删除', 'Delete')"
+                    :aria-label="t('common.delete')"
                   >
                     <Trash2 :size="14" />
                   </button>
@@ -169,31 +164,26 @@ function confirmDelete(value: Maintenance) {
   </section>
   <Modal
     v-model:open="open"
-    :title="form.id ? t('编辑维护计划', 'Edit maintenance') : t('安排维护', 'Schedule maintenance')"
+    :title="form.id ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')"
     wide
     ><form id="maintenance-form" @submit.prevent="save">
       <div class="form-grid">
-        <Field class="span-full" :label="t('名称', 'Name')"
+        <Field class="span-full" :label="t('common.name')"
           ><input v-model="form.name" required /></Field
-        ><Field class="span-full" :label="t('描述', 'Description')">
+        ><Field class="span-full" :label="t('maintenance.description')">
           <textarea v-model="form.description" /></Field
-        ><Field :label="t('开始时间', 'Starts at')"
+        ><Field :label="t('maintenance.startsAt')"
           ><input v-model="start" type="datetime-local" required /></Field
-        ><Field :label="t('结束时间', 'Ends at')"
+        ><Field :label="t('maintenance.endsAt')"
           ><input v-model="end" type="datetime-local" required /></Field
         ><Field
           class="span-full"
-          :label="t('时间窗口时区', 'Window time zone')"
-          :hint="
-            t(
-              '上方输入以此时区的当地时间解释。',
-              'The inputs above are interpreted as wall-clock time in this time zone.',
-            )
-          "
+          :label="t('maintenance.windowTimeZone')"
+          :hint="t('maintenance.theInputsAboveAreInterpretedAsWallClock')"
           ><input v-model="form.timezone" required placeholder="Asia/Shanghai"
         /></Field>
         <div class="span-full">
-          <label class="field-label">{{ t('影响的监控项', 'Affected monitors') }}</label>
+          <label class="field-label">{{ t('maintenance.affectedMonitors') }}</label>
           <div class="checkbox-group" un-mt="3">
             <label
               v-for="monitor in monitors.data.value?.items"
@@ -206,7 +196,7 @@ function confirmDelete(value: Maintenance) {
           </div>
         </div>
         <div class="span-full">
-          <label class="field-label">{{ t('公开展示到状态页', 'Show on status pages') }}</label>
+          <label class="field-label">{{ t('maintenance.showOnStatusPages') }}</label>
           <div class="checkbox-group" un-mt="3">
             <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label"
               ><input v-model="form.pageIds" type="checkbox" :value="page.id" />{{
@@ -219,16 +209,16 @@ function confirmDelete(value: Maintenance) {
       <p v-if="error" class="inline-error">{{ error }}</p>
     </form>
     <template #footer
-      ><button class="button" @click="open = false">{{ t('取消', 'Cancel') }}</button
+      ><button class="button" @click="open = false">{{ t('common.cancel') }}</button
       ><button class="button primary" form="maintenance-form" :disabled="saving">
-        {{ t('保存计划', 'Save schedule') }}
+        {{ t('maintenance.saveSchedule') }}
       </button></template
     ></Modal
-  ><Modal v-model:open="deleteOpen" :title="t('删除维护计划', 'Delete maintenance')"
+  ><Modal v-model:open="deleteOpen" :title="t('maintenance.deleteMaintenance')"
     ><p>{{ deleteTarget?.name }}</p>
     <template #footer
-      ><button class="button" @click="deleteOpen = false">{{ t('取消', 'Cancel') }}</button
-      ><button class="button danger" @click="remove">{{ t('删除', 'Delete') }}</button></template
+      ><button class="button" @click="deleteOpen = false">{{ t('common.cancel') }}</button
+      ><button class="button danger" @click="remove">{{ t('common.delete') }}</button></template
     ></Modal
   >
 </template>

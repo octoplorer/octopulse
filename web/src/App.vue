@@ -3,18 +3,19 @@
   <div class="toast-stack" aria-live="polite">
     <div v-for="item in notices" :key="item.id" class="toast" :class="item.kind">
       <span>{{ item.message }}</span
-      ><button @click="dismissNotice(item.id)" :aria-label="t('关闭通知', 'Close notification')">
-        ×
-      </button>
+      ><button @click="dismissNotice(item.id)" :aria-label="t('app.closeNotification')">×</button>
     </div>
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { watch } from 'vue'
-import { t } from './lib/preferences'
+
 import { useQueryCache } from '@pinia/colada'
 import { notices, dismissNotice } from './lib/notices'
 import { currentUser, observeMutations } from './lib/api'
+const { t } = useI18n({ useScope: 'global' })
+
 const cache = useQueryCache()
 observeMutations(() => {
   void cache.invalidateQueries().catch(() => {})

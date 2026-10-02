@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
-import { t } from '../lib/preferences'
+const { t } = useI18n({ useScope: 'global' })
+
 const props = defineProps<{ state?: string; paused?: boolean; maintenance?: boolean }>()
 const key = computed(() =>
   props.paused
@@ -9,23 +11,23 @@ const key = computed(() =>
       ? 'maintenance'
       : (props.state || 'unknown').toLowerCase(),
 )
-const labels: Record<string, [string, string]> = {
-  up: ['正常', 'Operational'],
-  down: ['故障', 'Down'],
-  unknown: ['等待数据', 'Unknown'],
-  paused: ['已暂停', 'Paused'],
-  maintenance: ['维护中', 'Maintenance'],
-  healthy: ['证书有效', 'Valid certificate'],
-  expiring: ['即将到期', 'Expiring'],
-  expired: ['已过期', 'Expired'],
-  check_failed: ['检查失败', 'Check failed'],
-  normal: ['全部正常', 'All systems operational'],
-  operational: ['全部正常', 'All systems operational'],
-  partial_outage: ['部分故障', 'Partial outage'],
-  full_outage: ['全面故障', 'Major outage'],
-  insufficient_data: ['数据不足', 'Insufficient data'],
+const labels: Record<string, string> = {
+  up: 'states.up',
+  down: 'states.down',
+  unknown: 'states.unknown',
+  paused: 'states.paused',
+  maintenance: 'states.maintenance',
+  healthy: 'states.healthy',
+  expiring: 'states.expiring',
+  expired: 'states.expired',
+  check_failed: 'states.check_failed',
+  normal: 'states.normal',
+  operational: 'states.operational',
+  partial_outage: 'states.partial_outage',
+  full_outage: 'states.full_outage',
+  insufficient_data: 'states.insufficient_data',
 }
-const label = computed(() => (labels[key.value] ? t(...labels[key.value]!) : props.state))
+const label = computed(() => (labels[key.value] ? t(labels[key.value]!) : props.state))
 </script>
 <template>
   <span class="state-badge" :data-state="key"><i />{{ label }}</span>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { Server, Settings, RefreshCw, ExternalLink, ArrowUpRight, Save, Clock } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
+import { ref, reactive } from 'vue'
+import { Server, Settings, RefreshCw, ArrowUpRight, Save } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useRecord, useCollection } from '../../../lib/data'
 import { listBeszelSystemsQuery, listSecretsQuery } from '../../../client/@pinia/colada.gen'
@@ -17,7 +18,7 @@ import type {
   Secret,
 } from '../../../lib/types'
 import { response, isAdmin } from '../../../lib/api'
-import { t, formatDate, duration } from '../../../lib/preferences'
+import { formatDate, duration } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { useIntervalFn } from '@vueuse/core'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -29,7 +30,9 @@ import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
 import Sparkline from '../../../components/Sparkline.vue'
 
-definePage({ meta: { title: ['服务器', 'Servers'] } })
+const { t, n } = useI18n({ useScope: 'global' })
+
+definePage({ meta: { title: 'navigation.servers' } })
 
 const query = useRecord<BeszelSystems>(
     () => 'beszel/systems',
@@ -74,7 +77,7 @@ async function save() {
       await response<BeszelConfig>(sdk.updateBeszelConfig({ body: config, throwOnError: true })),
     )
     configOpen.value = false
-    notify(t('Beszel 连接已保存', 'Beszel connection saved'))
+    notify(t('servers.beszelConnectionSaved'))
     await query.refresh()
   } catch (e) {
     error.value = errorText(e)
@@ -114,30 +117,31 @@ async function detail(server: BeszelSystem) {
   }
 }
 function percentage(value: number | undefined) {
-  return value == null ? '—' : `${Math.max(0, value).toFixed(1)}%`
+  return value == null
+    ? '—'
+    : n(Math.max(0, value) / 100, {
+        style: 'percent',
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })
 }
 useIntervalFn(() => query.refresh(), 30000)
 </script>
 <template>
   <PageHeader
-    :title="t('服务器', 'Servers')"
-    :description="
-      t(
-        '来自 Beszel 的独立服务器指标，与网站可用性互不关联。',
-        'Independent server metrics from Beszel, separate from website availability.',
-      )
-    "
+    :title="t('navigation.servers')"
+    :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')"
     ><button class="button" @click="query.refresh()">
-      <RefreshCw :size="14" />{{ t('刷新', 'Refresh') }}</button
+      <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><button v-if="isAdmin()" class="button primary" @click="configure">
-      <Settings :size="14" />{{ t('Beszel 连接', 'Beszel connection') }}
+      <Settings :size="14" />{{ t('servers.beszelConnection') }}
     </button></PageHeader
   >
   <div class="alert-strip">
     <Server :size="16" /><span
-      >{{ t('来源', 'Source') }}: {{ query.data.value?.source || 'Beszel' }} ·
-      {{ t('最近同步', 'Last sync') }} {{ formatDate(query.data.value?.syncedAt)
-      }}<span v-if="query.data.value?.stale"> · {{ t('数据已过期', 'Data is stale') }}</span></span
+      >{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
+      {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
+      }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span
     >
   </div>
   <div v-if="query.data.value?.error" class="error-banner" role="alert">
@@ -146,15 +150,10 @@ useIntervalFn(() => query.refresh(), 30000)
   <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
     ><EmptyState
       v-if="!query.data.value?.items.length"
-      :title="t('接入你的 Beszel Hub', 'Connect your Beszel Hub')"
-      :description="
-        t(
-          '使用专用账号读取可见服务器，凭据仅保留在 Go 服务端。',
-          'Use a dedicated account to read its visible systems. Credentials stay on the Go server.',
-        )
-      "
+      :title="t('servers.connectYourBeszelHub')"
+      :description="t('servers.useADedicatedAccountToReadItsVisible')"
       ><button v-if="isAdmin()" class="button primary" @click="configure">
-        {{ t('配置连接', 'Configure connection') }}
+        {{ t('servers.configureConnection') }}
       </button></EmptyState
     >
     <div v-else class="servers-grid">
@@ -177,90 +176,78 @@ useIntervalFn(() => query.refresh(), 30000)
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('内存', 'MEMORY') }}</span
+            <span class="mini-label">{{ t('servers.memory') }}</span
             ><strong>{{ percentage(server.memory) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.memory || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('磁盘', 'DISK') }}</span
+            <span class="mini-label">{{ t('servers.disk') }}</span
             ><strong>{{ percentage(server.disk) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.disk || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('同步时间', 'UPDATED') }}</span>
+            <span class="mini-label">{{ t('servers.updated') }}</span>
             <p class="muted" un-text="10px" un-mt="2">{{ formatDate(server.updatedAt) }}</p>
-            <span v-if="server.stale" class="certificate-risk">{{
-              t('数据过期', 'Stale data')
-            }}</span>
+            <span v-if="server.stale" class="certificate-risk">{{ t('servers.staleData') }}</span>
           </div>
         </div>
         <div class="section-divider" />
         <button class="button ghost" un-p="0!" @click="detail(server)">
-          {{ t('查看历史与容器', 'History & containers') }}<ArrowUpRight :size="14" />
+          {{ t('servers.historyContainers') }}<ArrowUpRight :size="14" />
         </button>
       </article></div
   ></AsyncState>
   <p class="note" un-mt="6">
-    {{
-      t(
-        '服务器失联、数据过期或版本不兼容不会改变网站状态。历史范围以 Hub 的实际保留数据为准。',
-        'Offline servers, stale data, or incompatible versions do not change website states. History follows the Hub’s actual retention.',
-      )
-    }}
+    {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
   </p>
-  <Modal v-model:open="configOpen" :title="t('Beszel Hub 连接', 'Beszel Hub connection')"
+  <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')"
     ><form id="beszel-form" @submit.prevent="save">
       <p class="note" un-mb="5">
-        {{
-          t(
-            '支持 Beszel 0.20.x，使用可见服务器范围受限的专用只读账号。',
-            'Supports Beszel 0.20.x. Use a dedicated read-only account scoped to visible systems.',
-          )
-        }}
+        {{ t('servers.supportsBeszel020XUseADedicated') }}
       </p>
-      <Field :label="t('Hub URL', 'Hub URL')"
+      <Field :label="t('servers.hubUrl')"
         ><input
           v-model="config.url"
           type="url"
           placeholder="https://beszel.example.com"
           required /></Field
-      ><Field :label="t('专用账号邮箱', 'Dedicated account email')" un-mt="4"
+      ><Field :label="t('servers.dedicatedAccountEmail')" un-mt="4"
         ><input v-model="config.email" type="email" required /></Field
-      ><Field :label="t('密码秘密引用', 'Password secret reference')" un-mt="4"
+      ><Field :label="t('servers.passwordSecretReference')" un-mt="4"
         ><SecretSelect
           v-model="config.passwordSecretId"
           :secrets="secrets.data.value?.items || []" /></Field
-      ><Field :label="t('同步间隔（秒）', 'Sync interval (seconds)')" un-mt="4"
+      ><Field :label="t('servers.syncIntervalSeconds')" un-mt="4"
         ><input v-model.number="config.pollSeconds" type="number" min="30" required /></Field
-      ><Toggle v-model="config.enabled" :label="t('启用接入', 'Enable integration')" un-mt="5" />
+      ><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" un-mt="5" />
       <p v-if="error" class="inline-error">{{ error }}</p>
     </form>
     <template #footer
-      ><button class="button" @click="configOpen = false">{{ t('取消', 'Cancel') }}</button
+      ><button class="button" @click="configOpen = false">{{ t('common.cancel') }}</button
       ><button class="button primary" form="beszel-form" :disabled="saving">
-        <Save :size="14" />{{ t('保存连接', 'Save connection') }}
+        <Save :size="14" />{{ t('servers.saveConnection') }}
       </button></template
     ></Modal
   ><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide
     ><div v-if="selected?.info" class="hint-grid" un-mb="5">
       <div>
-        <span class="mini-label">{{ t('主机名', 'Hostname') }}</span>
+        <span class="mini-label">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
       </div>
       <div>
         <span class="mini-label">CPU</span>
         <p>{{ selected.info.cpuModel || '—' }}</p>
         <p class="muted">
-          {{ selected.info.cores }} {{ t('核心', 'cores') }} / {{ selected.info.threads }}
-          {{ t('线程', 'threads') }}
+          {{ selected.info.cores }} {{ t('servers.cores') }} / {{ selected.info.threads }}
+          {{ t('servers.threads') }}
         </p>
       </div>
       <div>
-        <span class="mini-label">{{ t('系统与 Agent', 'System & agent') }}</span>
+        <span class="mini-label">{{ t('servers.systemAgent') }}</span>
         <p>{{ selected.info.kernel || '—' }}</p>
         <p class="muted">
           {{ selected.info.agentVersion || '—' }} ·
@@ -272,21 +259,21 @@ useIntervalFn(() => query.refresh(), 30000)
       ><Tabs.Root v-model="tab"
         ><Tabs.List class="tabs-list"
           ><Tabs.Trigger class="tabs-trigger" value="history">{{
-            t('历史指标', 'History')
+            t('servers.history')
           }}</Tabs.Trigger
           ><Tabs.Trigger class="tabs-trigger" value="containers">{{
-            t('容器', 'Containers')
+            t('servers.containers')
           }}</Tabs.Trigger></Tabs.List
         ><Tabs.Content value="history">
           <div un-flex="~ items-center justify-between gap-3" un-mt="5">
             <p class="note">
-              {{ t('来源', 'Source') }}: {{ historyMeta?.source || 'Beszel' }} ·
+              {{ t('common.source') }}: {{ historyMeta?.source || 'Beszel' }} ·
               {{ formatDate(historyMeta?.syncedAt)
-              }}<span v-if="historyMeta?.stale"> · {{ t('数据已过期', 'Stale data') }}</span>
+              }}<span v-if="historyMeta?.stale"> · {{ t('common.staleData') }}</span>
             </p>
             <select
               v-model="historyRange"
-              :aria-label="t('历史范围', 'History range')"
+              :aria-label="t('servers.historyRange')"
               @change="selected && detail(selected)"
             >
               <option v-for="range in ['1h', '12h', '24h', '1w', '30d']" :key="range">
@@ -295,10 +282,7 @@ useIntervalFn(() => query.refresh(), 30000)
             </select>
           </div>
           <p v-if="historyMeta?.error" class="inline-error">{{ historyMeta.error }}</p>
-          <EmptyState
-            v-if="!history.length"
-            :title="t('Hub 未返回历史数据', 'No history returned by the Hub')"
-          />
+          <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
           <div v-else un-py="6">
             <div class="hint-grid">
               <section>
@@ -311,7 +295,7 @@ useIntervalFn(() => query.refresh(), 30000)
                 />
               </section>
               <section>
-                <h3>{{ t('内存', 'Memory') }} (%)</h3>
+                <h3>{{ t('common.memory') }} (%)</h3>
                 <Sparkline
                   show-scale
                   :values="history.map((x) => x.memory)"
@@ -320,7 +304,7 @@ useIntervalFn(() => query.refresh(), 30000)
                 />
               </section>
               <section>
-                <h3>{{ t('磁盘', 'Disk') }} (%)</h3>
+                <h3>{{ t('servers.disk2') }} (%)</h3>
                 <Sparkline
                   show-scale
                   :values="history.map((x) => x.disk)"
@@ -329,7 +313,7 @@ useIntervalFn(() => query.refresh(), 30000)
                 />
               </section>
               <section>
-                <h3>{{ t('网络接收', 'Network received') }} (MiB/s)</h3>
+                <h3>{{ t('servers.networkReceived') }} (MiB/s)</h3>
                 <Sparkline
                   show-scale
                   :values="history.map((x) => x.networkIn / 1048576)"
@@ -338,7 +322,7 @@ useIntervalFn(() => query.refresh(), 30000)
                 />
               </section>
               <section>
-                <h3>{{ t('网络发送', 'Network sent') }} (MiB/s)</h3>
+                <h3>{{ t('servers.networkSent') }} (MiB/s)</h3>
                 <Sparkline
                   show-scale
                   :values="history.map((x) => x.networkOut / 1048576)"
@@ -353,23 +337,20 @@ useIntervalFn(() => query.refresh(), 30000)
           </div></Tabs.Content
         ><Tabs.Content value="containers"
           ><p class="note" un-mt="5">
-            {{ t('来源', 'Source') }}: {{ containersMeta?.source || 'Beszel' }} ·
+            {{ t('common.source') }}: {{ containersMeta?.source || 'Beszel' }} ·
             {{ formatDate(containersMeta?.syncedAt)
-            }}<span v-if="containersMeta?.stale"> · {{ t('数据已过期', 'Stale data') }}</span>
+            }}<span v-if="containersMeta?.stale"> · {{ t('common.staleData') }}</span>
           </p>
           <p v-if="containersMeta?.error" class="inline-error">{{ containersMeta.error }}</p>
-          <EmptyState
-            v-if="!containers.length"
-            :title="t('没有可见容器数据', 'No visible container data')"
-          />
+          <EmptyState v-if="!containers.length" :title="t('servers.noVisibleContainerData')" />
           <div v-else class="table-wrap" un-mt="5">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ t('容器', 'Container') }}</th>
-                  <th>{{ t('状态', 'Status') }}</th>
+                  <th>{{ t('servers.container') }}</th>
+                  <th>{{ t('common.status') }}</th>
                   <th>CPU</th>
-                  <th>{{ t('内存', 'Memory') }} (MiB)</th>
+                  <th>{{ t('common.memory') }} (MiB)</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,7 +361,12 @@ useIntervalFn(() => query.refresh(), 30000)
                   </td>
                   <td>{{ container.status }}</td>
                   <td>{{ percentage(container.cpu) }}</td>
-                  <td>{{ container.memory.toFixed(1) }} MiB</td>
+                  <td>
+                    {{
+                      n(container.memory, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                    }}
+                    MiB
+                  </td>
                 </tr>
               </tbody>
             </table>

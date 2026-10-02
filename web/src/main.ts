@@ -1,5 +1,5 @@
 import { watch } from 'vue'
-import { locale, t } from './lib/preferences'
+import { i18n, locale, t } from './lib/i18n'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { PiniaColada } from '@pinia/colada'
@@ -18,8 +18,8 @@ watch(
   [() => router.currentRoute.value.path, locale],
   () => {
     if (router.currentRoute.value.path.startsWith('/app'))
-      document.title = `Octopulse · ${t('服务监控', 'Service monitoring')}`
+      document.title = `Octopulse · ${t('app.serviceMonitoring')}`
   },
   { immediate: true },
 )
-createApp(App).use(createPinia()).use(PiniaColada).use(router).mount('#app')
+createApp(App).use(i18n).use(createPinia()).use(PiniaColada).use(router).mount('#app')

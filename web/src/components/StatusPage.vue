@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import { Activity, Check, AlertTriangle, Clock, ArrowUpRight, Languages } from '@lucide/vue'
 import type { PublicPage } from '../lib/types'
 import { usePreferredDark } from '@vueuse/core'
-import { t, formatDate, formatPercent, duration, locale, statusLabel } from '../lib/preferences'
+import { formatDate, formatPercent, duration, statusLabel } from '../lib/preferences'
 import StateBadge from './StateBadge.vue'
 import Sparkline from './Sparkline.vue'
+
+const { t, n, locale } = useI18n({ useScope: 'global' })
 const props = defineProps<{
   page: PublicPage
   preview?: boolean
@@ -19,20 +22,20 @@ const prefersDark = usePreferredDark(),
       props.page.config.colorScheme === 'dark' ||
       (props.page.config.colorScheme === 'system' && prefersDark.value),
   )
-const stateLabels: Record<string, [string, string]> = {
-  operational: ['所有服务运行正常', 'All systems operational'],
-  normal: ['所有服务运行正常', 'All systems operational'],
-  up: ['所有服务运行正常', 'All systems operational'],
-  partial: ['部分服务受到影响', 'Some services are affected'],
-  partial_outage: ['部分服务受到影响', 'Some services are affected'],
-  outage: ['服务全面故障', 'Major service outage'],
-  full_outage: ['服务全面故障', 'Major service outage'],
-  maintenance: ['计划维护进行中', 'Scheduled maintenance in progress'],
-  unknown: ['等待有效观测数据', 'Waiting for observations'],
-  insufficient_data: ['等待有效观测数据', 'Waiting for observations'],
+const stateLabels: Record<string, string> = {
+  operational: 'publicState.operational',
+  normal: 'publicState.normal',
+  up: 'publicState.up',
+  partial: 'publicState.partial',
+  partial_outage: 'publicState.partial_outage',
+  outage: 'publicState.outage',
+  full_outage: 'publicState.full_outage',
+  maintenance: 'publicState.maintenance',
+  unknown: 'publicState.unknown',
+  insufficient_data: 'publicState.insufficient_data',
 }
 const heading = computed(() =>
-    stateLabels[props.page.state] ? t(...stateLabels[props.page.state]!) : props.page.state,
+    stateLabels[props.page.state] ? t(stateLabels[props.page.state]!) : props.page.state,
   ),
   good = computed(() => ['up', 'normal', 'operational'].includes(props.page.state)),
   incidents = computed(() =>
@@ -84,7 +87,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
           ><button
             v-if="!preview"
             class="icon-button"
-            :aria-label="t('切换语言', 'Switch language')"
+            :aria-label="t('common.switchLanguage')"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
             <Languages :size="16" /><span un-text="10px" un-ml="1">{{
@@ -94,12 +97,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
         </nav>
       </header>
       <div v-if="stale" class="note" role="status" un-mb="5">
-        {{
-          t(
-            '状态信息暂时无法刷新，以下为上次收到的数据。请留意最近更新时间。',
-            'Status data could not be refreshed. The last received data is shown below; check its update time.',
-          )
-        }}
+        {{ t('statusPage.statusDataCouldNotBeRefreshedTheLast') }}
       </div>
       <p v-if="page.config.description" class="status-page-description">
         {{ page.config.description }}
@@ -115,8 +113,8 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
         <div>
           <h1>{{ heading }}</h1>
           <p>
-            {{ t('最近更新', 'Last updated') }} {{ formatDate(page.updatedAt)
-            }}{{ preview ? ` · ${t('草稿预览', 'Draft preview')}` : '' }}
+            {{ t('statusPage.lastUpdated') }} {{ formatDate(page.updatedAt)
+            }}{{ preview ? ` · ${t('statusPage.draftPreview')}` : '' }}
           </p>
         </div>
       </div>
@@ -151,15 +149,18 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
               <template v-if="monitor.certificate"
                 ><div class="metric-row">
                   <span
-                    >{{ t('剩余有效期', 'Time remaining') }}
+                    >{{ t('statusPage.timeRemaining') }}
                     {{
                       monitor.certificate.expiresAt
-                        ? monitor.certificate.daysRemaining.toFixed(1)
+                        ? n(monitor.certificate.daysRemaining, {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1,
+                          })
                         : '—'
                     }}
-                    {{ t('天', 'days') }}</span
+                    {{ t('common.days') }}</span
                   ><span
-                    >{{ t('到期', 'Expires') }}
+                    >{{ t('statusPage.expires') }}
                     {{ formatDate(monitor.certificate.expiresAt) }}</span
                   >
                 </div></template
@@ -173,33 +174,31 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
                 />
                 <div v-if="showMetric(monitor.id, 'showUptime')" class="metric-row">
                   <span
-                    >{{ t('可用率', 'Uptime') }}
+                    >{{ t('common.uptime') }}
                     <strong>{{ formatPercent(monitor.availability?.uptime) }}</strong
                     ><span un-ml="3"
-                      >{{ t('覆盖率', 'Coverage') }}
+                      >{{ t('statusPage.coverage') }}
                       {{ formatPercent(monitor.availability?.coverage) }}</span
                     ></span
                   ><span
-                    >{{ t('有效时长', 'Effective duration') }}
+                    >{{ t('statusPage.effectiveDuration') }}
                     {{ duration(monitor.availability?.effectiveMs) }}</span
                   >
                 </div></template
               >
             </article>
             <p v-if="!group.monitors.length" class="muted" un-p="5">
-              {{ t('此分组暂无服务。', 'No services in this group.') }}
+              {{ t('statusPage.noServicesInThisGroup') }}
             </p>
           </div>
         </section>
         <p v-if="!page.groups.length" class="muted" un-py="6">
-          {{ t('尚未发布服务。', 'No services have been published yet.') }}
+          {{ t('statusPage.noServicesHaveBeenPublishedYet') }}
         </p></template
       >
       <section v-if="incidents.length">
         <h2 class="public-incidents-title">
-          {{
-            incidentId ? t('事件进展', 'Incident updates') : t('事件公告', 'Incident announcements')
-          }}
+          {{ incidentId ? t('statusPage.incidentUpdates') : t('statusPage.incidentAnnouncements') }}
         </h2>
         <article
           v-for="incident in incidents"
@@ -232,10 +231,12 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
         </article>
       </section>
       <RouterLink v-if="incidentId" :to="base || '/'" class="button" un-mt="5">{{
-        t('返回状态页', 'Back to status page')
+        t('statusPage.backToStatusPage')
       }}</RouterLink>
       <footer class="public-footer">
-        <span un-flex="~ items-center gap-1.5"><Activity :size="13" />Powered by Octopulse</span>
+        <span un-flex="~ items-center gap-1.5"
+          ><Activity :size="13" />{{ t('publicPage.poweredBy') }}</span
+        >
       </footer>
     </div>
   </div>

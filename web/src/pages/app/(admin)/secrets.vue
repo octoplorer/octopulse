@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
@@ -6,15 +7,16 @@ import type { Secret } from '../../../lib/types'
 import { isAdmin } from '../../../lib/api'
 import * as sdk from '../../../client/sdk.gen'
 import { listSecretsQuery } from '../../../client/@pinia/colada.gen'
-import { t, formatDate } from '../../../lib/preferences'
+import { formatDate } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: ['秘密凭据', 'Secrets'], roles: ['admin'] } })
+definePage({ meta: { title: 'navigation.secrets', roles: ['admin'] } })
 
 const query = useCollection<Secret>('secrets', listSecretsQuery()),
   open = ref(false),
@@ -38,7 +40,7 @@ async function save() {
     form.value = ''
     open.value = false
     await query.refresh()
-    notify(t('秘密已保存', 'Secret saved'))
+    notify(t('secrets.secretSaved'))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -51,7 +53,7 @@ async function remove() {
     await sdk.deleteSecret({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
-    notify(t('秘密已删除', 'Secret deleted'))
+    notify(t('secrets.secretDeleted'))
   } catch (e) {
     notify(errorText(e), 'error')
   }
@@ -67,43 +69,28 @@ function cancel() {
 </script>
 <template>
   <PageHeader
-    :title="t('秘密凭据', 'Secrets')"
-    :description="
-      t(
-        '集中管理请求、TLS、代理和通知使用的敏感值。',
-        'Manage sensitive values used by requests, TLS, proxies, and notifications.',
-      )
-    "
+    :title="t('navigation.secrets')"
+    :description="t('secrets.manageSensitiveValuesUsedByRequestsTlsProxies')"
     ><button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('添加秘密', 'Add secret') }}
+      <Plus :size="15" />{{ t('common.addSecret') }}
     </button></PageHeader
   >
   <div class="alert-strip">
-    <KeyRound :size="16" />{{
-      t(
-        '已保存的值不会回读。更新时可替换内容，监控与渠道继续使用同一个引用。',
-        'Saved values cannot be read back. Replace a value while monitors and channels keep the same reference.',
-      )
-    }}
+    <KeyRound :size="16" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
   <section class="card">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
       ><EmptyState
         v-if="!query.data.value?.items.length"
-        :title="t('暂无秘密引用', 'No secrets yet')"
-        :description="
-          t(
-            '可保存 Token、PEM 证书、代理密码和 Shoutrrr 服务 URL。',
-            'Store tokens, PEM certificates, proxy passwords, and Shoutrrr service URLs.',
-          )
-        " />
+        :title="t('secrets.noSecretsYet')"
+        :description="t('secrets.storeTokensPemCertificatesProxyPasswordsAndShoutrrr')" />
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ t('名称', 'Name') }}</th>
-              <th>{{ t('引用 ID', 'Reference ID') }}</th>
-              <th>{{ t('最近更新', 'Updated') }}</th>
+              <th>{{ t('common.name') }}</th>
+              <th>{{ t('secrets.referenceId') }}</th>
+              <th>{{ t('secrets.updated') }}</th>
               <th />
             </tr>
           </thead>
@@ -117,11 +104,11 @@ function cancel() {
               <td>
                 <div v-if="isAdmin()" un-flex="~ gap-2">
                   <button class="button small" @click="edit(secret)">
-                    <Pencil :size="12" />{{ t('替换', 'Replace') }}</button
+                    <Pencil :size="12" />{{ t('secrets.replace') }}</button
                   ><button
                     class="icon-button"
                     @click="confirmDelete(secret)"
-                    :aria-label="t('删除', 'Delete')"
+                    :aria-label="t('common.delete')"
                   >
                     <Trash2 :size="14" />
                   </button>
@@ -132,15 +119,11 @@ function cancel() {
         </table></div
     ></AsyncState>
   </section>
-  <Modal
-    v-model:open="open"
-    :title="form.id ? t('更新秘密', 'Update secret') : t('添加秘密', 'Add secret')"
+  <Modal v-model:open="open" :title="form.id ? t('secrets.updateSecret') : t('common.addSecret')"
     ><form id="secret-form" @submit.prevent="save">
-      <Field :label="t('名称', 'Name')"><input v-model="form.name" required /></Field
+      <Field :label="t('common.name')"><input v-model="form.name" required /></Field
       ><Field
-        :label="
-          form.id ? t('替换后的秘密值', 'Replacement secret value') : t('秘密值', 'Secret value')
-        "
+        :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')"
         un-mt="5"
       >
         <textarea v-model="form.value" required rows="6" autocomplete="off" spellcheck="false" />
@@ -149,24 +132,19 @@ function cancel() {
     </form>
     <template #footer
       ><button class="button" @click="cancel">
-        {{ t('取消', 'Cancel') }}</button
+        {{ t('common.cancel') }}</button
       ><button class="button primary" form="secret-form" :disabled="saving">
-        {{ t('保存秘密', 'Save secret') }}
+        {{ t('secrets.saveSecret') }}
       </button></template
     ></Modal
   ><Modal
     v-model:open="deleteOpen"
-    :title="t('删除秘密', 'Delete secret')"
-    :description="
-      t(
-        '被监控或渠道引用的秘密需要先解除引用。',
-        'Remove monitor and channel references before deleting a secret.',
-      )
-    "
+    :title="t('secrets.deleteSecret')"
+    :description="t('secrets.removeMonitorAndChannelReferencesBeforeDeletingA')"
     ><p>{{ deleteTarget?.name }}</p>
     <template #footer
-      ><button class="button" @click="deleteOpen = false">{{ t('取消', 'Cancel') }}</button
-      ><button class="button danger" @click="remove">{{ t('删除', 'Delete') }}</button></template
+      ><button class="button" @click="deleteOpen = false">{{ t('common.cancel') }}</button
+      ><button class="button danger" @click="remove">{{ t('common.delete') }}</button></template
     ></Modal
   >
 </template>

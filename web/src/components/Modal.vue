@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { Dialog } from '@ark-ui/vue/dialog'
 import { X } from '@lucide/vue'
-import { dark, t } from '../lib/preferences'
+import { dark } from '../lib/preferences'
+const { t } = useI18n({ useScope: 'global' })
+
 const open = defineModel<boolean>('open', { default: false })
 defineProps<{ title: string; description?: string; wide?: boolean }>()
 </script>
@@ -20,7 +23,7 @@ defineProps<{ title: string; description?: string; wide?: boolean }>()
                 description
               }}</Dialog.Description>
             </div>
-            <Dialog.CloseTrigger class="icon-button" :aria-label="t('关闭对话框', 'Close dialog')"
+            <Dialog.CloseTrigger class="icon-button" :aria-label="t('modal.closeDialog')"
               ><X :size="20"
             /></Dialog.CloseTrigger>
           </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ref, computed } from 'vue'
 import { Plus, Search, RefreshCw, Globe, Server, ChevronRight } from '@lucide/vue'
 import { useCollection } from '../../../../lib/data'
@@ -6,21 +7,23 @@ import { listMonitorsQuery } from '../../../../client/@pinia/colada.gen'
 import { useIntervalFn } from '@vueuse/core'
 import type { Monitor } from '../../../../lib/types'
 import { targetOf, monitorTypes } from '../../../../lib/monitor'
-import { t, formatDate } from '../../../../lib/preferences'
+import { formatDate } from '../../../../lib/preferences'
 import { canEdit } from '../../../../lib/api'
 import PageHeader from '../../../../components/PageHeader.vue'
 import StateBadge from '../../../../components/StateBadge.vue'
 import EmptyState from '../../../../components/EmptyState.vue'
 import AsyncState from '../../../../components/AsyncState.vue'
 
-definePage({ meta: { title: ['监控项', 'Monitors'] } })
+const { t, locale } = useI18n({ useScope: 'global' })
+
+definePage({ meta: { title: 'common.monitors' } })
 
 const query = useCollection<Monitor>('monitors', listMonitorsQuery()),
   search = ref(''),
   state = ref('all'),
   type = ref('all')
 const items = computed(() =>
-  [...(query.data.value?.items || [])].sort((a, b) => a.name.localeCompare(b.name)),
+  [...(query.data.value?.items || [])].sort((a, b) => a.name.localeCompare(b.name, locale.value)),
 )
 const filtered = computed(() =>
   items.value.filter(
@@ -38,17 +41,12 @@ useIntervalFn(() => query.refresh(), 30000)
 </script>
 <template>
   <PageHeader
-    :title="t('监控项', 'Monitors')"
-    :description="
-      t(
-        '定义服务的健康标准，及时发现每一次变化。',
-        'Define healthy behavior and detect every change.',
-      )
-    "
+    :title="t('common.monitors')"
+    :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')"
     ><button class="button" @click="query.refresh()">
-      <RefreshCw :size="14" />{{ t('刷新', 'Refresh') }}</button
+      <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary"
-      ><Plus :size="15" />{{ t('添加监控项', 'Add monitor') }}</RouterLink
+      ><Plus :size="15" />{{ t('common.addMonitor') }}</RouterLink
     ></PageHeader
   >
   <section class="card">
@@ -56,21 +54,21 @@ useIntervalFn(() => query.refresh(), 30000)
       <div class="search-box">
         <Search :size="16" /><input
           v-model="search"
-          :placeholder="t('搜索名称、目标或标签…', 'Search name, target, or tags…')"
-          :aria-label="t('搜索监控项', 'Search monitors')"
+          :placeholder="t('monitors.searchNameTargetOrTags')"
+          :aria-label="t('monitors.searchMonitors')"
         />
       </div>
       <div un-flex="~ items-center gap-2">
-        <select v-model="state" un-w="auto!" :aria-label="t('状态筛选', 'Filter status')">
-          <option value="all">{{ t('全部状态', 'All states') }}</option>
-          <option value="up">{{ t('正常', 'Up') }}</option>
-          <option value="down">{{ t('故障', 'Down') }}</option>
-          <option value="unknown">{{ t('等待数据', 'Unknown') }}</option>
-          <option value="paused">{{ t('暂停', 'Paused') }}</option></select
-        ><select v-model="type" un-w="auto!" :aria-label="t('类型筛选', 'Filter type')">
-          <option value="all">{{ t('全部类型', 'All types') }}</option>
+        <select v-model="state" un-w="auto!" :aria-label="t('monitors.filterStatus')">
+          <option value="all">{{ t('monitors.allStates') }}</option>
+          <option value="up">{{ t('monitors.up') }}</option>
+          <option value="down">{{ t('monitors.down') }}</option>
+          <option value="unknown">{{ t('monitors.unknown') }}</option>
+          <option value="paused">{{ t('common.paused') }}</option></select
+        ><select v-model="type" un-w="auto!" :aria-label="t('monitors.filterType')">
+          <option value="all">{{ t('monitors.allTypes') }}</option>
           <option v-for="item in monitorTypes" :key="item.value" :value="item.value">
-            {{ t(item.zh, item.en) }}
+            {{ t(item.label) }}
           </option>
         </select>
       </div>
@@ -79,34 +77,29 @@ useIntervalFn(() => query.refresh(), 30000)
       ><EmptyState
         v-if="!filtered.length"
         :title="
-          items.length
-            ? t('没有匹配的监控项', 'No matching monitors')
-            : t('开始守护你的服务', 'Start watching your services')
+          items.length ? t('monitors.noMatchingMonitors') : t('monitors.startWatchingYourServices')
         "
         :description="
           items.length
-            ? t('调整搜索或筛选条件。', 'Try changing your search or filters.')
-            : t(
-                '添加服务检查后，可查看状态、历史与诊断信息。',
-                'Add a service check to see status, history, and diagnostics.',
-              )
+            ? t('monitors.tryChangingYourSearchOrFilters')
+            : t('monitors.addAServiceCheckToSeeStatusHistory')
         "
         ><RouterLink
           v-if="!items.length && canEdit()"
           to="/app/monitors/new"
           class="button primary"
-          >{{ t('创建监控项', 'Create monitor') }}</RouterLink
+          >{{ t('common.createMonitor') }}</RouterLink
         ></EmptyState
       >
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ t('服务', 'Service') }}</th>
-              <th>{{ t('状态', 'Status') }}</th>
-              <th>{{ t('分组', 'Group') }}</th>
-              <th>{{ t('间隔 / 重试', 'Interval / retries') }}</th>
-              <th>{{ t('最近检查', 'Last check') }}</th>
+              <th>{{ t('common.service') }}</th>
+              <th>{{ t('common.status') }}</th>
+              <th>{{ t('common.group') }}</th>
+              <th>{{ t('monitors.intervalRetries') }}</th>
+              <th>{{ t('common.lastCheck') }}</th>
               <th />
             </tr>
           </thead>
@@ -149,7 +142,7 @@ useIntervalFn(() => query.refresh(), 30000)
                 <RouterLink
                   :to="`/app/monitors/${monitor.id}`"
                   class="icon-button"
-                  :aria-label="t('查看详情', 'View details')"
+                  :aria-label="t('monitors.viewDetails')"
                   ><ChevronRight :size="16"
                 /></RouterLink>
               </td>
@@ -158,8 +151,8 @@ useIntervalFn(() => query.refresh(), 30000)
         </table></div
     ></AsyncState>
     <div class="table-footer">
-      <span>{{ filtered.length }} {{ t('个监控项', 'monitors') }}</span
-      ><span>{{ t('每 30 秒自动刷新', 'Refreshes every 30 seconds') }}</span>
+      <span>{{ t('counts.monitors', { count: filtered.length }, filtered.length) }}</span
+      ><span>{{ t('common.refreshesEvery30Seconds') }}</span>
     </div>
   </section>
 </template>

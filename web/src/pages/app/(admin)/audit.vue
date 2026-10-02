@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
-import { Search, RefreshCw, ScrollText } from '@lucide/vue'
+import { Search, RefreshCw } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import { listAuditQuery } from '../../../client/@pinia/colada.gen'
 import type { Audit } from '../../../lib/types'
-import { t, formatDate } from '../../../lib/preferences'
+import { formatDate } from '../../../lib/preferences'
 import PageHeader from '../../../components/PageHeader.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
 
-definePage({ meta: { title: ['审计日志', 'Audit log'], roles: ['admin'] } })
+const { t } = useI18n({ useScope: 'global' })
+
+definePage({ meta: { title: 'navigation.auditLog', roles: ['admin'] } })
 
 const query = useCollection<Audit>('audit', listAuditQuery()),
   search = ref(''),
@@ -26,15 +29,10 @@ const query = useCollection<Audit>('audit', listAuditQuery()),
 </script>
 <template>
   <PageHeader
-    :title="t('审计日志', 'Audit log')"
-    :description="
-      t(
-        '追踪配置变更与操作者，不记录秘密原文。',
-        'Trace configuration changes and their actors without recording secret values.',
-      )
-    "
+    :title="t('navigation.auditLog')"
+    :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')"
     ><button class="button" @click="query.refresh()">
-      <RefreshCw :size="14" />{{ t('刷新', 'Refresh') }}
+      <RefreshCw :size="14" />{{ t('common.refresh') }}
     </button></PageHeader
   >
   <section class="card">
@@ -42,23 +40,25 @@ const query = useCollection<Audit>('audit', listAuditQuery()),
       <div class="search-box">
         <Search :size="16" /><input
           v-model="search"
-          :placeholder="t('搜索成员、操作或资源…', 'Search actor, action, or resource…')"
-          :aria-label="t('搜索日志', 'Search audit log')"
+          :placeholder="t('audit.searchActorActionOrResource')"
+          :aria-label="t('audit.searchAuditLog')"
         />
       </div>
-      <span class="muted" un-text="10px">{{ items.length }} {{ t('条记录', 'records') }}</span>
+      <span class="muted" un-text="10px">{{
+        t('counts.records', { count: items.length }, items.length)
+      }}</span>
     </div>
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
-      ><EmptyState v-if="!items.length" :title="t('暂无匹配记录', 'No matching records')" />
+      ><EmptyState v-if="!items.length" :title="t('audit.noMatchingRecords')" />
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ t('时间', 'Time') }}</th>
-              <th>{{ t('操作者', 'Actor') }}</th>
-              <th>{{ t('操作', 'Action') }}</th>
-              <th>{{ t('资源类型', 'Resource') }}</th>
-              <th>{{ t('资源 ID', 'Resource ID') }}</th>
+              <th>{{ t('audit.time') }}</th>
+              <th>{{ t('audit.actor') }}</th>
+              <th>{{ t('audit.action') }}</th>
+              <th>{{ t('audit.resource') }}</th>
+              <th>{{ t('audit.resourceId') }}</th>
             </tr>
           </thead>
           <tbody>

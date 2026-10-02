@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRecord } from '../../lib/data'
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
 import type { PublicPage } from '../../lib/types'
-import { t } from '../../lib/preferences'
+
 import { useIntervalFn } from '@vueuse/core'
 import StatusPage from '../../components/StatusPage.vue'
 import AsyncState from '../../components/AsyncState.vue'
+
+const { t } = useI18n({ useScope: 'global' })
 const route = useRoute('/[[slug]]/[[...rest]]+'),
   isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents'),
   query = useRecord<PublicPage>(
@@ -33,13 +36,10 @@ const route = useRoute('/[[slug]]/[[...rest]]+'),
         : undefined,
   )
 useIntervalFn(() => query.refresh(), 30000)
-watch(
-  () => query.data.value,
-  (page) => {
-    if (page) document.title = `${page.config.title} · ${t('服务状态', 'Service status')}`
-  },
-  { immediate: true },
-)
+watchEffect(() => {
+  const page = query.data.value
+  if (page) document.title = `${page.config.title} · ${t('publicPage.serviceStatus')}`
+})
 </script>
 <template>
   <StatusPage
@@ -53,18 +53,13 @@ watch(
     <div class="public-inner">
       <AsyncState :pending="query.isPending.value"
         ><div class="empty-state">
-          <h1>{{ t('状态页暂不可用', 'Status page unavailable') }}</h1>
+          <h1>{{ t('publicPage.statusPageUnavailable') }}</h1>
           <p>
-            {{
-              t(
-                '此地址尚未绑定已发布页面，或服务暂时无法连接。',
-                'This address is not bound to a published page, or the service cannot be reached.',
-              )
-            }}
+            {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
           </p>
-          <button class="button" @click="query.refresh()">{{ t('重新连接', 'Try again') }}</button
+          <button class="button" @click="query.refresh()">{{ t('publicPage.tryAgain') }}</button
           ><RouterLink to="/app/login" class="button ghost" un-ml="3">{{
-            t('管理登录', 'Admin sign in')
+            t('publicPage.adminSignIn')
           }}</RouterLink>
         </div></AsyncState
       >

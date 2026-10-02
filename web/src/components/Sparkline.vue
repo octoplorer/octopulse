@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
-import { t } from '../lib/preferences'
+
+const { t, n } = useI18n({ useScope: 'global' })
+
 const props = defineProps<{
   values: number[]
   timestamps?: number[]
@@ -12,8 +15,7 @@ const scale = computed(() => {
   const values = props.values.filter(Number.isFinite)
   return { max: Math.max(...values, 1), min: Math.min(...values, 0), last: values.at(-1) }
 })
-const metric = (value: number) =>
-  new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
+const metric = (value: number) => n(value, { maximumFractionDigits: 2 })
 const segments = computed(() => {
   const entries = props.values
     .map((value, index) => ({ value, at: props.timestamps?.[index] ?? index }))
@@ -47,11 +49,15 @@ const segments = computed(() => {
     viewBox="0 0 300 60"
     preserveAspectRatio="none"
     role="img"
-    :aria-label="t('实测指标趋势', 'Observed metric trend')"
+    :aria-label="t('sparkline.observedMetricTrend')"
   >
     <title>
-      {{ t('实测数据点', 'Observed points') }}: {{ values.length }} ·
-      {{ t('最近值', 'Latest value') }}: {{ scale.last == null ? '—' : metric(scale.last) }}
+      {{
+        t('sparkline.summary', {
+          count: values.length,
+          value: scale.last == null ? '—' : metric(scale.last),
+        })
+      }}
     </title>
     <template v-if="showScale">
       <text x="2" y="9" fill="var(--muted)" font-size="8">{{ metric(scale.max) }}</text>

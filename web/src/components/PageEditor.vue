@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -15,9 +16,9 @@ import {
 } from '@lucide/vue'
 import { response, canEdit } from '../lib/api'
 import * as sdk from '../client/sdk.gen'
-import type { Page, Monitor, Settings, PublicPage, PageConfig } from '../lib/types'
+import type { Page, Monitor, Settings, PublicPage } from '../lib/types'
 import { publishedEntry } from '../lib/pages'
-import { t, formatDate } from '../lib/preferences'
+import { formatDate } from '../lib/preferences'
 import { notify, errorText } from '../lib/notices'
 import { clone } from '../lib/form'
 import PageHeader from './PageHeader.vue'
@@ -25,7 +26,8 @@ import Field from './Field.vue'
 import StatusPage from './StatusPage.vue'
 import AsyncState from './AsyncState.vue'
 import Modal from './Modal.vue'
-import Toggle from './Toggle.vue'
+const { t } = useI18n({ useScope: 'global' })
+
 const origin = location.origin
 const newID = () =>
   crypto.randomUUID?.() || `group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
@@ -178,7 +180,7 @@ function addMonitor(groupId: string) {
     id = newMonitorIds[groupId]
   if (!group || !id) return
   if (form.draft.groups.some((g) => g.monitors.some((m) => m.monitorId === id))) {
-    notify(t('此监控项已被选入页面', 'This monitor is already on the page'), 'error')
+    notify(t('pageEditor.thisMonitorIsAlreadyOnThePage'), 'error')
     return
   }
   group.monitors.push({
@@ -194,29 +196,20 @@ async function save(publish = false) {
   error.value = ''
   try {
     if (!form.name.trim() || !form.draft.title.trim())
-      throw new Error(t('请填写页面名称与标题', 'Page name and title are required'))
+      throw new Error(t('pageEditor.pageNameAndTitleAreRequired'))
     if (!/^[a-z0-9][a-z0-9-]*$/.test(form.slug))
-      throw new Error(
-        t(
-          '路径标识只允许小写字母、数字与连字符',
-          'Slug may contain lowercase letters, numbers, and hyphens',
-        ),
-      )
+      throw new Error(t('pageEditor.slugMayContainLowercaseLettersNumbersAndHyphens'))
     for (const link of form.draft.links) {
       const parsed = new URL(link.url)
       if (!['https:', 'http:'].includes(parsed.protocol) || !link.label.trim())
-        throw new Error(
-          t('公开链接需要名称与 HTTP(S) 地址', 'Public links need labels and HTTP(S) URLs'),
-        )
+        throw new Error(t('pageEditor.publicLinksNeedLabelsAndHttpSUrls'))
     }
     if (
       form.draft.logoUrl &&
       !/^https:\/\//.test(form.draft.logoUrl) &&
       !form.draft.logoUrl.startsWith('/assets/')
     )
-      throw new Error(
-        t('Logo 需使用 HTTPS 或上传资源地址', 'Logo must use HTTPS or an uploaded asset URL'),
-      )
+      throw new Error(t('pageEditor.logoMustUseHttpsOrAnUploadedAsset'))
     const body = clone(form)
     const data = await response<Page>(
       editing.value
@@ -227,8 +220,8 @@ async function save(publish = false) {
     if (publish) {
       await sdk.publishPage({ path: { id: form.id }, throwOnError: true })
       replacePage(await response<Page>(sdk.getPages({ path: { id: form.id }, throwOnError: true })))
-      notify(t('状态页已发布', 'Status page published'))
-    } else notify(t('草稿已保存', 'Draft saved'))
+      notify(t('pageEditor.statusPagePublished'))
+    } else notify(t('pageEditor.draftSaved'))
     savedPreview.value = await response<PublicPage>(
       sdk.previewPage({ path: { id: form.id }, throwOnError: true }),
     )
@@ -243,7 +236,7 @@ async function uploadLogo(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   if (file.size > 4 * 1024 * 1024) {
-    notify(t('图片需小于 4 MiB', 'Image must be smaller than 4 MiB'), 'error')
+    notify(t('pageEditor.imageMustBeSmallerThan4Mib'), 'error')
     return
   }
   try {
@@ -261,7 +254,7 @@ async function uploadLogo(event: Event) {
         }),
       )
     ).url
-    notify(t('Logo 已上传', 'Logo uploaded'))
+    notify(t('pageEditor.logoUploaded'))
   } catch (e) {
     notify(errorText(e), 'error')
   }
@@ -269,7 +262,7 @@ async function uploadLogo(event: Event) {
 async function remove() {
   try {
     await sdk.deletePages({ path: { id: form.id }, throwOnError: true })
-    notify(t('状态页已删除', 'Status page deleted'))
+    notify(t('pageEditor.statusPageDeleted'))
     router.push('/app/pages')
   } catch (e) {
     notify(errorText(e), 'error')
@@ -279,23 +272,16 @@ async function remove() {
 <template>
   <PageHeader
     :title="
-      editing
-        ? form.name || t('自定义状态页', 'Customize status page')
-        : t('创建状态页', 'Create status page')
+      editing ? form.name || t('pageEditor.customizeStatusPage') : t('common.createStatusPage')
     "
-    :description="
-      t(
-        '每页独立自定义，保存草稿后显式发布。',
-        'Customize each page independently. Save a draft, then publish.',
-      )
-    "
+    :description="t('pageEditor.customizeEachPageIndependentlySaveADraftThen')"
     ><RouterLink to="/app/pages" class="button ghost"
-      ><ArrowLeft :size="14" />{{ t('列表', 'All pages') }}</RouterLink
+      ><ArrowLeft :size="14" />{{ t('pageEditor.allPages') }}</RouterLink
     ><template v-if="canEdit()"
       ><button class="button" :disabled="saving" @click="save()">
-        <Save :size="14" />{{ t('保存草稿', 'Save draft') }}</button
+        <Save :size="14" />{{ t('common.saveDraft') }}</button
       ><button class="button primary" :disabled="saving" @click="save(true)">
-        <Send :size="14" />{{ t('发布页面', 'Publish page') }}
+        <Send :size="14" />{{ t('pageEditor.publishPage') }}
       </button></template
     ></PageHeader
   ><AsyncState :pending="loading"
@@ -304,20 +290,15 @@ async function remove() {
       <div>
         <section class="card">
           <div class="form-section">
-            <h2>{{ t('页面入口', 'Page access') }}</h2>
+            <h2>{{ t('pageEditor.pageAccess') }}</h2>
             <p class="muted">
-              {{
-                t(
-                  '路径与独立域名访问相同的已发布内容；入口变更在发布时生效。',
-                  'Path and custom domain serve the same published content. Entry changes take effect on publication.',
-                )
-              }}
+              {{ t('pageEditor.pathAndCustomDomainServeTheSamePublished') }}
             </p>
             <div class="form-grid">
-              <Field :label="t('后台页面名称', 'Internal page name')"
+              <Field :label="t('pageEditor.internalPageName')"
                 ><input v-model="form.name" :disabled="!canEdit()" required /></Field
               ><Field
-                :label="t('路径标识', 'Page slug')"
+                :label="t('pageEditor.pageSlug')"
                 :hint="`${origin}/${form.slug || 'status1'}`"
                 ><input
                   v-model="form.slug"
@@ -327,56 +308,51 @@ async function remove() {
                   required /></Field
               ><Field
                 class="span-full"
-                :label="t('独立域名', 'Custom domain')"
-                :hint="
-                  t(
-                    '管理员预先配置域名入口，DNS 与 HTTPS 由部署反代提供。',
-                    'Select an administrator-configured domain. DNS and HTTPS are handled by your reverse proxy.',
-                  )
-                "
+                :label="t('pageEditor.customDomain')"
+                :hint="t('pageEditor.selectAnAdministratorConfiguredDomainDnsAndHttps')"
                 ><select v-model="form.domain" :disabled="!canEdit()">
-                  <option value="">{{ t('仅使用路径访问', 'Path access only') }}</option>
+                  <option value="">{{ t('pageEditor.pathAccessOnly') }}</option>
                   <option v-for="domain in allowedDomains" :key="domain">{{ domain }}</option>
                 </select></Field
               >
             </div>
             <p v-if="form.publishedAt" class="note" un-mt="5">
-              {{ t('上次发布', 'Last published') }} {{ formatDate(form.publishedAt) }} · v{{
+              {{ t('pageEditor.lastPublished') }} {{ formatDate(form.publishedAt) }} · v{{
                 form.version
               }}<a
                 :href="publishedEntry(form).url"
                 class="button small ghost"
                 target="_blank"
                 rel="noopener"
-                ><ExternalLink :size="12" />{{ t('访问公开页面', 'Visit public page') }}</a
+                ><ExternalLink :size="12" />{{ t('pageEditor.visitPublicPage') }}</a
               >
             </p>
           </div>
           <div class="form-section">
-            <h2>{{ t('品牌与外观', 'Brand & appearance') }}</h2>
+            <h2>{{ t('pageEditor.brandAppearance') }}</h2>
             <p class="muted">
-              {{ t('设置只应用于此状态页。', 'These settings apply only to this status page.') }}
+              {{ t('pageEditor.theseSettingsApplyOnlyToThisStatusPage') }}
             </p>
             <div class="form-grid">
-              <Field class="span-full" :label="t('公开标题', 'Public title')"
+              <Field class="span-full" :label="t('pageEditor.publicTitle')"
                 ><input v-model="form.draft.title" :disabled="!canEdit()" required /></Field
-              ><Field class="span-full" :label="t('页面描述', 'Page description')">
+              ><Field class="span-full" :label="t('pageEditor.pageDescription')">
                 <textarea v-model="form.draft.description" :disabled="!canEdit()" rows="3" /></Field
-              ><Field class="span-full" :label="t('Logo 地址', 'Logo URL')"
+              ><Field class="span-full" :label="t('pageEditor.logoUrl')"
                 ><div class="field-row">
                   <input
                     v-model="form.draft.logoUrl"
                     :disabled="!canEdit()"
-                    placeholder="https://… or /assets/uploads/…"
+                    :placeholder="t('pageEditor.logoPlaceholder')"
                   /><label v-if="canEdit()" class="button"
-                    ><Upload :size="14" />{{ t('上传', 'Upload')
+                    ><Upload :size="14" />{{ t('pageEditor.upload')
                     }}<input
                       type="file"
                       accept="image/png,image/jpeg,image/gif"
                       un-hidden=""
                       @change="uploadLogo"
                   /></label></div></Field
-              ><Field :label="t('品牌色', 'Brand color')"
+              ><Field :label="t('pageEditor.brandColor')"
                 ><div class="field-row">
                   <input
                     v-model="form.draft.brandColor"
@@ -387,15 +363,15 @@ async function remove() {
                     :disabled="!canEdit()"
                     pattern="#[0-9a-fA-F]{6}"
                   /></div></Field
-              ><Field :label="t('深浅色', 'Color scheme')"
+              ><Field :label="t('pageEditor.colorScheme')"
                 ><select v-model="form.draft.colorScheme" :disabled="!canEdit()">
-                  <option value="system">{{ t('跟随系统', 'System') }}</option>
-                  <option value="light">{{ t('浅色', 'Light') }}</option>
-                  <option value="dark">{{ t('深色', 'Dark') }}</option>
+                  <option value="system">{{ t('common.system') }}</option>
+                  <option value="light">{{ t('common.light') }}</option>
+                  <option value="dark">{{ t('common.dark') }}</option>
                 </select></Field
               >
               <div class="span-full">
-                <label class="field-label">{{ t('公开链接', 'Public links') }}</label>
+                <label class="field-label">{{ t('pageEditor.publicLinks') }}</label>
                 <div
                   v-for="(link, index) in form.draft.links"
                   :key="index"
@@ -405,7 +381,7 @@ async function remove() {
                   <input
                     v-model="link.label"
                     :disabled="!canEdit()"
-                    :placeholder="t('链接名称', 'Link label')"
+                    :placeholder="t('pageEditor.linkLabel')"
                   /><input
                     v-model="link.url"
                     :disabled="!canEdit()"
@@ -415,7 +391,7 @@ async function remove() {
                     v-if="canEdit()"
                     class="icon-button"
                     @click="form.draft.links.splice(index, 1)"
-                    :aria-label="t('移除链接', 'Remove link')"
+                    :aria-label="t('pageEditor.removeLink')"
                   >
                     <X :size="14" />
                   </button>
@@ -426,47 +402,42 @@ async function remove() {
                   un-mt="2"
                   @click="form.draft.links.push({ label: '', url: '' })"
                 >
-                  <Plus :size="13" />{{ t('添加链接', 'Add link') }}
+                  <Plus :size="13" />{{ t('pageEditor.addLink') }}
                 </button>
               </div>
             </div>
           </div>
           <div class="form-section">
-            <h2>{{ t('服务与分组', 'Services & groups') }}</h2>
+            <h2>{{ t('pageEditor.servicesGroups') }}</h2>
             <p class="muted">
-              {{
-                t(
-                  '只发布明确选中的监控项。公开别名不会改变后台名称。',
-                  'Publish only selected monitors. Public aliases leave internal names unchanged.',
-                )
-              }}
+              {{ t('pageEditor.publishOnlySelectedMonitorsPublicAliasesLeaveInternal') }}
             </p>
             <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor">
               <div class="group-editor-header">
                 <input
-                  :aria-label="t('分组名称', 'Group name')"
+                  :aria-label="t('common.groupName')"
                   v-model="group.name"
                   :disabled="!canEdit()"
-                  :placeholder="t('分组名称', 'Group name')"
+                  :placeholder="t('common.groupName')"
                 /><template v-if="canEdit()"
                   ><button
                     class="icon-button"
                     :disabled="index === 0"
                     @click="move(form.draft.groups, index, -1)"
-                    :aria-label="t('分组上移', 'Move group up')"
+                    :aria-label="t('pageEditor.moveGroupUp')"
                   >
                     <ArrowUp :size="13" /></button
                   ><button
                     class="icon-button"
                     :disabled="index === form.draft.groups.length - 1"
                     @click="move(form.draft.groups, index, 1)"
-                    :aria-label="t('分组下移', 'Move group down')"
+                    :aria-label="t('pageEditor.moveGroupDown')"
                   >
                     <ArrowDown :size="13" /></button
                   ><button
                     class="icon-button"
                     @click="form.draft.groups.splice(index, 1)"
-                    :aria-label="t('移除分组', 'Remove group')"
+                    :aria-label="t('pageEditor.removeGroup')"
                   >
                     <X :size="14" /></button
                 ></template>
@@ -481,20 +452,20 @@ async function remove() {
                     monitors.find((x) => x.id === item.monitorId)?.name
                   }}</span
                   ><input
-                    :aria-label="t('公开别名', 'Public alias')"
+                    :aria-label="t('common.publicAlias')"
                     v-model="item.alias"
                     :disabled="!canEdit()"
-                    :placeholder="t('公开别名', 'Public alias')"
+                    :placeholder="t('common.publicAlias')"
                     un-mt="1"
                   />
                   <div un-flex="~ gap-4" un-mt="2">
                     <label class="checkbox-label"
                       ><input v-model="item.showUptime" type="checkbox" :disabled="!canEdit()" />{{
-                        t('可用率', 'Uptime')
+                        t('common.uptime')
                       }}</label
                     ><label class="checkbox-label"
                       ><input v-model="item.showLatency" type="checkbox" :disabled="!canEdit()" />{{
-                        t('延迟', 'Latency')
+                        t('pageEditor.latency')
                       }}</label
                     >
                   </div>
@@ -504,35 +475,32 @@ async function remove() {
                     class="icon-button"
                     :disabled="mIndex === 0"
                     @click="move(group.monitors, mIndex, -1)"
-                    :aria-label="t('服务上移', 'Move service up')"
+                    :aria-label="t('pageEditor.moveServiceUp')"
                   >
                     <ArrowUp :size="13" /></button
                   ><button
                     class="icon-button"
                     :disabled="mIndex === group.monitors.length - 1"
                     @click="move(group.monitors, mIndex, 1)"
-                    :aria-label="t('服务下移', 'Move service down')"
+                    :aria-label="t('pageEditor.moveServiceDown')"
                   >
                     <ArrowDown :size="13" /></button
                   ><button
                     class="icon-button"
                     @click="group.monitors.splice(mIndex, 1)"
-                    :aria-label="t('移除服务', 'Remove service')"
+                    :aria-label="t('pageEditor.removeService')"
                   >
                     <X :size="14" /></button
                 ></template>
               </div>
               <div v-if="canEdit()" class="group-editor-row">
-                <select
-                  v-model="newMonitorIds[group.id]"
-                  :aria-label="t('选择监控项', 'Select a monitor')"
-                >
-                  <option value="">{{ t('选择监控项', 'Select a monitor') }}</option>
+                <select v-model="newMonitorIds[group.id]" :aria-label="t('common.selectAMonitor')">
+                  <option value="">{{ t('common.selectAMonitor') }}</option>
                   <option v-for="monitor in monitors" :key="monitor.id" :value="monitor.id">
                     {{ monitor.name }} · {{ monitor.type }}
                   </option></select
                 ><button class="button small" @click="addMonitor(group.id)">
-                  <Plus :size="13" />{{ t('加入', 'Add') }}
+                  <Plus :size="13" />{{ t('pageEditor.add') }}
                 </button>
               </div>
             </div>
@@ -543,12 +511,12 @@ async function remove() {
               @click="
                 form.draft.groups.push({
                   id: newID(),
-                  name: t('服务分组', 'Services'),
+                  name: t('pageEditor.services'),
                   monitors: [],
                 })
               "
             >
-              <Plus :size="13" />{{ t('添加分组', 'Add group') }}
+              <Plus :size="13" />{{ t('pageEditor.addGroup') }}
             </button>
           </div>
         </section>
@@ -559,37 +527,30 @@ async function remove() {
             un-mr="auto"
             @click="deleteOpen = true"
           >
-            <Trash2 :size="13" />{{ t('删除页面', 'Delete page') }}</button
+            <Trash2 :size="13" />{{ t('pageEditor.deletePage') }}</button
           ><button v-if="canEdit()" class="button primary" :disabled="saving" @click="save()">
-            <Save :size="14" />{{ t('保存草稿', 'Save draft') }}
+            <Save :size="14" />{{ t('common.saveDraft') }}
           </button>
         </div>
       </div>
       <aside class="editor-preview">
         <div class="preview-label">
-          <strong>{{ t('实时草稿预览', 'Live draft preview') }}</strong
-          ><span>{{ t('桌面 / 移动自适应', 'Responsive preview') }}</span>
+          <strong>{{ t('pageEditor.liveDraftPreview') }}</strong
+          ><span>{{ t('pageEditor.responsivePreview') }}</span>
         </div>
         <StatusPage :page="preview" preview />
         <p class="field-hint" un-mt="3">
-          {{
-            t(
-              '保存后重新读取真实统计；未保存的新选项显示已有服务状态，暂无历史统计。发布前不会改变公开页面。',
-              'Saving refreshes real statistics. Newly selected services show current states without fabricated history. Draft edits do not alter the public page.',
-            )
-          }}
+          {{ t('pageEditor.savingRefreshesRealStatisticsNewlySelectedServicesShow') }}
         </p>
       </aside>
     </div></AsyncState
   ><Modal
     v-model:open="deleteOpen"
-    :title="t('删除状态页', 'Delete status page')"
-    :description="
-      t('该页面的路径与域名入口将停止发布。', 'The page path and domain will stop publishing.')
-    "
+    :title="t('pageEditor.deleteStatusPage')"
+    :description="t('pageEditor.thePagePathAndDomainWillStopPublishing')"
     ><template #footer
-      ><button class="button" @click="deleteOpen = false">{{ t('取消', 'Cancel') }}</button
-      ><button class="button danger" @click="remove">{{ t('删除', 'Delete') }}</button></template
+      ><button class="button" @click="deleteOpen = false">{{ t('common.cancel') }}</button
+      ><button class="button danger" @click="remove">{{ t('common.delete') }}</button></template
     ></Modal
   >
 </template>

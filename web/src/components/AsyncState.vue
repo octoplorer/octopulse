@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { t } from '../lib/preferences'
+import { useI18n } from 'vue-i18n'
+
 import { errorText } from '../lib/notices'
+const { t } = useI18n({ useScope: 'global' })
+
 defineProps<{ pending?: boolean; error?: unknown }>()
 defineEmits<{ retry: [] }>()
 </script>
 <template>
   <div v-if="pending" class="loading-state" role="status">
-    <span class="spinner" />{{ t('正在读取数据…', 'Loading data…') }}
+    <span class="spinner" />{{ t('asyncState.loadingData') }}
   </div>
   <div v-else-if="error" class="error-banner" role="alert">
     {{ errorText(error)
-    }}<button class="button ghost" @click="$emit('retry')">{{ t('重试', 'Retry') }}</button>
+    }}<button class="button ghost" @click="$emit('retry')">{{ t('asyncState.retry') }}</button>
   </div>
   <slot v-else />
 </template>
