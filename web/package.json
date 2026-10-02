@@ -1,0 +1,36 @@
+{
+  "name": "@octopulse/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "vue-tsc --noEmit",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "generate": "openapi-ts && node scripts/generate-routes.mjs",
+    "check": "vue-tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts scripts/*.test.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "vue": "3.5.43",
+    "vue-router": "5.3.1",
+    "pinia": "4.0.3",
+    "@pinia/colada": "1.4.6",
+    "@vueuse/core": "15.0.0",
+    "@ark-ui/vue": "5.39.2",
+    "@lucide/vue": "1.49.0"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "@vitejs/plugin-vue": "6.0.9",
+    "typescript": "6.0.3",
+    "unocss": "66.10.5",
+    "vite": "8.3.2",
+    "vue-tsc": "3.3.11",
+    "@types/node": "24.10.1",
+    "prettier": "3.9.9"
+  }
+}

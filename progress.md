@@ -1,0 +1,61 @@
+# Implementation progress
+
+## 2026-10-02
+
+- Revalidated active objective and current checkout: documentation only, clean main ahead of origin by the specifications commit.
+- Created feat/uptime-platform for user-requested incremental development commits.
+- Read first-release requirements and initialized persistent implementation plan.
+- Began current Huma/aube documentation resolution using ctx7.
+- Installed mise-managed Go1.27.1/aube2.6.1 and aube frontend dependencies. Go modules locked in go.mod/go.sum.
+- Added config, shared entities, AES-256-GCM vault with separate persistent key, bcrypt passwords and cryptographic session tokens.
+- Passed `mise exec go@1.27.1 -- go test ./internal/security ./internal/config ./internal/domain` (security tests verify restart, key/identity binding, tamper rejection, key file permissions and password/token behavior).
+- Homebrew PostgreSQL18.6 installed; isolated project test cluster is next. No system launch service started.
+- Isolated PostgreSQL cluster .cache/pg-test running loopback:55432, test database octopulse_test. Store worker ran identical real PostgreSQL+SQLite contracts and backup/restore successfully; final dual-backend race suite passed (7.665s including actual PostgreSQL lock-session loss).
+- Store includes paired goose migrations/sqlc generated core queries, atomic document/runtime/round/interval/event/outbox operations, singleton locks, page binding uniqueness, lease CAS, aggregate watermark cleanup and SQLite backup.
+- Probe worker completed HTTP/TCP/DNS/TLS/certificate implementations and real socket tests; race coverage76.9%. Next assignment is scheduling/state/heartbeats.
+
+### Implementation and delivery progress
+
+- Committed the foundation, transactional dual-database persistence, probes/monitoring engine, storage concurrency fix, durable Shoutrrr notifications, independent Beszel integration, and time-weighted statistics as seven incremental Conventional Commits on feat/uptime-platform. No remote push.
+- Implemented authenticated Huma API/server wiring, role/CSRF enforcement, write-only encrypted secret management, accounts/profile/audit, monitor CRUD/check/history/heartbeat, notification records/test, custom pages and image uploads, publication/domain routing, incident progress and maintenance. API and frontend subsequently passed full integration checks recorded below.
+- Verified store, engine, notification and statistics stages against file SQLite and real PostgreSQL18.6. Statistics race suite passed in 59.755s with 81.7% coverage and vet. Final full suites include and passed additional history-window, retained-latency, published-routing, password-session and HTTP shutdown regressions.
+- Verified the Beszel adapter against a released v0.20.0 Hub with a normal readonly account; authentication, token refresh, server summaries, history and containers passed. Accepted family is 0.20.x. Credentials remain encrypted server-side and data is independent of uptime.
+- Implemented the complete Vue CSR admin/public frontend with generated HeyAPI SDK/Colada options, Ark controls and UnoCSS prefixed attributes. Stage checks passed typecheck, build, formatting and 5 unit tests. Actual desktop interaction covered five monitor types, HTTP CRUD/check/pause/diagnostics, heartbeat token rotation, page draft/preview/publication/customization, incidents, maintenance, secrets, failed notification records and personal language/timezone/theme. Latest backend and mobile/readonly/domain/Beszel workflows subsequently passed, as recorded below.
+- Normal-build capacity workloads passed on SQLite and PostgreSQL: actual 100 monitors at 30 seconds for at least 65 seconds, 300 rounds, 460 attempts and 20 webhook notifications, including concurrent public/admin queries and aggregate/retention work. PostgreSQL race capacity exposed a scheduling competition; the fix and final reruns passed, as recorded below. See docs/capacity.md for measurements and limits.
+- Docker CLI, Colima and plugins were installed for the isolated octopulse-test profile. A multi-stage nonroot image and SQLite/PostgreSQL Compose files are prepared; actual final arm64 builds, both startup/persistence and complete backup workflows subsequently passed.
+- Added Chinese README covering actual mise/aube tasks, two database modes, binary plus web/dist, Compose, exact Host/DNS/TLS routing, key/database/uploads backup and Beszel compatibility. Explicitly documented that the SQLite backup CLI takes the singleton lock and requires stopping the service.
+- Added CI for mise/aube locked installs, SQLite and real PostgreSQL race tests (-p1), matching PostgreSQL18 backup tools, vet, generated drift checks, frontend formatting/types/tests/build, optional real-time two-database capacity tests and a binary+webdist artifact. Action versions resolved with ctx7 and current official repositories. Workflow has not run remotely because no push is authorized.
+- Added docs/acceptance.md with requirement-to-source/test mappings and separate phase evidence/final execution gates. All local implementation and delivery gates have now passed, as recorded in the final acceptance section.
+- Committed 057232d fix(monitoring): preserve accepted checks and serialize scheduling completion. Latest SQLite API/main race regression passed (server94.530s/cmd2.370s); this was a package subset under concurrent capacity work, not final full-suite or performance evidence.
+- Docker arm64 image has now built successfully; Compose startup/persistence/backup and PostgreSQL delivery checks subsequently passed. Frontend recovered through native Chrome and completed the required browser workflows, as recorded below.
+- Updated database-design.md to actual pinned versions, sqlc output paths, SchemaVersion2, TEXT document payloads, connection and runtime locks, watermark/aggregation behavior, and stopped-service backup CLI. Updated design-tree.md's implementation status while retaining historical product decisions and investigation evidence.
+
+### Final dual-database and SQLite delivery evidence
+
+- Committed c3164c4 feat(api): expose secured administration and published status pages, and 3bee56d test(capacity): verify 100 monitors against both databases. No push.
+- Full SQLite `go test -race -p 1 -timeout=10m ./...` passed, including engine9.498s/server58.900s/statistics71.249s/store3.240s; cmd result was cached. Full real PostgreSQL18.6 business-database suite with `-count=1 -race -p 1` passed: cmd2.785s, Beszel2.404s, engine7.702s, notify4.095s, probe2.398s, security6.412s, server58.989s, statistics87.793s and store9.106s, including actual PostgreSQL backup tools.
+- Final capacity normal and race workloads passed on both databases after the scheduling competition fix. Each completed 300 rounds, 460 attempts and 20 actual webhook notifications with query/aggregation/retention checks. docs/capacity.md records conditions, p95 and resource samples, including independent SQLite race rerun after concurrent stress caused client timeouts in an earlier rejected run.
+- Actual arm64 image built; backend build step took127.5s. SQLite Compose container is healthy and runs UID10001. Actual setup, monitor, publication, encrypted secret/header resolution and PNG upload succeeded and survived restart.
+- Stopped the SQLite service, ran CLI backup (0600 permissions), overwrote/restored the database and restarted with the original key/uploads. Encrypted secret-header probe returned Up, published page and PNG remained accessible; complete SQLite container restore passed. PostgreSQL Compose startup and complete restore subsequently passed, as recorded below.
+- Recovered computer-use verification through native Chrome. Beszel showed one real fixture server with stale/source metadata and actual history CPU23%/memory42%/disk55%; containers explicitly empty. Viewer had no write entry points, restricted direct routes redirected, and diagnostics remained redacted. Statistics displayed effective5.8h and coverage25%.
+- Verified status.localhost:18080 root, incident subroute and return-root plus /ui-status-v2 displayed the same published content. Draft slug/domain edits kept the old public route; publish switched routes. Frontend canonical refetch and cleared optional-domain handling now refresh visit links correctly; final browser validation passed.
+- Updated v1-spec.md and monitor-options.md stale implementation/status wording to confirmed facts and linked exact acceptance/capacity evidence. Phase8 local verification is complete after PostgreSQL container, format/vet/generation/frontend checks passed. Remote CI still has not run.
+
+### Completed local acceptance
+
+- Committed18e44c0 feat(web): add monitoring console and customizable status pages. Final frontend format/typecheck,8 unit tests and production build passed, including canonical publication refetch and optional-domain clearing boundaries.
+- Go vet passed. sqlc,OpenAPI and HeyAPI regenerated with no tracked or untracked drift; OpenAPI byte comparison matched. generate:api now writes a temporary file and replaces the contract only after success.
+- Reproduced mise env configuration overriding external PostgreSQL exports and removed redundant [env] defaults. Runtime Go defaults remain identical; externally exported DB_DRIVER=postgres now remains preserved and was verified.
+- PostgreSQL18.6 container was healthy. Actual setup,encrypted-secret header monitor Up,page publication,PNG upload and restart passed. Stopped the app,ran custom pg_dump,dropdb,createdb and pg_restore,then restarted; original-key secret decryption/header probe Up,published page,secret metadata and PNG were preserved.
+- Rebuilt the final Docker image from all latest Go/web sources; native arm64 manifest prefix573b2f. Both fresh SQLite and PostgreSQL Compose deployments passed health,administrator bootstrap,actual HTTP monitor Up,/app CSR index and hashed JS200 checks. Complete restart/backup/restore were separately verified on both databases.
+- Produced the native Darwin arm64 binary plus web/dist tar at .cache/release/octopulse-darwin-arm64.tar.gz; independent-package smoke passed health200,/app CSR200 and clean SIGTERM exit. Local architecture verification covers Darwin arm64 and Linux arm64 containers; CI declares Linux amd64 but no remote push or run has occurred.
+- All eight phases and the requirement audit are complete. Temporary Compose containers/networks/volumes and the named Colima octopulse-test profile/data have been removed; isolated PostgreSQL,demo and Beszel fixture processes stopped. Cleanup affected only this task's resources; other user profiles were preserved.
+
+- Verified the actual CI PGDG printf format is one literal backslash before n. Executing the extracted format produced five separate deb822 lines with a trailing newline and no literal backslash-n text. Workflow YAML and owned Markdown formatting checks passed. Remote workflow remains unexecuted.
+- Committed 7d088aa feat(delivery): package binary and Docker deployments with verification CI. The final documentation commit records completed implementation and acceptance evidence, bringing this implementation branch to 13 incremental Conventional Commits. No push or remote CI execution occurred.
+
+### Local development origin fix
+
+- Reproduced the reported Untrusted request origin using the running Vite 5173 → Go 8080 proxy. Vite string shorthand rewrote Host while retaining the browser Origin; direct matching-origin API requests passed validation.
+- Replaced proxy shorthand with explicit changeOrigin:false for API and uploaded assets. Production Origin, exact management Host and CSRF enforcement remain unchanged.
+- Added a real Vite proxy regression test, verified failing before the fix and passing after it, plus Go origin/security regressions. Frontend 16 tests/typecheck/format/production build, frozen-lock install and targeted Go race tests passed. Actual localhost and 127.0.0.1 development requests now pass origin validation while an external Origin remains rejected with 403.

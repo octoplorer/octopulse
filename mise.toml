@@ -1,0 +1,49 @@
+[tools]
+go = "1.27.1"
+node = "24.19.0"
+"github:aubepkg/aube" = "2.6.1"
+sqlc = "1.30.0"
+
+[tasks."dev:api"]
+run = "go run ./cmd/octopulse serve"
+
+[tasks."dev:web"]
+dir = "web"
+run = "aube run dev"
+
+[tasks."generate:api"]
+run = """
+set -e
+mkdir -p .cache
+go run ./cmd/octopulse openapi > .cache/openapi.json.tmp
+mv .cache/openapi.json.tmp api/openapi.json
+"""
+
+[tasks."generate:db"]
+run = "sqlc generate"
+
+[tasks."generate:web"]
+dir = "web"
+run = "aube run generate"
+depends = ["generate:api"]
+
+[tasks."test:go"]
+run = "go test ./..."
+
+[tasks."check:web"]
+dir = "web"
+run = "aube run check"
+
+[tasks."build:web"]
+dir = "web"
+run = "aube run build"
+
+[tasks."build:go"]
+run = "go build -trimpath -o bin/octopulse ./cmd/octopulse"
+depends = ["build:web"]
+
+[tasks.check]
+depends = ["test:go", "check:web"]
+
+[tasks.build]
+depends = ["build:go"]
