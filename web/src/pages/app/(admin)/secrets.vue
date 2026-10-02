@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import type { Secret } from '../../../lib/types'
-import { isAdmin } from '../../../lib/api'
+import { isAdmin } from '../../../composables/api'
 import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import {
@@ -12,8 +12,9 @@ import {
   updateSecretMutation,
   deleteSecretMutation,
 } from '../../../client/@pinia/colada.gen'
-import { formatDate } from '../../../lib/preferences'
-import { notify, errorText } from '../../../lib/notices'
+import { formatDate } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
+import { notify } from '../../../composables/notices'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'

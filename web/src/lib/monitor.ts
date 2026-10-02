@@ -1,4 +1,4 @@
-import { t } from './i18n'
+import { t } from '../composables/i18n'
 import type {
   Monitor,
   TLSConfig,

@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { ref, reactive, computed } from 'vue'
 import { Plus, MessageSquare } from '@lucide/vue'
 import type { Incident, Page, Monitor } from '../../../lib/types'
-import { canEdit } from '../../../lib/api'
+import { canEdit } from '../../../composables/api'
 import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import {
@@ -14,8 +14,9 @@ import {
   updateIncidentsMutation,
   createIncidentUpdateMutation,
 } from '../../../client/@pinia/colada.gen'
-import { formatDate, statusLabel } from '../../../lib/preferences'
-import { notify, errorText } from '../../../lib/notices'
+import { formatDate, statusLabel } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
+import { notify } from '../../../composables/notices'
 import { clone } from '../../../lib/form'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'

@@ -17,7 +17,7 @@ import {
   CheckCircle2,
 } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { canEdit } from '../../../../../lib/api'
+import { canEdit } from '../../../../../composables/api'
 import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../../../client/types.gen'
 import {
@@ -30,8 +30,9 @@ import {
 } from '../../../../../client/@pinia/colada.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { targetOf } from '../../../../../lib/monitor'
-import { formatDate, formatPercent, duration } from '../../../../../lib/preferences'
-import { notify, errorText } from '../../../../../lib/notices'
+import { formatDate, formatPercent, duration } from '../../../../../composables/preferences'
+import { errorText } from '../../../../../lib/errors'
+import { notify } from '../../../../../composables/notices'
 import { useIntervalFn, useClipboard } from '@vueuse/core'
 import PageHeader from '../../../../../components/PageHeader.vue'
 import StateBadge from '../../../../../components/StateBadge.vue'

@@ -4,16 +4,17 @@ import { reactive, ref, onMounted } from 'vue'
 import { Save } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
-import { isAdmin, currentUser } from '../../../lib/api'
+import { isAdmin, currentUser } from '../../../composables/api'
 import {
   getSettingsQuery,
   updateSettingsMutation,
   updateProfileMutation,
 } from '../../../client/@pinia/colada.gen'
 import type { Settings as OrganizationSettings } from '../../../lib/types'
-import { languageOptions } from '../../../lib/i18n'
-import { theme, timezone } from '../../../lib/preferences'
-import { notify, errorText } from '../../../lib/notices'
+import { languageOptions } from '../../../composables/i18n'
+import { theme, timezone } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
+import { notify } from '../../../composables/notices'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'
 import AsyncState from '../../../components/AsyncState.vue'

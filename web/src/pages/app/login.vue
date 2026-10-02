@@ -5,8 +5,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck } from '@lucide/vue'
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
-import { dark } from '../../lib/preferences'
-import { applySession } from '../../lib/api'
+import { dark } from '../../composables/preferences'
+import { applySession } from '../../composables/api'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import {
   getSetupQuery,
@@ -14,7 +14,7 @@ import {
   createSetupMutation,
   createSessionMutation,
 } from '../../client/@pinia/colada.gen'
-import { errorText } from '../../lib/notices'
+import { errorText } from '../../lib/errors'
 
 const { t } = useI18n({ useScope: 'global' })
 const queryCache = useQueryCache()

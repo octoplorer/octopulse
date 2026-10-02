@@ -44,7 +44,9 @@ mise run dev:web
 
 页面路由由 Vue Router 5 官方的 `vue-router/vite` 插件从 `web/src/pages` 自动生成。`app/login.vue` 是独立登录页，`app/(admin).vue` 提供后台布局，`app/(admin)/` 内的页面通过 `definePage()` 声明标题的翻译 key 和角色权限；`[id]` 目录用于动态参数。公开状态页使用 `[[slug]]/[[...rest]]+.vue`，兼容路径入口和独立域名。新增页面只需创建对应 `.vue` 文件；开发服务器会更新路由，插件会在开发和构建时生成 `web/typed-router.d.ts`，页面变更应连同更新后的路由类型声明一起提交。
 
-前端国际化使用 Vue I18n Composition API，入口为 `web/src/lib/i18n.ts`，中英文文案分别维护在 `web/src/locales/zh-CN.json` 和 `web/src/locales/en.json`。组件使用 `useI18n({ useScope: 'global' })` 获取 `t`、`n`、`d` 和响应式 `locale`；普通 TypeScript 模块使用共享 composer。新增文案应为两个语言包添加相同的语义 key，变量使用命名插值（如 `t('errors.invalidJSON', { label })`），数量使用完整复数消息（如 `t('counts.monitors', { count }, count)`），避免拼接文案。消息中的字面量 `@`、花括号和 `|` 使用 Vue I18n 的字面量插值语法转义。
+前端共享响应式状态放在 `web/src/composables/`（会话、国际化、偏好和通知）；`web/src/lib/` 保留无状态工具和类型。依赖当前语言或时区的格式化函数随偏好模块放在 `composables/preferences.ts`。
+
+前端国际化使用 Vue I18n Composition API，入口为 `web/src/composables/i18n.ts`，中英文文案分别维护在 `web/src/locales/zh-CN.json` 和 `web/src/locales/en.json`。组件使用 `useI18n({ useScope: 'global' })` 获取 `t`、`n`、`d` 和响应式 `locale`；普通 TypeScript 模块使用共享 composer。新增文案应为两个语言包添加相同的语义 key，变量使用命名插值（如 `t('errors.invalidJSON', { label })`），数量使用完整复数消息（如 `t('counts.monitors', { count }, count)`），避免拼接文案。消息中的字面量 `@`、花括号和 `|` 使用 Vue I18n 的字面量插值语法转义。
 
 语言沿用 API 的 `zh-CN` / `en`，登录后使用个人设置，访客使用 VueUse `useStorage` 保存的 `octopulse.locale` 偏好，默认简体中文；缺失翻译回退到简体中文。日期与数字通过 composer 格式化，日期沿用所选显示时区；表单中的机器日期格式保持固定。增加语言时同时更新语言包、`i18n.ts` 的语言及格式配置和后端允许的语言值。`mise exec -- aube run test`（在 `web` 目录）验证语言包一致性、消息编译、复数和日期/数字格式。用户填写的状态页和事件内容、服务端返回的诊断文案按原内容显示。
 

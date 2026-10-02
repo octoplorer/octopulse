@@ -23,9 +23,10 @@ import type {
   BeszelContainers,
   Secret,
 } from '../../../lib/types'
-import { isAdmin } from '../../../lib/api'
-import { formatDate, duration } from '../../../lib/preferences'
-import { notify, errorText } from '../../../lib/notices'
+import { isAdmin } from '../../../composables/api'
+import { formatDate, duration } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
+import { notify } from '../../../composables/notices'
 import { useIntervalFn } from '@vueuse/core'
 import PageHeader from '../../../components/PageHeader.vue'
 import Field from '../../../components/Field.vue'

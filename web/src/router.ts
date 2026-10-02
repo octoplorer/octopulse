@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 import { useQueryCache } from '@pinia/colada'
 import { getSessionQuery } from './client/@pinia/colada.gen'
-import { currentUser, applySession } from './lib/api'
+import { currentUser, applySession } from './composables/api'
 export const router = createRouter({
   history: createWebHistory(),
   routes,

@@ -12,8 +12,8 @@ import { useI18n } from 'vue-i18n'
 import { watch } from 'vue'
 
 import { useQueryCache } from '@pinia/colada'
-import { notices, dismissNotice } from './lib/notices'
-import { currentUser } from './lib/api'
+import { notices, dismissNotice } from './composables/notices'
+import { currentUser } from './composables/api'
 const { t } = useI18n({ useScope: 'global' })
 
 const cache = useQueryCache()

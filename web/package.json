@@ -10,7 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "generate": "openapi-ts",
     "check": "vue-tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/*.test.ts",
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts src/composables/*.test.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

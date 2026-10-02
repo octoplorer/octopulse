@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Save, ArrowLeft, X, Upload } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
-import { canEdit } from '../lib/api'
+import { canEdit } from '../composables/api'
 import {
   createMonitorMutation,
   getMonitorQuery,
@@ -25,7 +25,8 @@ import {
 } from '../lib/monitor'
 import { clone, parseJSON, splitValues, defaults } from '../lib/form'
 
-import { errorText, notify } from '../lib/notices'
+import { errorText } from '../lib/errors'
+import { notify } from '../composables/notices'
 import PageHeader from './PageHeader.vue'
 import Field from './Field.vue'
 import Toggle from './Toggle.vue'

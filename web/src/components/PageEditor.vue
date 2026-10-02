@@ -15,7 +15,7 @@ import {
   ExternalLink,
 } from '@lucide/vue'
 import { useMutation, useQueryCache } from '@pinia/colada'
-import { canEdit } from '../lib/api'
+import { canEdit } from '../composables/api'
 import {
   createPagesMutation,
   deletePagesMutation,
@@ -29,8 +29,9 @@ import {
 } from '../client/@pinia/colada.gen'
 import type { Page, Monitor, Settings, PublicPage } from '../lib/types'
 import { publishedEntry } from '../lib/pages'
-import { formatDate } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
+import { formatDate } from '../composables/preferences'
+import { errorText } from '../lib/errors'
+import { notify } from '../composables/notices'
 import { clone } from '../lib/form'
 import PageHeader from './PageHeader.vue'
 import Field from './Field.vue'

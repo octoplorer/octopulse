@@ -1,4 +1,4 @@
-import { t } from './i18n'
+import { t } from '../composables/i18n'
 
 export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T

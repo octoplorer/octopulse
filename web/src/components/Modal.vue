@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { Dialog } from '@ark-ui/vue/dialog'
 import { X } from '@lucide/vue'
-import { dark } from '../lib/preferences'
+import { dark } from '../composables/preferences'
 const { t } = useI18n({ useScope: 'global' })
 
 const open = defineModel<boolean>('open', { default: false })

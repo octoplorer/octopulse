@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { errorText } from '../lib/notices'
+import { errorText } from '../lib/errors'
 const { t } = useI18n({ useScope: 'global' })
 
 defineProps<{ pending?: boolean; error?: unknown }>()

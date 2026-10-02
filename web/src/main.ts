@@ -1,5 +1,5 @@
 import { watch } from 'vue'
-import { i18n, locale, t } from './lib/i18n'
+import { i18n, locale, t } from './composables/i18n'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { PiniaColada, useQueryCache } from '@pinia/colada'

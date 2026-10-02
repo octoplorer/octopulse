@@ -1,10 +1,10 @@
 import { ref } from 'vue'
 import { client } from '../client/client.gen'
 import type { GetSessionResponse } from '../client/types.gen'
-import { normalizeCollections } from './normalize'
+import { normalizeCollections } from '../lib/normalize'
 import { timezone } from './preferences'
 import { locale, t } from './i18n'
-import type { User } from './types'
+import type { User } from '../lib/types'
 export const currentUser = ref<User | null>(null)
 let csrfToken = ''
 client.setConfig({

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { Activity, Check, AlertTriangle, Clock, ArrowUpRight, Languages } from '@lucide/vue'
 import type { PublicPage } from '../lib/types'
 import { usePreferredDark } from '@vueuse/core'
-import { formatDate, formatPercent, duration, statusLabel } from '../lib/preferences'
+import { formatDate, formatPercent, duration, statusLabel } from '../composables/preferences'
 import StateBadge from './StateBadge.vue'
 import Sparkline from './Sparkline.vue'
 

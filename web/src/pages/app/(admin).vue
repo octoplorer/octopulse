@@ -21,8 +21,8 @@ import {
   LogOut,
   ChevronRight,
 } from '@lucide/vue'
-import { dark, theme, formatDate, statusLabel } from '../../lib/preferences'
-import { currentUser, applySession, isAdmin } from '../../lib/api'
+import { dark, theme, formatDate, statusLabel } from '../../composables/preferences'
+import { currentUser, applySession, isAdmin } from '../../composables/api'
 import { useMutation } from '@pinia/colada'
 import { deleteSessionMutation } from '../../client/@pinia/colada.gen'
 import { useIntervalFn, useMediaQuery, onKeyStroke } from '@vueuse/core'
