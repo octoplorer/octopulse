@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { client } from '../client/client.gen'
 import * as sdk from '../client/sdk.gen'
-import { routes } from '../client/routes.gen'
 import { normalizeCollections } from './normalize'
 import { locale, timezone } from './preferences'
 import type { User } from './types'
@@ -43,46 +42,9 @@ client.interceptors.error.use((error) => {
     message += `: ${problem.errors.map((e) => `${e.location || ''} ${e.message || ''}`).join('; ')}`
   return new Error(message)
 })
-export function resolveOperation(path: string, method = 'GET') {
-  const url = new URL(path.startsWith('/api/') ? path : `/api/v1/${path}`, location.origin)
-  for (const route of routes) {
-    if (route.method !== method.toUpperCase()) continue
-    const match = new RegExp(route.pattern).exec(url.pathname)
-    if (!match) continue
-    const params: Record<string, string> = {}
-    route.parameters.forEach((name, index) => {
-      params[name] = decodeURIComponent(match[index + 1]!)
-    })
-    return { operation: route.operation, path: params, query: Object.fromEntries(url.searchParams) }
-  }
-  throw new Error(`API operation is missing from the generated contract: ${method} ${url.pathname}`)
-}
-type OperationOptions = {
-  body?: unknown
-  path?: Record<string, string>
-  query?: Record<string, string>
-  signal?: AbortSignal
-  throwOnError: true
-}
-// This dynamic dispatch boundary is generated from Go route metadata. Every
-// request uses the corresponding HeyAPI SDK operation; DTOs come from its types.
-const operations = sdk as unknown as Record<
-  string,
-  (options: OperationOptions) => Promise<{ data: unknown }>
->
-export async function api<T>(
-  path: string,
-  options: { method?: string; body?: unknown; signal?: AbortSignal } = {},
-): Promise<T> {
-  const resolved = resolveOperation(path, options.method || 'GET'),
-    operation = operations[resolved.operation]
-  if (!operation) throw new Error(`Generated SDK operation unavailable: ${resolved.operation}`)
-  const { data } = await operation({
-    ...resolved,
-    body: options.body,
-    signal: options.signal,
-    throwOnError: true,
-  })
+// The shared client normalizes Go slices; UI DTOs describe those normalized collections.
+export async function response<T>(operation: Promise<{ data: unknown }>): Promise<T> {
+  const { data } = await operation
   return data as T
 }
 export async function loadSession() {

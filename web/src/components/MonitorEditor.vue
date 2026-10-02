@@ -3,7 +3,8 @@ import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Save, ArrowLeft, Plus, X, Upload } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { api, canEdit } from '../lib/api'
+import { response, canEdit } from '../lib/api'
+import * as sdk from '../client/sdk.gen'
 import type { Monitor, Channel, Secret } from '../lib/types'
 import {
   newMonitor,
@@ -71,13 +72,16 @@ async function load() {
   loading.value = true
   try {
     const [c, s] = await Promise.all([
-      api<{ items: Channel[] }>('channels'),
-      api<{ items: Secret[] }>('secrets'),
+      response<{ items: Channel[] }>(sdk.listChannels({ throwOnError: true })),
+      response<{ items: Secret[] }>(sdk.listSecrets({ throwOnError: true })),
     ])
     channels.value = c.items
     secrets.value = s.items
     if (editing.value) {
-      Object.assign(form, await api<Monitor>(`monitors/${id.value}`))
+      Object.assign(
+        form,
+        await response<Monitor>(sdk.getMonitor({ path: { id: id.value! }, throwOnError: true })),
+      )
       if (form.http) form.http = defaults(emptyHTTP(), form.http)
       if (form.tcp) form.tcp = defaults(emptyTCP(), form.tcp)
       if (form.dns) form.dns = defaults(emptyDNS(), form.dns)
@@ -140,10 +144,11 @@ async function save() {
           'The monitor configuration request may not exceed 8 MiB',
         ),
       )
-    const result = await api<Monitor>(editing.value ? `monitors/${form.id}` : 'monitors', {
-      method: editing.value ? 'PATCH' : 'POST',
-      body: payload,
-    })
+    const result = await response<Monitor>(
+      editing.value
+        ? sdk.updateMonitor({ path: { id: form.id }, body: payload, throwOnError: true })
+        : sdk.createMonitor({ body: payload, throwOnError: true }),
+    )
     notify(t('监控项已保存', 'Monitor saved'))
     router.push(`/app/monitors/${result.id}`)
   } catch (e) {

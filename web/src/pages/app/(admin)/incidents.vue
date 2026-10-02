@@ -3,7 +3,13 @@ import { ref, reactive, computed } from 'vue'
 import { Plus, MessageSquare, CheckCircle2 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import type { Incident, Page, Monitor } from '../../../lib/types'
-import { api, canEdit } from '../../../lib/api'
+import { response, canEdit } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
+import {
+  listIncidentsQuery,
+  listPagesQuery,
+  listMonitorsQuery,
+} from '../../../client/@pinia/colada.gen'
 import { t, formatDate, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
@@ -15,9 +21,9 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['事件公告', 'Incidents'] } })
 
-const query = useCollection<Incident>('incidents'),
-  pages = useCollection<Page>('pages'),
-  monitors = useCollection<Monitor>('monitors'),
+const query = useCollection<Incident>('incidents', listIncidentsQuery()),
+  pages = useCollection<Page>('pages', listPagesQuery()),
+  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
   open = ref(false),
   detailOpen = ref(false),
   selected = ref<Incident | null>(null),
@@ -71,10 +77,9 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    await api(form.id ? `incidents/${form.id}` : 'incidents', {
-      method: form.id ? 'PATCH' : 'POST',
-      body: form,
-    })
+    if (form.id)
+      await sdk.updateIncidents({ path: { id: form.id }, body: form, throwOnError: true })
+    else await sdk.createIncidents({ body: form, throwOnError: true })
     open.value = false
     notify(t('公告已保存', 'Incident saved'))
     await query.refresh()
@@ -88,10 +93,13 @@ async function update() {
   if (!selected.value) return
   saving.value = true
   try {
-    const result = await api<Incident>(`incidents/${selected.value.id}/updates`, {
-      method: 'POST',
-      body: { body: updateBody.value, status: updateStatus.value },
-    })
+    const result = await response<Incident>(
+      sdk.createIncidentUpdate({
+        path: { id: selected.value.id },
+        body: { body: updateBody.value, status: updateStatus.value },
+        throwOnError: true,
+      }),
+    )
     selected.value = result
     updateBody.value = ''
     notify(t('进展已发布', 'Update published'))

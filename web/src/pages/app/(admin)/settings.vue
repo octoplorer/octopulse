@@ -2,7 +2,8 @@
 import { reactive, ref, onMounted } from 'vue'
 import { Save, Settings, UserRound } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { api, isAdmin, currentUser } from '../../../lib/api'
+import { response, isAdmin, currentUser } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
 import type { Settings as OrganizationSettings, User } from '../../../lib/types'
 import { t, locale, theme, timezone } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
@@ -33,7 +34,10 @@ const loading = ref(true),
   })
 onMounted(async () => {
   try {
-    Object.assign(form, await api<OrganizationSettings>('settings'))
+    Object.assign(
+      form,
+      await response<OrganizationSettings>(sdk.getSettings({ throwOnError: true })),
+    )
     domains.value = form.allowedDomains.join('\n')
   } catch (e) {
     error.value = errorText(e)
@@ -51,7 +55,7 @@ async function saveOrganization() {
       .filter(Boolean)
     Object.assign(
       form,
-      await api<OrganizationSettings>('settings', { method: 'PATCH', body: form }),
+      await response<OrganizationSettings>(sdk.updateSettings({ body: form, throwOnError: true })),
     )
     notify(t('组织设置已保存', 'Organization settings saved'))
   } catch (e) {
@@ -64,17 +68,19 @@ async function saveProfile() {
   saving.value = true
   error.value = ''
   try {
-    currentUser.value = await api<User>('profile', {
-      method: 'PATCH',
-      body: {
-        name: profile.name,
-        locale: profile.locale,
-        timezone: profile.timezone,
-        ...(profile.password
-          ? { password: profile.password, oldPassword: profile.oldPassword }
-          : {}),
-      },
-    })
+    currentUser.value = await response<User>(
+      sdk.updateProfile({
+        body: {
+          name: profile.name,
+          locale: profile.locale,
+          timezone: profile.timezone,
+          ...(profile.password
+            ? { password: profile.password, oldPassword: profile.oldPassword }
+            : {}),
+        },
+        throwOnError: true,
+      }),
+    )
     locale.value = profile.locale
     timezone.value = profile.timezone
     profile.password = ''

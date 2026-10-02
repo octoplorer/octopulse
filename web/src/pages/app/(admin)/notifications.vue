@@ -4,7 +4,14 @@ import { Plus, Bell, Send, Pencil, Trash2, RefreshCw } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useCollection } from '../../../lib/data'
 import type { Channel, Secret, Delivery, Monitor } from '../../../lib/types'
-import { api, isAdmin } from '../../../lib/api'
+import { isAdmin } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
+import {
+  listChannelsQuery,
+  listSecretsQuery,
+  listDeliveriesQuery,
+  listMonitorsQuery,
+} from '../../../client/@pinia/colada.gen'
 import { t, formatDate, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
@@ -18,10 +25,10 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['通知与投递', 'Notifications'] } })
 
-const query = useCollection<Channel>('channels'),
-  secrets = useCollection<Secret>('secrets'),
-  deliveries = useCollection<Delivery>('deliveries'),
-  monitors = useCollection<Monitor>('monitors'),
+const query = useCollection<Channel>('channels', listChannelsQuery()),
+  secrets = useCollection<Secret>('secrets', listSecretsQuery()),
+  deliveries = useCollection<Delivery>('deliveries', listDeliveriesQuery()),
+  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -47,10 +54,8 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    await api(form.id ? `channels/${form.id}` : 'channels', {
-      method: form.id ? 'PATCH' : 'POST',
-      body: form,
-    })
+    if (form.id) await sdk.updateChannels({ path: { id: form.id }, body: form, throwOnError: true })
+    else await sdk.createChannels({ body: form, throwOnError: true })
     open.value = false
     await query.refresh()
     notify(t('通知渠道已保存', 'Channel saved'))
@@ -63,7 +68,7 @@ async function save() {
 async function test(channel: Channel) {
   testing.value = channel.id
   try {
-    await api(`channels/${channel.id}/test`, { method: 'POST' })
+    await sdk.testChannel({ path: { id: channel.id }, throwOnError: true })
     notify(t('测试通知已提交，请查看投递记录。', 'Test submitted. Check delivery history.'))
   } catch (e) {
     notify(errorText(e), 'error')
@@ -75,7 +80,7 @@ async function test(channel: Channel) {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await api(`channels/${deleteTarget.value.id}`, { method: 'DELETE' })
+    await sdk.deleteChannels({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
     notify(t('通知渠道已删除', 'Channel deleted'))

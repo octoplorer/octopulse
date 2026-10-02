@@ -5,7 +5,8 @@ import { ArrowRight, ShieldCheck } from '@lucide/vue'
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
 import { dark, t } from '../../lib/preferences'
-import { api, login, loadSession } from '../../lib/api'
+import { response, login, loadSession } from '../../lib/api'
+import * as sdk from '../../client/sdk.gen'
 import { errorText } from '../../lib/notices'
 const route = useRoute(),
   router = useRouter(),
@@ -19,7 +20,9 @@ const route = useRoute(),
   timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
 onMounted(async () => {
   try {
-    required.value = (await api<{ required: boolean }>('setup')).required
+    required.value = (
+      await response<{ required: boolean }>(sdk.getSetup({ throwOnError: true }))
+    ).required
     if (!required.value && (await loadSession()).user) {
       router.replace('/app')
     }
@@ -34,14 +37,14 @@ async function submit() {
   error.value = ''
   try {
     if (required.value)
-      await api('setup', {
-        method: 'POST',
+      await sdk.createSetup({
         body: {
           username: username.value,
           password: password.value,
           organizationName: organizationName.value,
           timezone: timezone.value,
         },
+        throwOnError: true,
       })
     await login(username.value, password.value)
     const next = String(route.query.next || '/app')

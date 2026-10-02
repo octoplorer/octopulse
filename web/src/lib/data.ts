@@ -1,25 +1,18 @@
 import { useQuery, useQueryCache, type UseQueryOptions } from '@pinia/colada'
-import * as generatedQueries from '../client/@pinia/colada.gen'
-import { api, currentUser, resolveOperation } from './api'
-function optionsFor<T>(path: string): UseQueryOptions<T, Error> {
-  const resolved = resolveOperation(path)
-  const factory = (
-    generatedQueries as unknown as Record<string, (options: unknown) => UseQueryOptions<T, Error>>
-  )[`${resolved.operation}Query`]
-  if (!factory) throw new Error(`Generated query unavailable: ${resolved.operation}`)
-  return factory(resolved)
-}
-export function useCollection<T>(name: string) {
-  return useQuery({
+import { currentUser } from './api'
+import type { ErrorModel } from '../client/types.gen'
+type QueryOptions = Pick<UseQueryOptions<unknown, ErrorModel>, 'query'>
+export function useCollection<T>(name: string, options: QueryOptions) {
+  return useQuery<{ items: T[] }, ErrorModel>({
     key: () => ['collection', currentUser.value?.id || 'anonymous', name],
-    query: (context) => optionsFor<{ items: T[] }>(name).query(context),
+    query: async (context) => (await options.query(context)) as { items: T[] },
     staleTime: 10000,
   })
 }
-export function useRecord<T>(name: () => string) {
-  return useQuery({
+export function useRecord<T>(name: () => string, options: () => QueryOptions) {
+  return useQuery<T, ErrorModel>({
     key: () => ['record', currentUser.value?.id || 'anonymous', name()],
-    query: (context) => optionsFor<T>(name()).query(context),
+    query: async (context) => (await options().query(context)) as T,
     staleTime: 5000,
   })
 }

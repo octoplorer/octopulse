@@ -3,6 +3,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { Server, Settings, RefreshCw, ExternalLink, ArrowUpRight, Save, Clock } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useRecord, useCollection } from '../../../lib/data'
+import { listBeszelSystemsQuery, listSecretsQuery } from '../../../client/@pinia/colada.gen'
+import * as sdk from '../../../client/sdk.gen'
+import type { GetBeszelHistoryData } from '../../../client/types.gen'
 import type {
   BeszelConfig,
   BeszelSystem,
@@ -13,7 +16,7 @@ import type {
   BeszelContainers,
   Secret,
 } from '../../../lib/types'
-import { api, isAdmin } from '../../../lib/api'
+import { response, isAdmin } from '../../../lib/api'
 import { t, formatDate, duration } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { useIntervalFn } from '@vueuse/core'
@@ -28,8 +31,11 @@ import Sparkline from '../../../components/Sparkline.vue'
 
 definePage({ meta: { title: ['服务器', 'Servers'] } })
 
-const query = useRecord<BeszelSystems>(() => 'beszel/systems'),
-  secrets = useCollection<Secret>('secrets'),
+const query = useRecord<BeszelSystems>(
+    () => 'beszel/systems',
+    () => listBeszelSystemsQuery(),
+  ),
+  secrets = useCollection<Secret>('secrets', listSecretsQuery()),
   configOpen = ref(false),
   detailOpen = ref(false),
   selected = ref<BeszelSystem | null>(null),
@@ -40,7 +46,7 @@ const query = useRecord<BeszelSystems>(() => 'beszel/systems'),
   detailLoading = ref(false),
   detailError = ref(''),
   tab = ref('history'),
-  historyRange = ref('24h'),
+  historyRange = ref<NonNullable<GetBeszelHistoryData['query']>['range']>('24h'),
   historyMeta = ref<BeszelHistory | null>(null),
   containersMeta = ref<BeszelContainers | null>(null),
   config = reactive<BeszelConfig>({
@@ -52,7 +58,7 @@ const query = useRecord<BeszelSystems>(() => 'beszel/systems'),
   })
 async function configure() {
   try {
-    Object.assign(config, await api<BeszelConfig>('beszel/config'))
+    Object.assign(config, await response<BeszelConfig>(sdk.getBeszelConfig({ throwOnError: true })))
     error.value = ''
     configOpen.value = true
   } catch (e) {
@@ -65,7 +71,7 @@ async function save() {
   try {
     Object.assign(
       config,
-      await api<BeszelConfig>('beszel/config', { method: 'PATCH', body: config }),
+      await response<BeszelConfig>(sdk.updateBeszelConfig({ body: config, throwOnError: true })),
     )
     configOpen.value = false
     notify(t('Beszel 连接已保存', 'Beszel connection saved'))
@@ -83,8 +89,19 @@ async function detail(server: BeszelSystem) {
   detailError.value = ''
   try {
     const [h, c] = await Promise.all([
-      api<BeszelHistory>(`beszel/systems/${server.id}/history?range=${historyRange.value}`),
-      api<BeszelContainers>(`beszel/systems/${server.id}/containers`),
+      response<BeszelHistory>(
+        sdk.getBeszelHistory({
+          path: { id: server.id },
+          query: { range: historyRange.value },
+          throwOnError: true,
+        }),
+      ),
+      response<BeszelContainers>(
+        sdk.listBeszelContainers({
+          path: { id: server.id },
+          throwOnError: true,
+        }),
+      ),
     ])
     historyMeta.value = h
     containersMeta.value = c

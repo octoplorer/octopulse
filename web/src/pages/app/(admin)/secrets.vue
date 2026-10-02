@@ -3,7 +3,9 @@ import { ref, reactive } from 'vue'
 import { Plus, KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import type { Secret } from '../../../lib/types'
-import { api, isAdmin } from '../../../lib/api'
+import { isAdmin } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
+import { listSecretsQuery } from '../../../client/@pinia/colada.gen'
 import { t, formatDate } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -14,7 +16,7 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['秘密凭据', 'Secrets'], roles: ['admin'] } })
 
-const query = useCollection<Secret>('secrets'),
+const query = useCollection<Secret>('secrets', listSecretsQuery()),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -31,10 +33,8 @@ async function save() {
   error.value = ''
   try {
     const body = { name: form.name, value: form.value }
-    await api(form.id ? `secrets/${form.id}` : 'secrets', {
-      method: form.id ? 'PATCH' : 'POST',
-      body,
-    })
+    if (form.id) await sdk.updateSecret({ path: { id: form.id }, body, throwOnError: true })
+    else await sdk.createSecret({ body, throwOnError: true })
     form.value = ''
     open.value = false
     await query.refresh()
@@ -48,7 +48,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await api(`secrets/${deleteTarget.value.id}`, { method: 'DELETE' })
+    await sdk.deleteSecret({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
     notify(t('秘密已删除', 'Secret deleted'))

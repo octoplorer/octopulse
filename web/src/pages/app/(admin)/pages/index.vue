@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Plus, ArrowUpRight, Pencil, Globe } from '@lucide/vue'
 import { useCollection } from '../../../../lib/data'
+import { listPagesQuery } from '../../../../client/@pinia/colada.gen'
 import type { Page } from '../../../../lib/types'
 import { t, formatDate } from '../../../../lib/preferences'
 import { publishedEntry } from '../../../../lib/pages'
@@ -11,7 +12,7 @@ import AsyncState from '../../../../components/AsyncState.vue'
 
 definePage({ meta: { title: ['状态页', 'Status pages'] } })
 
-const query = useCollection<Page>('pages')
+const query = useCollection<Page>('pages', listPagesQuery())
 </script>
 <template>
   <PageHeader

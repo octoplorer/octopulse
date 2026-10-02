@@ -17,7 +17,9 @@ import {
 } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useRecord } from '../../../../../lib/data'
-import { api, canEdit } from '../../../../../lib/api'
+import { response, canEdit } from '../../../../../lib/api'
+import * as sdk from '../../../../../client/sdk.gen'
+import { getMonitorQuery, getMonitorHistoryQuery } from '../../../../../client/@pinia/colada.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { targetOf } from '../../../../../lib/monitor'
 import { t, formatDate, formatPercent, duration } from '../../../../../lib/preferences'
@@ -34,12 +36,20 @@ definePage({ meta: { title: ['监控详情', 'Monitor details'] } })
 
 const route = useRoute('/app/(admin)/monitors/[id]/'),
   router = useRouter(),
-  query = useRecord<Monitor>(() => `monitors/${route.params.id}`),
+  query = useRecord<Monitor>(
+    () => `monitors/${route.params.id}`,
+    () => getMonitorQuery({ path: { id: route.params.id } }),
+  ),
   period = ref('24h'),
   from = () =>
     Date.now() - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
   history = useRecord<MonitorHistory>(
     () => `monitors/${route.params.id}/history?from=${from()}&to=${Date.now()}`,
+    () =>
+      getMonitorHistoryQuery({
+        path: { id: route.params.id },
+        query: { from: from(), to: Date.now() },
+      }),
   ),
   busy = ref(false),
   confirmDelete = ref(false),
@@ -60,7 +70,7 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
   busy.value = true
   try {
     if (action === 'check') {
-      await api(`monitors/${monitor.value.id}/check`, { method: 'POST' })
+      await sdk.checkMonitor({ path: { id: monitor.value.id }, throwOnError: true })
       notify(
         t(
           '检查请求已接受，结果将在完成后更新。',
@@ -68,15 +78,15 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
         ),
       )
     } else if (action === 'toggle') {
-      await api(`monitors/${monitor.value.id}`, {
-        method: 'PATCH',
+      await sdk.updateMonitor({
+        path: { id: monitor.value.id },
         body: { ...monitor.value, enabled: !monitor.value.enabled },
+        throwOnError: true,
       })
       notify(t('监控状态已更新', 'Monitor updated'))
     } else if (action === 'rotate') {
-      const data = await api<{ token: string; url: string }>(
-        `monitors/${monitor.value.id}/heartbeat/rotate`,
-        { method: 'POST' },
+      const data = await response<{ token: string; url: string }>(
+        sdk.rotateHeartbeat({ path: { id: monitor.value.id }, throwOnError: true }),
       )
       heartbeatToken.value = data.token
       heartbeatUrl.value = new URL(
@@ -85,7 +95,7 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
       ).href
       notify(t('新密钥只在此显示一次，请保存。', 'Save this token. It is shown only once.'))
     } else {
-      await api(`monitors/${monitor.value.id}`, { method: 'DELETE' })
+      await sdk.deleteMonitor({ path: { id: monitor.value.id }, throwOnError: true })
       notify(t('监控项已删除', 'Monitor deleted'))
       router.push('/app/monitors')
       return

@@ -2,6 +2,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRecord } from '../../lib/data'
+import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
 import type { PublicPage } from '../../lib/types'
 import { t } from '../../lib/preferences'
 import { useIntervalFn } from '@vueuse/core'
@@ -9,10 +10,15 @@ import StatusPage from '../../components/StatusPage.vue'
 import AsyncState from '../../components/AsyncState.vue'
 const route = useRoute('/[[slug]]/[[...rest]]+'),
   isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents'),
-  query = useRecord<PublicPage>(() =>
-    isDomain.value
-      ? `/api/public/resolve?host=${encodeURIComponent(location.hostname)}`
-      : `/api/public/pages/${encodeURIComponent(String(route.params.slug))}`,
+  query = useRecord<PublicPage>(
+    () =>
+      isDomain.value
+        ? `/api/public/resolve?host=${encodeURIComponent(location.hostname)}`
+        : `/api/public/pages/${encodeURIComponent(String(route.params.slug))}`,
+    () =>
+      isDomain.value
+        ? resolvePublicPageQuery({ query: { host: location.hostname } })
+        : getPublicPageQuery({ path: { slug: String(route.params.slug) } }),
   ),
   rest = computed(() =>
     Array.isArray(route.params.rest)

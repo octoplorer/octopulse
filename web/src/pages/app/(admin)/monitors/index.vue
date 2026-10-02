@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { Plus, Search, RefreshCw, Globe, Server, ChevronRight } from '@lucide/vue'
 import { useCollection } from '../../../../lib/data'
+import { listMonitorsQuery } from '../../../../client/@pinia/colada.gen'
 import { useIntervalFn } from '@vueuse/core'
 import type { Monitor } from '../../../../lib/types'
 import { targetOf, monitorTypes } from '../../../../lib/monitor'
@@ -14,7 +15,7 @@ import AsyncState from '../../../../components/AsyncState.vue'
 
 definePage({ meta: { title: ['监控项', 'Monitors'] } })
 
-const query = useCollection<Monitor>('monitors'),
+const query = useCollection<Monitor>('monitors', listMonitorsQuery()),
   search = ref(''),
   state = ref('all'),
   type = ref('all')

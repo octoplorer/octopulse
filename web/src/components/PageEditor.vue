@@ -13,7 +13,8 @@ import {
   Trash2,
   ExternalLink,
 } from '@lucide/vue'
-import { api, canEdit } from '../lib/api'
+import { response, canEdit } from '../lib/api'
+import * as sdk from '../client/sdk.gen'
 import type { Page, Monitor, Settings, PublicPage, PageConfig } from '../lib/types'
 import { publishedEntry } from '../lib/pages'
 import { t, formatDate } from '../lib/preferences'
@@ -72,14 +73,18 @@ async function load() {
   loading.value = true
   try {
     const [m, s] = await Promise.all([
-      api<{ items: Monitor[] }>('monitors'),
-      api<Settings>('settings'),
+      response<{ items: Monitor[] }>(sdk.listMonitors({ throwOnError: true })),
+      response<Settings>(sdk.getSettings({ throwOnError: true })),
     ])
     monitors.value = m.items
     allowedDomains.value = s.allowedDomains || []
     if (editing.value) {
-      replacePage(await api<Page>(`pages/${id.value}`))
-      savedPreview.value = await api<PublicPage>(`pages/${id.value}/preview`)
+      replacePage(
+        await response<Page>(sdk.getPages({ path: { id: id.value! }, throwOnError: true })),
+      )
+      savedPreview.value = await response<PublicPage>(
+        sdk.previewPage({ path: { id: id.value! }, throwOnError: true }),
+      )
     }
   } catch (e) {
     error.value = errorText(e)
@@ -212,17 +217,21 @@ async function save(publish = false) {
       throw new Error(
         t('Logo 需使用 HTTPS 或上传资源地址', 'Logo must use HTTPS or an uploaded asset URL'),
       )
-    const data = await api<Page>(editing.value ? `pages/${form.id}` : 'pages', {
-      method: editing.value ? 'PATCH' : 'POST',
-      body: clone(form),
-    })
+    const body = clone(form)
+    const data = await response<Page>(
+      editing.value
+        ? sdk.updatePages({ path: { id: form.id }, body, throwOnError: true })
+        : sdk.createPages({ body, throwOnError: true }),
+    )
     replacePage(data)
     if (publish) {
-      await api<Page>(`pages/${form.id}/publish`, { method: 'POST' })
-      replacePage(await api<Page>(`pages/${form.id}`))
+      await sdk.publishPage({ path: { id: form.id }, throwOnError: true })
+      replacePage(await response<Page>(sdk.getPages({ path: { id: form.id }, throwOnError: true })))
       notify(t('状态页已发布', 'Status page published'))
     } else notify(t('草稿已保存', 'Draft saved'))
-    savedPreview.value = await api<PublicPage>(`pages/${form.id}/preview`)
+    savedPreview.value = await response<PublicPage>(
+      sdk.previewPage({ path: { id: form.id }, throwOnError: true }),
+    )
     if (!id.value) await router.replace(`/app/pages/${form.id}`)
   } catch (e) {
     error.value = errorText(e)
@@ -245,10 +254,12 @@ async function uploadLogo(event: Event) {
       reader.readAsDataURL(file)
     })
     form.draft.logoUrl = (
-      await api<{ url: string }>('assets', {
-        method: 'POST',
-        body: { filename: file.name, contentType: file.type, base64 },
-      })
+      await response<{ url: string }>(
+        sdk.uploadAsset({
+          body: { filename: file.name, contentType: file.type, base64 },
+          throwOnError: true,
+        }),
+      )
     ).url
     notify(t('Logo 已上传', 'Logo uploaded'))
   } catch (e) {
@@ -257,7 +268,7 @@ async function uploadLogo(event: Event) {
 }
 async function remove() {
   try {
-    await api(`pages/${form.id}`, { method: 'DELETE' })
+    await sdk.deletePages({ path: { id: form.id }, throwOnError: true })
     notify(t('状态页已删除', 'Status page deleted'))
     router.push('/app/pages')
   } catch (e) {

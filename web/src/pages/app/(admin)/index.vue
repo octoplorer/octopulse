@@ -12,6 +12,12 @@ import {
   Server,
 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
+import {
+  listMonitorsQuery,
+  listIncidentsQuery,
+  listPagesQuery,
+  listMaintenanceQuery,
+} from '../../../client/@pinia/colada.gen'
 import type { Monitor, Incident, Page, Maintenance } from '../../../lib/types'
 import { targetOf } from '../../../lib/monitor'
 import { publishedEntry } from '../../../lib/pages'
@@ -25,10 +31,10 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['概览', 'Overview'] } })
 
-const monitors = useCollection<Monitor>('monitors'),
-  incidents = useCollection<Incident>('incidents'),
-  pages = useCollection<Page>('pages'),
-  maintenance = useCollection<Maintenance>('maintenance')
+const monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
+  incidents = useCollection<Incident>('incidents', listIncidentsQuery()),
+  pages = useCollection<Page>('pages', listPagesQuery()),
+  maintenance = useCollection<Maintenance>('maintenance', listMaintenanceQuery())
 const items = computed(() => monitors.data.value?.items || []),
   active = computed(() => items.value.filter((m) => m.enabled)),
   up = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'up')),

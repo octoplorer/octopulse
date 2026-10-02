@@ -3,7 +3,9 @@ import { ref, reactive } from 'vue'
 import { Plus, Pencil, Users, Trash2 } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import type { User } from '../../../lib/types'
-import { api, isAdmin, currentUser } from '../../../lib/api'
+import { isAdmin, currentUser } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
+import { listUsersQuery } from '../../../client/@pinia/colada.gen'
 import { t, formatDate, timezone, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
@@ -16,7 +18,7 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['成员与权限', 'Members'], roles: ['admin'] } })
 
-const query = useCollection<User>('users'),
+const query = useCollection<User>('users', listUsersQuery()),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -56,10 +58,13 @@ async function save() {
   error.value = ''
   try {
     const { password, ...rest } = form
-    await api(form.id ? `users/${form.id}` : 'users', {
-      method: form.id ? 'PATCH' : 'POST',
-      body: { ...rest, ...(password ? { password } : {}) },
-    })
+    if (form.id)
+      await sdk.updateUser({
+        path: { id: form.id },
+        body: { ...rest, ...(password ? { password } : {}) },
+        throwOnError: true,
+      })
+    else await sdk.createUser({ body: { ...rest, password }, throwOnError: true })
     form.password = ''
     open.value = false
     await query.refresh()
@@ -73,7 +78,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await api(`users/${deleteTarget.value.id}`, { method: 'DELETE' })
+    await sdk.deleteUser({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     await query.refresh()
     notify(t('成员已删除', 'Member deleted'))

@@ -3,7 +3,13 @@ import { ref, reactive } from 'vue'
 import { Plus, Pencil, Trash2, CalendarClock } from '@lucide/vue'
 import { useCollection } from '../../../lib/data'
 import type { Maintenance, Monitor, Page } from '../../../lib/types'
-import { api, canEdit } from '../../../lib/api'
+import { canEdit } from '../../../lib/api'
+import * as sdk from '../../../client/sdk.gen'
+import {
+  listMaintenanceQuery,
+  listMonitorsQuery,
+  listPagesQuery,
+} from '../../../client/@pinia/colada.gen'
 import {
   t,
   formatDate,
@@ -21,9 +27,9 @@ import EmptyState from '../../../components/EmptyState.vue'
 
 definePage({ meta: { title: ['计划维护', 'Maintenance'] } })
 
-const query = useCollection<Maintenance>('maintenance'),
-  monitors = useCollection<Monitor>('monitors'),
-  pages = useCollection<Page>('pages'),
+const query = useCollection<Maintenance>('maintenance', listMaintenanceQuery()),
+  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
+  pages = useCollection<Page>('pages', listPagesQuery()),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -60,10 +66,8 @@ async function save() {
       startsAt: datetimeMilliseconds(start.value, form.timezone),
       endsAt: datetimeMilliseconds(end.value, form.timezone),
     }
-    await api(form.id ? `maintenance/${form.id}` : 'maintenance', {
-      method: form.id ? 'PATCH' : 'POST',
-      body,
-    })
+    if (form.id) await sdk.updateMaintenance({ path: { id: form.id }, body, throwOnError: true })
+    else await sdk.createMaintenance({ body, throwOnError: true })
     open.value = false
     notify(t('维护计划已保存', 'Maintenance saved'))
     await query.refresh()
@@ -76,7 +80,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await api(`maintenance/${deleteTarget.value.id}`, { method: 'DELETE' })
+    await sdk.deleteMaintenance({ path: { id: deleteTarget.value.id }, throwOnError: true })
     deleteOpen.value = false
     notify(t('维护计划已删除', 'Maintenance deleted'))
     await query.refresh()
