@@ -1,0 +1,116 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      capacity:
+        description: Run the real-time 100-monitor capacity tests on both databases
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: octopulse_test
+          POSTGRES_PASSWORD: octopulse_ci
+          POSTGRES_DB: octopulse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U octopulse_test -d octopulse_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+      - name: Install matching PostgreSQL backup tools
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --silent --show-error --location https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          printf '%s\n' \
+            'Types: deb' \
+            'URIs: https://apt.postgresql.org/pub/repos/apt' \
+            'Suites: noble-pgdg' \
+            'Components: main' \
+            'Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc' \
+            | sudo tee /etc/apt/sources.list.d/octopulse-pgdg.sources > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client-18
+          echo '/usr/lib/postgresql/18/bin' >> "$GITHUB_PATH"
+      - name: Download Go modules
+        run: go mod download
+      - name: Install locked frontend dependencies
+        working-directory: web
+        run: aube install --frozen-lockfile
+      - name: Check generated database and API contracts
+        run: |
+          sqlc generate
+          go run ./cmd/octopulse openapi > api/openapi.json.tmp
+          mv api/openapi.json.tmp api/openapi.json
+          cd web
+          aube run --no-install generate
+          cd ..
+          git diff --exit-code -- api/openapi.json internal/store/sqlitequery internal/store/postgresquery web/src/client
+          test -z "$(git status --porcelain -- api/openapi.json internal/store/sqlitequery internal/store/postgresquery web/src/client)"
+      - name: Test SQLite with race detection
+        run: go test -race -p 1 -count=1 -timeout=10m ./...
+      - name: Test real PostgreSQL with race detection
+        env:
+          OCTOPULSE_TEST_DB_DRIVER: postgres
+          OCTOPULSE_TEST_POSTGRES_DSN: postgres://octopulse_test:octopulse_ci@127.0.0.1:5432/octopulse_test?sslmode=disable
+        run: go test -race -p 1 -count=1 -timeout=10m ./...
+      - name: Vet Go code
+        run: go vet ./...
+      - name: Check frontend formatting, types, tests and production build
+        working-directory: web
+        run: |
+          aube run --no-install format:check
+          aube run --no-install check
+          aube run --no-install test
+          aube run --no-install build
+      - name: Test SQLite capacity
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.capacity }}
+        env:
+          OCTOPULSE_RUN_CAPACITY: "1"
+        run: go test -race -p 1 ./internal/server -run '^TestServiceCapacity100Monitors$' -count=1 -v -timeout=180s
+      - name: Test PostgreSQL capacity
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.capacity }}
+        env:
+          OCTOPULSE_RUN_CAPACITY: "1"
+          OCTOPULSE_TEST_DB_DRIVER: postgres
+          OCTOPULSE_TEST_POSTGRES_DSN: postgres://octopulse_test:octopulse_ci@127.0.0.1:5432/octopulse_test?sslmode=disable
+        run: go test -race -p 1 ./internal/server -run '^TestServiceCapacity100Monitors$' -count=1 -v -timeout=180s
+      - name: Build binary and package frontend assets
+        run: |
+          mkdir -p .cache/release/octopulse-linux-amd64/bin .cache/release/octopulse-linux-amd64/web bin
+          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o .cache/release/octopulse-linux-amd64/bin/octopulse ./cmd/octopulse
+          cp -R web/dist .cache/release/octopulse-linux-amd64/web/dist
+          cp README.md .env.example .cache/release/octopulse-linux-amd64/
+          tar -C .cache/release -czf bin/octopulse-linux-amd64.tar.gz octopulse-linux-amd64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: octopulse-linux-amd64
+          path: bin/octopulse-linux-amd64.tar.gz
+          archive: false
+          if-no-files-found: error
+          retention-days: 14

@@ -4,11 +4,6 @@ node = "24.19.0"
 "github:aubepkg/aube" = "2.6.1"
 sqlc = "1.30.0"
 
-[env]
-OCTOPULSE_ADDR = "127.0.0.1:8080"
-OCTOPULSE_DB_DRIVER = "sqlite"
-OCTOPULSE_DB_DSN = "file:.data/octopulse.db"
-
 [tasks."dev:api"]
 run = "go run ./cmd/octopulse serve"
 
@@ -17,7 +12,12 @@ dir = "web"
 run = "aube run dev"
 
 [tasks."generate:api"]
-run = "go run ./cmd/octopulse openapi > api/openapi.json"
+run = """
+set -e
+mkdir -p .cache
+go run ./cmd/octopulse openapi > .cache/openapi.json.tmp
+mv .cache/openapi.json.tmp api/openapi.json
+"""
 
 [tasks."generate:db"]
 run = "sqlc generate"

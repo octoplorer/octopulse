@@ -1,0 +1,17 @@
+services:
+  octopulse:
+    build: .
+    image: octopulse:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      OCTOPULSE_ADMIN_HOSTS: ${OCTOPULSE_ADMIN_HOSTS:-localhost,127.0.0.1}
+      OCTOPULSE_COOKIE_SECURE: ${OCTOPULSE_COOKIE_SECURE:-false}
+      OCTOPULSE_ENCRYPTION_KEY: ${OCTOPULSE_ENCRYPTION_KEY:-}
+      OCTOPULSE_DB_MAX_CONNECTIONS: ${OCTOPULSE_DB_MAX_CONNECTIONS:-10}
+      OCTOPULSE_STATISTICS_INTERVAL_SECONDS: ${OCTOPULSE_STATISTICS_INTERVAL_SECONDS:-60}
+    volumes:
+      - octopulse-data:/data
+volumes:
+  octopulse-data:
