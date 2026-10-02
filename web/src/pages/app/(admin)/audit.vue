@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
-import { Search, RefreshCw } from '@lucide/vue'
-import { useQuery, type DefineQueryOptions } from '@pinia/colada'
-import { listAuditQuery } from '../../../client/@pinia/colada.gen'
+import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Audit } from '../../../lib/types'
-import { formatDate } from '../../../composables/preferences'
-import PageHeader from '../../../components/PageHeader.vue'
+import { RefreshCw, Search } from '@lucide/vue'
+import { useQuery } from '@pinia/colada'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { listAuditQuery } from '../../../client/@pinia/colada.gen'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import { formatDate } from '../../../composables/preferences'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -23,7 +24,7 @@ const search = ref('')
 const items = computed(
   () =>
     query.data.value?.items
-      .filter((x) =>
+      .filter(x =>
         `${x.username} ${x.action} ${x.resourceType} ${x.resourceId}`
           .toLowerCase()
           .includes(search.value.toLowerCase()),
@@ -31,14 +32,16 @@ const items = computed(
       .sort((a, b) => b.createdAt - a.createdAt) || [],
 )
 </script>
+
 <template>
   <PageHeader
     :title="t('navigation.auditLog')"
     :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')"
-    ><button class="button" @click="query.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
-    </button></PageHeader
   >
+    <button class="button" @click="query.refetch()">
+      <RefreshCw :size="14" />{{ t('common.refresh') }}
+    </button>
+  </PageHeader>
   <section class="card">
     <div class="filter-bar">
       <div class="search-box">
@@ -46,14 +49,14 @@ const items = computed(
           v-model="search"
           :placeholder="t('audit.searchActorActionOrResource')"
           :aria-label="t('audit.searchAuditLog')"
-        />
+        >
       </div>
       <span class="muted" un-text="10px">{{
         t('counts.records', { count: items.length }, items.length)
       }}</span>
     </div>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
-      ><EmptyState v-if="!items.length" :title="t('audit.noMatchingRecords')" />
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+      <EmptyState v-if="!items.length" :title="t('audit.noMatchingRecords')" />
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
@@ -67,7 +70,9 @@ const items = computed(
           </thead>
           <tbody>
             <tr v-for="entry in items" :key="entry.id">
-              <td class="muted" un-text="10px">{{ formatDate(entry.createdAt) }}</td>
+              <td class="muted" un-text="10px">
+                {{ formatDate(entry.createdAt) }}
+              </td>
               <td>{{ entry.username }}</td>
               <td>
                 <span class="pill">{{ entry.action }}</span>
@@ -79,7 +84,7 @@ const items = computed(
             </tr>
           </tbody>
         </table>
-      </div></AsyncState
-    >
+      </div>
+    </AsyncState>
   </section>
 </template>

@@ -1,7 +1,8 @@
-import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
-import VueRouter from 'vue-router/vite'
 import UnoCSS from 'unocss/vite'
+import { defineConfig } from 'vitest/config'
+import VueRouter from 'vue-router/vite'
+
 export default defineConfig({
   plugins: [UnoCSS(), VueRouter(), vue()],
   test: {

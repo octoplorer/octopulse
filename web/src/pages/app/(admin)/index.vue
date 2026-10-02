@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { computed } from 'vue'
+import type { DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
+import type { Incident, Maintenance, Monitor, Page } from '../../../lib/types'
 import {
-  Plus,
-  ArrowUpRight,
   Activity,
-  CheckCircle2,
   AlertTriangle,
+  ArrowUpRight,
+  CheckCircle2,
   Clock,
   Globe,
+  Plus,
   RefreshCw,
   Server,
 } from '@lucide/vue'
-import { useQuery, type DefineQueryOptions } from '@pinia/colada'
-import {
-  listMonitorsQuery,
-  listIncidentsQuery,
-  listPagesQuery,
-  listMaintenanceQuery,
-} from '../../../client/@pinia/colada.gen'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Monitor, Incident, Page, Maintenance } from '../../../lib/types'
-import { targetOf } from '../../../lib/monitor'
-import { publishedEntry } from '../../../lib/pages'
-import { formatDate, statusLabel } from '../../../composables/preferences'
-import { canEdit } from '../../../composables/api'
+import { useQuery } from '@pinia/colada'
 import { useIntervalFn } from '@vueuse/core'
-import PageHeader from '../../../components/PageHeader.vue'
-import StateBadge from '../../../components/StateBadge.vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+  listIncidentsQuery,
+  listMaintenanceQuery,
+  listMonitorsQuery,
+  listPagesQuery,
+} from '../../../client/@pinia/colada.gen'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import StateBadge from '../../../components/StateBadge.vue'
+import { canEdit } from '../../../composables/api'
+import { formatDate, statusLabel } from '../../../composables/preferences'
+import { targetOf } from '../../../lib/monitor'
+import { publishedEntry } from '../../../lib/pages'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -52,13 +53,13 @@ const maintenance = useQuery({
   staleTime: 10000,
 } as DefineQueryOptions<{ items: Maintenance[] }, ErrorModel>)
 const items = computed(() => monitors.data.value?.items || [])
-const active = computed(() => items.value.filter((m) => m.enabled))
-const up = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'up'))
+const active = computed(() => items.value.filter(m => m.enabled))
+const up = computed(() => active.value.filter(m => m.type !== 'certificate' && m.state === 'up'))
 const down = computed(() =>
-  active.value.filter((m) => m.type !== 'certificate' && m.state === 'down'),
+  active.value.filter(m => m.type !== 'certificate' && m.state === 'down'),
 )
 const unknown = computed(() =>
-  active.value.filter((m) => m.type !== 'certificate' && m.state === 'unknown'),
+  active.value.filter(m => m.type !== 'certificate' && m.state === 'unknown'),
 )
 const ordered = computed(() =>
   [...items.value]
@@ -72,29 +73,33 @@ const recentIncidents = computed(() => incidents.data.value?.items.slice(0, 5) |
 const nextMaintenance = computed(
   () =>
     maintenance.data.value?.items
-      .filter((x) => x.endsAt > Date.now())
+      .filter(x => x.endsAt > Date.now())
       .sort((a, b) => a.startsAt - b.startsAt)
       .slice(0, 3) || [],
 )
 useIntervalFn(() => monitors.refetch(), 30000)
 </script>
+
 <template>
   <PageHeader
     :title="t('overview.serviceOverview')"
     :description="t('overview.aClearViewOfEveryServiceHeartbeat')"
     eyebrow="YOUR INFRASTRUCTURE, AT A GLANCE"
-    ><button class="button" @click="monitors.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}</button
-    ><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary"
-      ><Plus :size="15" />{{ t('common.addMonitor') }}</RouterLink
-    ></PageHeader
   >
+    <button class="button" @click="monitors.refetch()">
+      <RefreshCw :size="14" />{{ t('common.refresh') }}
+    </button><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
+      <Plus :size="15" />{{ t('common.addMonitor') }}
+    </RouterLink>
+  </PageHeader>
   <div class="stats-grid">
     <div class="card stat-card">
       <div class="stat-label">
         {{ t('overview.totalMonitors') }}<span class="stat-icon"><Activity :size="15" /></span>
       </div>
-      <div class="stat-value">{{ items.length }}</div>
+      <div class="stat-value">
+        {{ items.length }}
+      </div>
       <div class="stat-meta">
         {{ t('overview.active') }} {{ active.length }} · {{ t('common.paused') }}
         {{ items.length - active.length }}
@@ -104,7 +109,9 @@ useIntervalFn(() => monitors.refetch(), 30000)
       <div class="stat-label">
         {{ t('overview.operational') }}<span class="stat-icon"><CheckCircle2 :size="15" /></span>
       </div>
-      <div class="stat-value" un-text="[var(--accent)]">{{ up.length }}</div>
+      <div class="stat-value" un-text="[var(--accent)]">
+        {{ up.length }}
+      </div>
       <div class="stat-meta">
         <span class="positive">{{ t('overview.confirmedServiceStates') }}</span>
       </div>
@@ -117,13 +124,17 @@ useIntervalFn(() => monitors.refetch(), 30000)
       <div class="stat-value" :style="{ color: down.length ? 'var(--danger)' : undefined }">
         {{ down.length }}
       </div>
-      <div class="stat-meta">{{ t('overview.confirmedOutages') }}</div>
+      <div class="stat-meta">
+        {{ t('overview.confirmedOutages') }}
+      </div>
     </div>
     <div class="card stat-card">
       <div class="stat-label">
         {{ t('overview.waitingForData') }}<span class="stat-icon"><Clock :size="15" /></span>
       </div>
-      <div class="stat-value">{{ unknown.length }}</div>
+      <div class="stat-value">
+        {{ unknown.length }}
+      </div>
       <div class="stat-meta">
         {{ t('overview.initialChecksOrCollectionGaps') }}
       </div>
@@ -139,22 +150,24 @@ useIntervalFn(() => monitors.refetch(), 30000)
               {{ t('overview.outagesFirstSoYouCanFocusOnWhat') }}
             </p>
           </div>
-          <RouterLink to="/app/monitors" class="button small ghost"
-            >{{ t('overview.viewAll') }}<ArrowUpRight :size="13"
-          /></RouterLink>
+          <RouterLink to="/app/monitors" class="button small ghost">
+            {{ t('overview.viewAll') }}<ArrowUpRight :size="13" />
+          </RouterLink>
         </div>
         <AsyncState
           :pending="monitors.isPending.value"
           :error="monitors.error.value"
           @retry="monitors.refetch()"
-          ><EmptyState
+        >
+          <EmptyState
             v-if="!items.length"
             :title="t('overview.monitorYourFirstService')"
             :description="t('overview.httpTcpDnsHeartbeatAndCertificateChecksAre')"
-            ><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary"
-              ><Plus :size="14" />{{ t('common.createMonitor') }}</RouterLink
-            ></EmptyState
           >
+            <RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
+              <Plus :size="14" />{{ t('common.createMonitor') }}
+            </RouterLink>
+          </EmptyState>
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
@@ -168,16 +181,12 @@ useIntervalFn(() => monitors.refetch(), 30000)
               <tbody>
                 <tr v-for="monitor in ordered" :key="monitor.id">
                   <td>
-                    <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3"
-                      ><span class="monitor-type-icon"
-                        ><Globe v-if="monitor.type === 'http'" :size="16" /><Server
-                          v-else
-                          :size="16" /></span
-                      ><span
-                        ><span class="monitor-name">{{ monitor.name }}</span
-                        ><span class="monitor-sub">{{ targetOf(monitor) }}</span></span
-                      ></RouterLink
-                    >
+                    <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3">
+                      <span class="monitor-type-icon"><Globe v-if="monitor.type === 'http'" :size="16" /><Server
+                        v-else
+                        :size="16"
+                      /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
+                    </RouterLink>
                   </td>
                   <td>
                     <StateBadge
@@ -195,25 +204,26 @@ useIntervalFn(() => monitors.refetch(), 30000)
                     }}
                     s
                   </td>
-                  <td class="muted" un-text="10px">{{ formatDate(monitor.lastCheckedAt) }}</td>
+                  <td class="muted" un-text="10px">
+                    {{ formatDate(monitor.lastCheckedAt) }}
+                  </td>
                 </tr>
               </tbody>
             </table>
-          </div></AsyncState
-        >
+          </div>
+        </AsyncState>
         <div v-if="items.length" class="table-footer">
           <span>{{
             t('overview.showingMonitors', { shown: ordered.length, total: items.length })
-          }}</span
-          ><span>{{ t('common.refreshesEvery30Seconds') }}</span>
+          }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span>
         </div>
       </section>
       <section class="card" un-mt="6">
         <div class="card-header">
           <h2>{{ t('overview.publicStatusPages') }}</h2>
-          <RouterLink to="/app/pages" class="button small ghost"
-            >{{ t('overview.managePages') }}<ArrowUpRight :size="13"
-          /></RouterLink>
+          <RouterLink to="/app/pages" class="button small ghost">
+            {{ t('overview.managePages') }}<ArrowUpRight :size="13" />
+          </RouterLink>
         </div>
         <div class="card-body">
           <EmptyState
@@ -230,7 +240,9 @@ useIntervalFn(() => monitors.refetch(), 30000)
             <div un-flex="~ items-center gap-3">
               <Globe :size="18" un-text="[var(--accent)]" />
               <div>
-                <h3 un-text="xs">{{ page.name }}</h3>
+                <h3 un-text="xs">
+                  {{ page.name }}
+                </h3>
                 <p class="muted" un-text="10px">
                   /{{ page.publishedAt ? publishedEntry(page).slug : page.slug
                   }}{{
@@ -263,15 +275,16 @@ useIntervalFn(() => monitors.refetch(), 30000)
             :key="incident.id"
             to="/app/incidents"
             class="activity-item"
-            ><i
+          >
+            <i
               class="activity-dot"
               :style="{ background: incident.status === 'resolved' ? 'var(--accent)' : '#dfa151' }"
             />
             <div>
               <h3>{{ incident.title }}</h3>
               <p>{{ statusLabel(incident.status) }} · {{ formatDate(incident.updatedAt) }}</p>
-            </div></RouterLink
-          >
+            </div>
+          </RouterLink>
         </div>
       </section>
       <section class="card" un-mt="6">
@@ -287,16 +300,19 @@ useIntervalFn(() => monitors.refetch(), 30000)
             :key="window.id"
             to="/app/maintenance"
             class="activity-item"
-            ><Clock :size="15" un-text="[var(--muted)]" un-mt="1" />
+          >
+            <Clock :size="15" un-text="[var(--muted)]" un-mt="1" />
             <div>
               <h3>{{ window.name }}</h3>
               <p>{{ formatDate(window.startsAt) }}</p>
-            </div></RouterLink
-          >
+            </div>
+          </RouterLink>
         </div>
       </section>
       <div class="note" un-mt="6">
-        <p class="eyebrow" un-mb="2">OCTOPULSE</p>
+        <p class="eyebrow" un-mb="2">
+          OCTOPULSE
+        </p>
         {{ t('overview.uptimeReflectsConfirmedDurationPausedMaintenanceAndMissing') }}
       </div>
     </aside>

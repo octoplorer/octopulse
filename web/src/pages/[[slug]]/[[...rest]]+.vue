@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { computed } from 'vue'
-import { useHead } from '@unhead/vue'
-import { useRoute } from 'vue-router'
-import { useQuery, type DefineQueryOptions } from '@pinia/colada'
-import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
+import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../client/types.gen'
 import type { PublicPage } from '../../lib/types'
-
+import { useQuery } from '@pinia/colada'
+import { useHead } from '@unhead/vue'
 import { useIntervalFn } from '@vueuse/core'
-import StatusPage from '../../components/StatusPage.vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
+
+import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
 import AsyncState from '../../components/AsyncState.vue'
+import StatusPage from '../../components/StatusPage.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute('/[[slug]]/[[...rest]]+')
@@ -52,6 +53,7 @@ useHead(() => {
   }
 })
 </script>
+
 <template>
   <StatusPage
     v-if="query.data.value"
@@ -62,18 +64,21 @@ useHead(() => {
   />
   <div v-else class="public-page">
     <div class="public-inner">
-      <AsyncState :pending="query.isPending.value"
-        ><div class="empty-state">
+      <AsyncState :pending="query.isPending.value">
+        <div class="empty-state">
           <h1>{{ t('publicPage.statusPageUnavailable') }}</h1>
           <p>
             {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
           </p>
-          <button class="button" @click="query.refetch()">{{ t('publicPage.tryAgain') }}</button
-          ><RouterLink to="/app/login" class="button ghost" un-ml="3">{{
-            t('publicPage.adminSignIn')
-          }}</RouterLink>
-        </div></AsyncState
-      >
+          <button class="button" @click="query.refetch()">
+            {{ t('publicPage.tryAgain') }}
+          </button><RouterLink to="/app/login" class="button ghost" un-ml="3">
+            {{
+              t('publicPage.adminSignIn')
+            }}
+          </RouterLink>
+        </div>
+      </AsyncState>
     </div>
   </div>
 </template>

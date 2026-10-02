@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck } from '@lucide/vue'
+import { useMutation, useQueryCache } from '@pinia/colada'
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  createSessionMutation,
+  createSetupMutation,
+  getSessionQuery,
+  getSetupQuery,
+} from '../../client/@pinia/colada.gen'
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
-import { dark } from '../../composables/preferences'
 import { applySession } from '../../composables/api'
-import { useMutation, useQueryCache } from '@pinia/colada'
-import {
-  getSetupQuery,
-  getSessionQuery,
-  createSetupMutation,
-  createSessionMutation,
-} from '../../client/@pinia/colada.gen'
+import { dark } from '../../composables/preferences'
 import { errorText } from '../../lib/errors'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -48,11 +48,14 @@ onMounted(async () => {
       if (sessionState.status !== 'success')
         throw sessionState.error || new Error(t('errors.requestFailed'))
       applySession(sessionState.data)
-      if (sessionState.data.user) router.replace('/app')
+      if (sessionState.data.user)
+        router.replace('/app')
     }
-  } catch (e) {
+  }
+  catch (e) {
     error.value = errorText(e)
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 })
@@ -60,7 +63,7 @@ async function submit() {
   saving.value = true
   error.value = ''
   try {
-    if (required.value)
+    if (required.value) {
       await setup.mutateAsync({
         body: {
           username: username.value,
@@ -69,26 +72,32 @@ async function submit() {
           timezone: timezone.value,
         },
       })
+    }
     await createSession.mutateAsync({
       body: { username: username.value, password: password.value },
     })
     const next = String(route.query.next || '/app')
     router.replace(next.startsWith('/app') ? next : '/app')
-  } catch (e) {
+  }
+  catch (e) {
     error.value = errorText(e)
-  } finally {
+  }
+  finally {
     saving.value = false
   }
 }
 </script>
+
 <template>
   <div class="auth-page" :data-theme="dark ? 'dark' : 'light'">
     <section class="auth-art">
       <Brand />
       <div class="auth-visual" />
       <div class="auth-copy">
-        <p class="eyebrow" un-text="teal-300">{{ t('login.slogan') }}</p>
-        <h1>{{ t('login.everyHeartbeat') }}<br />{{ t('login.alwaysInSight') }}</h1>
+        <p class="eyebrow" un-text="teal-300">
+          {{ t('login.slogan') }}
+        </p>
+        <h1>{{ t('login.everyHeartbeat') }}<br>{{ t('login.alwaysInSight') }}</h1>
         <p>
           {{ t('login.monitorServicesRespondToIncidentsAndKeepEveryone') }}
         </p>
@@ -99,7 +108,9 @@ async function submit() {
     </section>
     <section class="auth-main">
       <div class="auth-form">
-        <div class="auth-logo-mobile"><Brand /></div>
+        <div class="auth-logo-mobile">
+          <Brand />
+        </div>
         <p class="eyebrow">
           {{ required ? t('login.getStarted') : t('login.welcomeBackEyebrow') }}
         </p>
@@ -113,27 +124,34 @@ async function submit() {
               : t('login.signInToSeeHowYourServicesAre')
           }}
         </p>
-        <div v-if="loading" class="loading-state"><span class="spinner" /></div>
+        <div v-if="loading" class="loading-state">
+          <span class="spinner" />
+        </div>
         <form v-else @submit.prevent="submit">
-          <Field :label="t('common.username')"
-            ><input v-model="username" autocomplete="username" required maxlength="100" /></Field
-          ><Field
+          <Field :label="t('common.username')">
+            <input v-model="username" autocomplete="username" required maxlength="100">
+          </Field><Field
             :label="t('common.password')"
             :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined"
-            ><input
+          >
+            <input
               v-model="password"
               type="password"
               :autocomplete="required ? 'new-password' : 'current-password'"
               required
               :minlength="required ? 12 : undefined"
-              maxlength="72" /></Field
-          ><template v-if="required"
-            ><Field :label="t('common.organizationName')"
-              ><input v-model="organizationName" required /></Field
-            ><Field :label="t('common.organizationTimeZone')"
-              ><input v-model="timezone" placeholder="Asia/Shanghai" required /></Field
-          ></template>
-          <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
+              maxlength="72"
+            >
+          </Field><template v-if="required">
+            <Field :label="t('common.organizationName')">
+              <input v-model="organizationName" required>
+            </Field><Field :label="t('common.organizationTimeZone')">
+              <input v-model="timezone" placeholder="Asia/Shanghai" required>
+            </Field>
+          </template>
+          <p v-if="error" class="inline-error" role="alert">
+            {{ error }}
+          </p>
           <button type="submit" class="button primary" :disabled="saving">
             {{
               saving

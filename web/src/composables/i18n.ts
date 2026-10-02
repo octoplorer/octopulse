@@ -15,7 +15,7 @@ export type AppLocale = (typeof supportedLocales)[number]
 export const languageOptions = [
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en', label: 'English' },
-] as const satisfies readonly { value: AppLocale; label: string }[]
+] as const satisfies readonly { value: AppLocale, label: string }[]
 export const messages = { 'zh-CN': zhCN, en } satisfies Record<AppLocale, MessageSchema>
 
 const dateTimeFormat = { dateStyle: 'medium', timeStyle: 'short' } as const
@@ -32,11 +32,11 @@ export const i18n = createI18n({
   messages,
   datetimeFormats: {
     'zh-CN': { short: dateTimeFormat },
-    en: { short: dateTimeFormat },
+    'en': { short: dateTimeFormat },
   },
   numberFormats: {
     'zh-CN': numberFormats,
-    en: numberFormats,
+    'en': numberFormats,
   },
 })
 

@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { ref, reactive } from 'vue'
-import { Server, Settings, RefreshCw, ArrowUpRight, Save } from '@lucide/vue'
+import type { DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel, GetBeszelHistoryData } from '../../../client/types.gen'
+import type {
+  BeszelConfig,
+  BeszelContainer,
+  BeszelContainers,
+  BeszelHistory,
+  BeszelHistoryPoint,
+  BeszelSystem,
+  BeszelSystems,
+  Secret,
+} from '../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useMutation, useQuery, useQueryCache, type DefineQueryOptions } from '@pinia/colada'
+import { ArrowUpRight, RefreshCw, Save, Server, Settings } from '@lucide/vue'
+import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
+import { useIntervalFn } from '@vueuse/core'
+import { reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   getBeszelConfigQuery,
   getBeszelHistoryQuery,
@@ -12,30 +25,18 @@ import {
   listSecretsQuery,
   updateBeszelConfigMutation,
 } from '../../../client/@pinia/colada.gen'
-import type { ErrorModel, GetBeszelHistoryData } from '../../../client/types.gen'
-import type {
-  BeszelConfig,
-  BeszelSystem,
-  BeszelSystems,
-  BeszelHistory,
-  BeszelHistoryPoint,
-  BeszelContainer,
-  BeszelContainers,
-  Secret,
-} from '../../../lib/types'
-import { isAdmin } from '../../../composables/api'
-import { formatDate, duration } from '../../../composables/preferences'
-import { errorText } from '../../../lib/errors'
-import { notify } from '../../../composables/notices'
-import { useIntervalFn } from '@vueuse/core'
-import PageHeader from '../../../components/PageHeader.vue'
-import Field from '../../../components/Field.vue'
-import Toggle from '../../../components/Toggle.vue'
-import SecretSelect from '../../../components/SecretSelect.vue'
-import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+import Field from '../../../components/Field.vue'
+import Modal from '../../../components/Modal.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import SecretSelect from '../../../components/SecretSelect.vue'
 import Sparkline from '../../../components/Sparkline.vue'
+import Toggle from '../../../components/Toggle.vue'
+import { isAdmin } from '../../../composables/api'
+import { notify } from '../../../composables/notices'
+import { duration, formatDate } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
 
 const { t, n } = useI18n({ useScope: 'global' })
 
@@ -77,11 +78,13 @@ async function configure() {
     const state = await queryCache.refresh(
       queryCache.ensure({ ...getBeszelConfigQuery(), staleTime: 0 }),
     )
-    if (state.status !== 'success') throw state.error || new Error(t('errors.requestFailed'))
+    if (state.status !== 'success')
+      throw state.error || new Error(t('errors.requestFailed'))
     Object.assign(config, structuredClone(state.data))
     error.value = ''
     configOpen.value = true
-  } catch (e) {
+  }
+  catch (e) {
     notify(errorText(e), 'error')
   }
 }
@@ -93,9 +96,11 @@ async function save() {
     configOpen.value = false
     notify(t('servers.beszelConnectionSaved'))
     await query.refresh()
-  } catch (e) {
+  }
+  catch (e) {
     error.value = errorText(e)
-  } finally {
+  }
+  finally {
     saving.value = false
   }
 }
@@ -125,17 +130,24 @@ async function detail(server: BeszelSystem) {
         }),
       ),
     ])
-    if (request !== detailRequest) return
-    if (h.status !== 'success') throw h.error || new Error(t('errors.requestFailed'))
-    if (c.status !== 'success') throw c.error || new Error(t('errors.requestFailed'))
+    if (request !== detailRequest)
+      return
+    if (h.status !== 'success')
+      throw h.error || new Error(t('errors.requestFailed'))
+    if (c.status !== 'success')
+      throw c.error || new Error(t('errors.requestFailed'))
     historyMeta.value = h.data as BeszelHistory
     containersMeta.value = c.data as BeszelContainers
     history.value = h.data.items || []
     containers.value = c.data.items || []
-  } catch (e) {
-    if (request === detailRequest) detailError.value = errorText(e)
-  } finally {
-    if (request === detailRequest) detailLoading.value = false
+  }
+  catch (e) {
+    if (request === detailRequest)
+      detailError.value = errorText(e)
+  }
+  finally {
+    if (request === detailRequest)
+      detailLoading.value = false
   }
 }
 function percentage(value: number | undefined) {
@@ -149,35 +161,36 @@ function percentage(value: number | undefined) {
 }
 useIntervalFn(() => query.refetch(), 30000)
 </script>
+
 <template>
   <PageHeader
     :title="t('navigation.servers')"
     :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')"
-    ><button class="button" @click="query.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}</button
-    ><button v-if="isAdmin()" class="button primary" @click="configure">
-      <Settings :size="14" />{{ t('servers.beszelConnection') }}
-    </button></PageHeader
   >
+    <button class="button" @click="query.refetch()">
+      <RefreshCw :size="14" />{{ t('common.refresh') }}
+    </button><button v-if="isAdmin()" class="button primary" @click="configure">
+      <Settings :size="14" />{{ t('servers.beszelConnection') }}
+    </button>
+  </PageHeader>
   <div class="alert-strip">
-    <Server :size="16" /><span
-      >{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
+    <Server :size="16" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
-      }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span
-    >
+      }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
   </div>
   <div v-if="query.data.value?.error" class="error-banner" role="alert">
     {{ query.data.value.error }}
   </div>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
-    ><EmptyState
+  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+    <EmptyState
       v-if="!query.data.value?.items.length"
       :title="t('servers.connectYourBeszelHub')"
       :description="t('servers.useADedicatedAccountToReadItsVisible')"
-      ><button v-if="isAdmin()" class="button primary" @click="configure">
-        {{ t('servers.configureConnection') }}
-      </button></EmptyState
     >
+      <button v-if="isAdmin()" class="button primary" @click="configure">
+        {{ t('servers.configureConnection') }}
+      </button>
+    </EmptyState>
     <div v-else class="servers-grid">
       <article v-for="server in query.data.value.items" :key="server.id" class="card server-card">
         <div un-flex="~ items-center justify-between gap-3">
@@ -185,7 +198,9 @@ useIntervalFn(() => query.refetch(), 30000)
             <span class="monitor-type-icon"><Server :size="17" /></span>
             <div>
               <h2>{{ server.name }}</h2>
-              <p class="muted" un-text="10px">{{ server.host || server.id }}</p>
+              <p class="muted" un-text="10px">
+                {{ server.host || server.id }}
+              </p>
             </div>
           </div>
           <span class="pill">{{ server.status }}</span>
@@ -198,22 +213,22 @@ useIntervalFn(() => query.refetch(), 30000)
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('servers.memory') }}</span
-            ><strong>{{ percentage(server.memory) }}</strong>
+            <span class="mini-label">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.memory || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('servers.disk') }}</span
-            ><strong>{{ percentage(server.disk) }}</strong>
+            <span class="mini-label">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.disk || 0, 100)}%` }" />
             </div>
           </div>
           <div>
             <span class="mini-label">{{ t('servers.updated') }}</span>
-            <p class="muted" un-text="10px" un-mt="2">{{ formatDate(server.updatedAt) }}</p>
+            <p class="muted" un-text="10px" un-mt="2">
+              {{ formatDate(server.updatedAt) }}
+            </p>
             <span v-if="server.stale" class="certificate-risk">{{ t('servers.staleData') }}</span>
           </div>
         </div>
@@ -221,41 +236,47 @@ useIntervalFn(() => query.refetch(), 30000)
         <button class="button ghost" un-p="0!" @click="detail(server)">
           {{ t('servers.historyContainers') }}<ArrowUpRight :size="14" />
         </button>
-      </article></div
-  ></AsyncState>
+      </article>
+    </div>
+  </AsyncState>
   <p class="note" un-mt="6">
     {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
   </p>
-  <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')"
-    ><form id="beszel-form" @submit.prevent="save">
+  <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')">
+    <form id="beszel-form" @submit.prevent="save">
       <p class="note" un-mb="5">
         {{ t('servers.supportsBeszel020XUseADedicated') }}
       </p>
-      <Field :label="t('servers.hubUrl')"
-        ><input
+      <Field :label="t('servers.hubUrl')">
+        <input
           v-model="config.url"
           type="url"
           placeholder="https://beszel.example.com"
-          required /></Field
-      ><Field :label="t('servers.dedicatedAccountEmail')" un-mt="4"
-        ><input v-model="config.email" type="email" required /></Field
-      ><Field :label="t('servers.passwordSecretReference')" un-mt="4"
-        ><SecretSelect
+          required
+        >
+      </Field><Field :label="t('servers.dedicatedAccountEmail')" un-mt="4">
+        <input v-model="config.email" type="email" required>
+      </Field><Field :label="t('servers.passwordSecretReference')" un-mt="4">
+        <SecretSelect
           v-model="config.passwordSecretId"
-          :secrets="secrets.data.value?.items || []" /></Field
-      ><Field :label="t('servers.syncIntervalSeconds')" un-mt="4"
-        ><input v-model.number="config.pollSeconds" type="number" min="30" required /></Field
-      ><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" un-mt="5" />
-      <p v-if="error" class="inline-error">{{ error }}</p>
+          :secrets="secrets.data.value?.items || []"
+        />
+      </Field><Field :label="t('servers.syncIntervalSeconds')" un-mt="4">
+        <input v-model.number="config.pollSeconds" type="number" min="30" required>
+      </Field><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" un-mt="5" />
+      <p v-if="error" class="inline-error">
+        {{ error }}
+      </p>
     </form>
-    <template #footer
-      ><button class="button" @click="configOpen = false">{{ t('common.cancel') }}</button
-      ><button class="button primary" form="beszel-form" :disabled="saving">
+    <template #footer>
+      <button class="button" @click="configOpen = false">
+        {{ t('common.cancel') }}
+      </button><button class="button primary" form="beszel-form" :disabled="saving">
         <Save :size="14" />{{ t('servers.saveConnection') }}
-      </button></template
-    ></Modal
-  ><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide
-    ><div v-if="selected?.info" class="hint-grid" un-mb="5">
+      </button>
+    </template>
+  </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>
+    <div v-if="selected?.info" class="hint-grid" un-mb="5">
       <div>
         <span class="mini-label">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
@@ -277,16 +298,19 @@ useIntervalFn(() => query.refetch(), 30000)
         </p>
       </div>
     </div>
-    <AsyncState :pending="detailLoading" :error="detailError" @retry="selected && detail(selected)"
-      ><Tabs.Root v-model="tab"
-        ><Tabs.List class="tabs-list"
-          ><Tabs.Trigger class="tabs-trigger" value="history">{{
-            t('servers.history')
-          }}</Tabs.Trigger
-          ><Tabs.Trigger class="tabs-trigger" value="containers">{{
-            t('servers.containers')
-          }}</Tabs.Trigger></Tabs.List
-        ><Tabs.Content value="history">
+    <AsyncState :pending="detailLoading" :error="detailError" @retry="selected && detail(selected)">
+      <Tabs.Root v-model="tab">
+        <Tabs.List class="tabs-list">
+          <Tabs.Trigger class="tabs-trigger" value="history">
+            {{
+              t('servers.history')
+            }}
+          </Tabs.Trigger><Tabs.Trigger class="tabs-trigger" value="containers">
+            {{
+              t('servers.containers')
+            }}
+          </Tabs.Trigger>
+        </Tabs.List><Tabs.Content value="history">
           <div un-flex="~ items-center justify-between gap-3" un-mt="5">
             <p class="note">
               {{ t('common.source') }}: {{ historyMeta?.source || 'Beszel' }} ·
@@ -303,7 +327,9 @@ useIntervalFn(() => query.refetch(), 30000)
               </option>
             </select>
           </div>
-          <p v-if="historyMeta?.error" class="inline-error">{{ historyMeta.error }}</p>
+          <p v-if="historyMeta?.error" class="inline-error">
+            {{ historyMeta.error }}
+          </p>
           <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
           <div v-else un-py="6">
             <div class="hint-grid">
@@ -356,14 +382,16 @@ useIntervalFn(() => query.refetch(), 30000)
             <p class="muted" un-text="10px" un-mt="5">
               {{ formatDate(history[0]?.at) }} — {{ formatDate(history.at(-1)?.at) }}
             </p>
-          </div></Tabs.Content
-        ><Tabs.Content value="containers"
-          ><p class="note" un-mt="5">
+          </div>
+        </Tabs.Content><Tabs.Content value="containers">
+          <p class="note" un-mt="5">
             {{ t('common.source') }}: {{ containersMeta?.source || 'Beszel' }} ·
             {{ formatDate(containersMeta?.syncedAt)
             }}<span v-if="containersMeta?.stale"> · {{ t('common.staleData') }}</span>
           </p>
-          <p v-if="containersMeta?.error" class="inline-error">{{ containersMeta.error }}</p>
+          <p v-if="containersMeta?.error" class="inline-error">
+            {{ containersMeta.error }}
+          </p>
           <EmptyState v-if="!containers.length" :title="t('servers.noVisibleContainerData')" />
           <div v-else class="table-wrap" un-mt="5">
             <table class="data-table">
@@ -378,8 +406,7 @@ useIntervalFn(() => query.refetch(), 30000)
               <tbody>
                 <tr v-for="container in containers" :key="container.id || container.name">
                   <td>
-                    <span class="monitor-name">{{ container.name }}</span
-                    ><span class="monitor-sub">{{ container.image }}</span>
+                    <span class="monitor-name">{{ container.name }}</span><span class="monitor-sub">{{ container.image }}</span>
                   </td>
                   <td>{{ container.status }}</td>
                   <td>{{ percentage(container.cpu) }}</td>
@@ -392,9 +419,9 @@ useIntervalFn(() => query.refetch(), 30000)
                 </tr>
               </tbody>
             </table>
-          </div></Tabs.Content
-        ></Tabs.Root
-      ></AsyncState
-    ></Modal
-  >
+          </div>
+        </Tabs.Content>
+      </Tabs.Root>
+    </AsyncState>
+  </Modal>
 </template>

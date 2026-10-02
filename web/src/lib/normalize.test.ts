@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { normalizeCollections } from './normalize.ts'
 
-test('nullable Go slices become usable lists without fabricating statistics', () => {
+it('nullable Go slices become usable lists without fabricating statistics', () => {
   expect(
     normalizeCollections({
       items: null,

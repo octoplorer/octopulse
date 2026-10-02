@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { i18n, locale, messages, supportedLocales, t } from './i18n.ts'
@@ -7,13 +7,14 @@ function flattenMessages(catalog: object, prefix = ''): Record<string, string> {
   const result: Record<string, string> = {}
   for (const [key, value] of Object.entries(catalog)) {
     const path = prefix ? `${prefix}.${key}` : key
-    if (typeof value === 'string') result[path] = value
+    if (typeof value === 'string')
+      result[path] = value
     else Object.assign(result, flattenMessages(value, path))
   }
   return result
 }
 
-test('every supported catalog has the same keys and compiles through Vue I18n', () => {
+it('every supported catalog has the same keys and compiles through Vue I18n', () => {
   const originalLocale = locale.value
   const warnings: unknown[][] = []
   const errors: unknown[][] = []
@@ -35,14 +36,15 @@ test('every supported catalog has the same keys and compiles through Vue I18n', 
     }
     expect(warnings, 'catalogs must compile without warnings').toStrictEqual([])
     expect(errors, 'catalogs must compile without errors').toStrictEqual([])
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
     console.warn = originalWarn
     console.error = originalError
   }
 })
 
-test('translations react to locale changes, interpolate values, and pluralize counts', () => {
+it('translations react to locale changes, interpolate values, and pluralize counts', () => {
   const originalLocale = locale.value
   const translated = computed(() => t('common.monitors'))
   try {
@@ -55,12 +57,13 @@ test('translations react to locale changes, interpolate values, and pluralize co
     locale.value = 'zh-CN'
     expect(translated.value).toBe('监控项')
     expect(t('counts.monitors', 2)).toBe('2 个监控项')
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
   }
 })
 
-test('literal JSON and at signs are handled by the message compiler', () => {
+it('literal JSON and at signs are handled by the message compiler', () => {
   const originalLocale = locale.value
   try {
     locale.value = 'en'
@@ -73,17 +76,18 @@ test('literal JSON and at signs are handled by the message compiler', () => {
       messages: {
         en: {
           ...messages.en,
-          common: { ...messages.en.common, monitors: "support{'@'}example.com" },
+          common: { ...messages.en.common, monitors: 'support{\'@\'}example.com' },
         },
       },
     }).global
     expect(composer.t('common.monitors')).toBe('support@example.com')
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
   }
 })
 
-test('the configured fallback supplies translations when a locale has no catalog', () => {
+it('the configured fallback supplies translations when a locale has no catalog', () => {
   const composer = createI18n({
     legacy: false,
     locale: 'fr',

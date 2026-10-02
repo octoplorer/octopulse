@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
-
-const { t, n } = useI18n({ useScope: 'global' })
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   values: number[]
@@ -11,6 +9,9 @@ const props = defineProps<{
   color?: string
   showScale?: boolean
 }>()
+
+const { t, n } = useI18n({ useScope: 'global' })
+
 const scale = computed(() => {
   const values = props.values.filter(Number.isFinite)
   return { max: Math.max(...values, 1), min: Math.min(...values, 0), last: values.at(-1) }
@@ -19,29 +20,32 @@ const metric = (value: number) => n(value, { maximumFractionDigits: 2 })
 const segments = computed(() => {
   const entries = props.values
     .map((value, index) => ({ value, at: props.timestamps?.[index] ?? index }))
-    .filter((p) => Number.isFinite(p.value) && Number.isFinite(p.at))
-  if (!entries.length) return []
-  const max = Math.max(...entries.map((p) => p.value), 1)
-  const min = Math.min(...entries.map((p) => p.value), 0)
+    .filter(p => Number.isFinite(p.value) && Number.isFinite(p.at))
+  if (!entries.length)
+    return []
+  const max = Math.max(...entries.map(p => p.value), 1)
+  const min = Math.min(...entries.map(p => p.value), 0)
   const spread = max - min || 1
-  const from = Math.min(...entries.map((p) => p.at))
-  const to = Math.max(...entries.map((p) => p.at))
+  const from = Math.min(...entries.map(p => p.at))
+  const to = Math.max(...entries.map(p => p.at))
   const span = to - from || 1
   const gaps = entries
     .slice(1)
     .map((p, i) => p.at - entries[i]!.at)
-    .filter((g) => g > 0)
+    .filter(g => g > 0)
     .sort((a, b) => a - b)
-  const gapLimit =
-    props.timestamps && gaps.length ? gaps[Math.floor(gaps.length / 2)]! * 3 : Infinity
+  const gapLimit
+    = props.timestamps && gaps.length ? gaps[Math.floor(gaps.length / 2)]! * 3 : Infinity
   const paths: string[][] = [[]]
   entries.forEach((p, index) => {
-    if (index && p.at - entries[index - 1]!.at > gapLimit) paths.push([])
+    if (index && p.at - entries[index - 1]!.at > gapLimit)
+      paths.push([])
     paths.at(-1)!.push(`${((p.at - from) / span) * 300},${54 - ((p.value - min) / spread) * 44}`)
   })
-  return paths.map((points) => points.join(' '))
+  return paths.map(points => points.join(' '))
 })
 </script>
+
 <template>
   <svg
     v-if="segments.length"
@@ -83,5 +87,7 @@ const segments = computed(() => {
       vector-effect="non-scaling-stroke"
     />
   </svg>
-  <div v-else class="chart-empty">—</div>
+  <div v-else class="chart-empty">
+    —
+  </div>
 </template>

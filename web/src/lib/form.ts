@@ -6,19 +6,22 @@ export function clone<T>(value: T): T {
 export function parseJSON<T>(value: string, label: string): T {
   try {
     return JSON.parse(value) as T
-  } catch {
+  }
+  catch {
     throw new Error(t('errors.invalidJSON', { label }))
   }
 }
 export function splitValues(value: string): string[] {
   return value
     .split(/[\n,]/)
-    .map((x) => x.trim())
+    .map(x => x.trim())
     .filter(Boolean)
 }
 export function defaults<T>(base: T, value: unknown): T {
-  if (value === null || value === undefined) return clone(base)
-  if (Array.isArray(base)) return (Array.isArray(value) ? value : base) as T
+  if (value === null || value === undefined)
+    return clone(base)
+  if (Array.isArray(base))
+    return (Array.isArray(value) ? value : base) as T
   if (typeof base === 'object' && base !== null && typeof value === 'object') {
     const output = { ...value } as Record<string, unknown>
     for (const [key, item] of Object.entries(base))

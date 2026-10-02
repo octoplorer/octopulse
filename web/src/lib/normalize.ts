@@ -30,8 +30,10 @@ const collectionKeys = new Set([
 // Go nil slices are valid null arrays in the transport contract. UI list values
 // use empty arrays while meaningful null statistics (uptime/coverage) stay null.
 export function normalizeCollections(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalizeCollections)
-  if (typeof value !== 'object' || value === null) return value
+  if (Array.isArray(value))
+    return value.map(normalizeCollections)
+  if (typeof value !== 'object' || value === null)
+    return value
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,

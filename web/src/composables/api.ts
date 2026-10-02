@@ -1,20 +1,22 @@
+import type { GetSessionResponse } from '../client/types.gen'
+import type { User } from '../lib/types'
 import { ref } from 'vue'
 import { client } from '../client/client.gen'
-import type { GetSessionResponse } from '../client/types.gen'
 import { normalizeCollections } from '../lib/normalize'
-import { timezone } from './preferences'
 import { locale, t } from './i18n'
-import type { User } from '../lib/types'
+import { timezone } from './preferences'
+
 export const currentUser = ref<User | null>(null)
 let csrfToken = ''
 client.setConfig({
   baseUrl: location.origin,
   credentials: 'same-origin',
   throwOnError: true,
-  responseTransformer: async (data) => normalizeCollections(data),
+  responseTransformer: async data => normalizeCollections(data),
 })
 client.interceptors.request.use((request) => {
-  if (csrfToken) request.headers.set('X-CSRF-Token', csrfToken)
+  if (csrfToken)
+    request.headers.set('X-CSRF-Token', csrfToken)
   return request
 })
 client.interceptors.response.use((response, request) => {
@@ -26,16 +28,18 @@ client.interceptors.response.use((response, request) => {
   return response
 })
 client.interceptors.error.use((error) => {
-  if (error instanceof Error) return error
-  if (typeof error !== 'object' || error === null) return new Error(String(error))
+  if (error instanceof Error)
+    return error
+  if (typeof error !== 'object' || error === null)
+    return new Error(String(error))
   const problem = error as {
     detail?: string
     title?: string
-    errors?: { message?: string; location?: string }[]
+    errors?: { message?: string, location?: string }[]
   }
   let message = problem.detail || problem.title || t('errors.requestFailed')
   if (problem.errors?.length)
-    message += `: ${problem.errors.map((e) => `${e.location || ''} ${e.message || ''}`).join('; ')}`
+    message += `: ${problem.errors.map(e => `${e.location || ''} ${e.message || ''}`).join('; ')}`
   return new Error(message)
 })
 export function applySession(data: GetSessionResponse | null) {
@@ -46,6 +50,7 @@ export function applySession(data: GetSessionResponse | null) {
     timezone.value = data.user.timezone
   }
 }
-export const canEdit = () =>
-  currentUser.value?.role === 'admin' || currentUser.value?.role === 'operator'
+export function canEdit() {
+  return currentUser.value?.role === 'admin' || currentUser.value?.role === 'operator'
+}
 export const isAdmin = () => currentUser.value?.role === 'admin'

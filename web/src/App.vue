@@ -1,20 +1,12 @@
-<template>
-  <RouterView />
-  <div class="toast-stack" aria-live="polite">
-    <div v-for="item in notices" :key="item.id" class="toast" :class="item.kind">
-      <span>{{ item.message }}</span
-      ><button @click="dismissNotice(item.id)" :aria-label="t('app.closeNotification')">×</button>
-    </div>
-  </div>
-</template>
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { watch } from 'vue'
-import { useHead } from '@unhead/vue'
-
 import { useQueryCache } from '@pinia/colada'
-import { notices, dismissNotice } from './composables/notices'
+import { useHead } from '@unhead/vue'
+import { watch } from 'vue'
+
+import { useI18n } from 'vue-i18n'
 import { currentUser } from './composables/api'
+import { dismissNotice, notices } from './composables/notices'
+
 const { t, locale } = useI18n({ useScope: 'global' })
 useHead({
   title: () => `Octopulse · ${t('app.serviceMonitoring')}`,
@@ -37,3 +29,14 @@ watch(
   { flush: 'sync' },
 )
 </script>
+
+<template>
+  <RouterView />
+  <div class="toast-stack" aria-live="polite">
+    <div v-for="item in notices" :key="item.id" class="toast" :class="item.kind">
+      <span>{{ item.message }}</span><button :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
+        ×
+      </button>
+    </div>
+  </div>
+</template>

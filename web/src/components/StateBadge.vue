@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const props = defineProps<{ state?: string, paused?: boolean, maintenance?: boolean }>()
+
 const { t } = useI18n({ useScope: 'global' })
 
-const props = defineProps<{ state?: string; paused?: boolean; maintenance?: boolean }>()
 const key = computed(() =>
   props.paused
     ? 'paused'
@@ -29,6 +31,7 @@ const labels: Record<string, string> = {
 }
 const label = computed(() => (labels[key.value] ? t(labels[key.value]!) : props.state))
 </script>
+
 <template>
   <span class="state-badge" :data-state="key"><i />{{ label }}</span>
 </template>

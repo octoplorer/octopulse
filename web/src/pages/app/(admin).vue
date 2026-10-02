@@ -1,32 +1,33 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import {
   Activity,
-  LayoutDashboard,
-  Globe,
-  Server,
-  Settings,
-  Users,
-  KeyRound,
-  ScrollText,
   Bell,
   CalendarClock,
-  MessageSquare,
-  Menu,
-  Sun,
-  Moon,
-  Languages,
-  LogOut,
   ChevronRight,
+  Globe,
+  KeyRound,
+  Languages,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Moon,
+  ScrollText,
+  Server,
+  Settings,
+  Sun,
+  Users,
 } from '@lucide/vue'
-import { dark, theme, formatDate, statusLabel } from '../../composables/preferences'
-import { currentUser, applySession, isAdmin } from '../../composables/api'
 import { useMutation } from '@pinia/colada'
+import { onKeyStroke, useIntervalFn, useMediaQuery } from '@vueuse/core'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { deleteSessionMutation } from '../../client/@pinia/colada.gen'
-import { useIntervalFn, useMediaQuery, onKeyStroke } from '@vueuse/core'
 import Brand from '../../components/Brand.vue'
+import { applySession, currentUser, isAdmin } from '../../composables/api'
+import { dark, formatDate, statusLabel, theme } from '../../composables/preferences'
+
 const { t, locale } = useI18n({ useScope: 'global' })
 const deleteSession = useMutation({
   ...deleteSessionMutation(),
@@ -67,6 +68,7 @@ async function signout() {
   router.push('/app/login')
 }
 </script>
+
 <template>
   <div class="admin-app" :data-theme="dark ? 'dark' : 'light'">
     <div v-if="menuOpen" class="sidebar-scrim" @click="menuOpen = false" />
@@ -76,8 +78,12 @@ async function signout() {
       :class="{ open: menuOpen }"
       :inert="mobile && !menuOpen"
     >
-      <RouterLink to="/app" @click="menuOpen = false"><Brand /></RouterLink>
-      <div class="nav-label">{{ t('common.workspace') }}</div>
+      <RouterLink to="/app" @click="menuOpen = false">
+        <Brand />
+      </RouterLink>
+      <div class="nav-label">
+        {{ t('common.workspace') }}
+      </div>
       <nav>
         <RouterLink
           v-for="item in nav"
@@ -88,23 +94,27 @@ async function signout() {
           :exact-active-class="item.path === '/app' ? 'router-link-active' : ''"
           :active-class="item.path === '/app' ? '' : 'router-link-active'"
           @click="menuOpen = false"
-          ><component :is="item.icon" :size="17" />{{ t(item.label) }}</RouterLink
         >
+          <component :is="item.icon" :size="17" />{{ t(item.label) }}
+        </RouterLink>
       </nav>
-      <div class="nav-label">{{ t('navigation.administration') }}</div>
+      <div class="nav-label">
+        {{ t('navigation.administration') }}
+      </div>
       <nav>
-        <template v-if="isAdmin()"
-          ><RouterLink
+        <template v-if="isAdmin()">
+          <RouterLink
             v-for="item in adminNav"
             :key="item.path"
             :to="item.path"
             class="nav-link"
             @click="menuOpen = false"
-            ><component :is="item.icon" :size="17" />{{ t(item.label) }}</RouterLink
-          ></template
-        ><RouterLink to="/app/settings" class="nav-link" @click="menuOpen = false"
-          ><Settings :size="17" />{{ t('common.settings') }}</RouterLink
-        >
+          >
+            <component :is="item.icon" :size="17" />{{ t(item.label) }}
+          </RouterLink>
+        </template><RouterLink to="/app/settings" class="nav-link" @click="menuOpen = false">
+          <Settings :size="17" />{{ t('common.settings') }}
+        </RouterLink>
       </nav>
       <div class="sidebar-footer">
         <div un-flex="~ items-center gap-3">
@@ -113,7 +123,9 @@ async function signout() {
           }}</span>
           <div un-flex="1">
             <strong un-text="xs">{{ currentUser?.name || currentUser?.username }}</strong>
-            <div class="muted" un-text="10px">{{ statusLabel(currentUser?.role || '') }}</div>
+            <div class="muted" un-text="10px">
+              {{ statusLabel(currentUser?.role || '') }}
+            </div>
           </div>
           <button class="icon-button" :aria-label="t('navigation.signOut')" @click="signout">
             <LogOut :size="16" />
@@ -126,29 +138,26 @@ async function signout() {
         <div un-flex="~ items-center gap-3">
           <button
             class="icon-button mobile-menu"
-            @click="menuOpen = !menuOpen"
             :aria-label="
               menuOpen ? t('navigation.closeNavigation') : t('navigation.openNavigation')
             "
             :aria-expanded="menuOpen"
             aria-controls="workspace-navigation"
+            @click="menuOpen = !menuOpen"
           >
-            <Menu :size="20" /></button
-          ><span class="topbar-crumb"
-            >{{ t('common.workspace') }}<ChevronRight un-inline="" un-mx="2" :size="11" /><strong>{{
-              title
-            }}</strong></span
-          >
+            <Menu :size="20" />
+          </button><span class="topbar-crumb">{{ t('common.workspace') }}<ChevronRight un-inline="" un-mx="2" :size="11" /><strong>{{
+            title
+          }}</strong></span>
         </div>
         <div un-flex="~ items-center gap-3">
-          <span class="topbar-time"><i />{{ formatDate(now.getTime()) }}</span
-          ><button
+          <span class="topbar-time"><i />{{ formatDate(now.getTime()) }}</span><button
             class="icon-button"
             :aria-label="t('common.switchLanguage')"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
-            <Languages :size="17" /></button
-          ><button
+            <Languages :size="17" />
+          </button><button
             class="icon-button"
             :aria-label="t('navigation.toggleColorScheme')"
             @click="theme = dark ? 'light' : 'dark'"
@@ -157,7 +166,9 @@ async function signout() {
           </button>
         </div>
       </header>
-      <main class="content"><RouterView /></main>
+      <main class="content">
+        <RouterView />
+      </main>
     </div>
   </div>
 </template>

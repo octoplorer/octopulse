@@ -1,45 +1,47 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import type { DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../../../client/types.gen'
+import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
+import { Tabs } from '@ark-ui/vue/tabs'
 import {
-  Play,
+  Activity,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Copy,
+  KeyRound,
   Pause,
   Pencil,
-  Trash2,
+  Play,
   RefreshCw,
-  KeyRound,
-  Copy,
-  ArrowLeft,
-  Clock,
-  Activity,
   ShieldCheck,
-  CheckCircle2,
+  Trash2,
 } from '@lucide/vue'
-import { Tabs } from '@ark-ui/vue/tabs'
-import { canEdit } from '../../../../../composables/api'
-import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../../../client/types.gen'
+import { useMutation, useQuery } from '@pinia/colada'
+import { useClipboard, useIntervalFn } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import {
-  getMonitorQuery,
-  getMonitorHistoryQuery,
   checkMonitorMutation,
-  updateMonitorMutation,
-  rotateHeartbeatMutation,
   deleteMonitorMutation,
+  getMonitorHistoryQuery,
+  getMonitorQuery,
+  rotateHeartbeatMutation,
+  updateMonitorMutation,
 } from '../../../../../client/@pinia/colada.gen'
-import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
-import { targetOf } from '../../../../../lib/monitor'
-import { formatDate, formatPercent, duration } from '../../../../../composables/preferences'
-import { errorText } from '../../../../../lib/errors'
-import { notify } from '../../../../../composables/notices'
-import { useIntervalFn, useClipboard } from '@vueuse/core'
-import PageHeader from '../../../../../components/PageHeader.vue'
-import StateBadge from '../../../../../components/StateBadge.vue'
 import AsyncState from '../../../../../components/AsyncState.vue'
-import Sparkline from '../../../../../components/Sparkline.vue'
 import EmptyState from '../../../../../components/EmptyState.vue'
 import Modal from '../../../../../components/Modal.vue'
+import PageHeader from '../../../../../components/PageHeader.vue'
+import Sparkline from '../../../../../components/Sparkline.vue'
+import StateBadge from '../../../../../components/StateBadge.vue'
+import { canEdit } from '../../../../../composables/api'
+import { notify } from '../../../../../composables/notices'
+import { duration, formatDate, formatPercent } from '../../../../../composables/preferences'
+import { errorText } from '../../../../../lib/errors'
+import { targetOf } from '../../../../../lib/monitor'
+
 const { t, n } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.monitorDetails' } })
@@ -96,19 +98,22 @@ useIntervalFn(() => {
   refreshHistory()
 }, 30000)
 async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
-  if (!monitor.value) return
+  if (!monitor.value)
+    return
   busy.value = true
   try {
     if (action === 'check') {
       await checkMonitor.mutateAsync({ path: { id: monitor.value.id } })
       notify(t('monitorDetails.checkRequestAcceptedResultsUpdateWhenTheRound'))
-    } else if (action === 'toggle') {
+    }
+    else if (action === 'toggle') {
       await updateMonitor.mutateAsync({
         path: { id: monitor.value.id },
         body: { ...monitor.value, enabled: !monitor.value.enabled },
       })
       notify(t('monitorDetails.monitorUpdated'))
-    } else if (action === 'rotate') {
+    }
+    else if (action === 'rotate') {
       const data = await rotateHeartbeat.mutateAsync({ path: { id: monitor.value.id } })
       heartbeatToken.value = data.token
       heartbeatUrl.value = new URL(
@@ -116,7 +121,8 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
         location.origin,
       ).href
       notify(t('monitorDetails.saveThisTokenItIsShownOnlyOnce'))
-    } else {
+    }
+    else {
       await deleteMonitor.mutateAsync({ path: { id: monitor.value.id } })
       notify(t('monitorDetails.monitorDeleted'))
       router.push('/app/monitors')
@@ -124,9 +130,11 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
     }
     await query.refresh()
     await refreshHistory()
-  } catch (e) {
+  }
+  catch (e) {
     notify(errorText(e), 'error')
-  } finally {
+  }
+  finally {
     busy.value = false
   }
 }
@@ -135,29 +143,30 @@ function viewRound(round: Round) {
   diagnosticsOpen.value = true
 }
 </script>
+
 <template>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
-    ><template v-if="monitor"
-      ><PageHeader :title="monitor.name" :description="targetOf(monitor)"
-        ><RouterLink to="/app/monitors" class="button ghost"
-          ><ArrowLeft :size="14" />{{ t('monitorDetails.allMonitors') }}</RouterLink
-        ><template v-if="canEdit()"
-          ><button class="button" :disabled="busy" @click="act('toggle')">
+  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+    <template v-if="monitor">
+      <PageHeader :title="monitor.name" :description="targetOf(monitor)">
+        <RouterLink to="/app/monitors" class="button ghost">
+          <ArrowLeft :size="14" />{{ t('monitorDetails.allMonitors') }}
+        </RouterLink><template v-if="canEdit()">
+          <button class="button" :disabled="busy" @click="act('toggle')">
             <Pause v-if="monitor.enabled" :size="14" /><Play v-else :size="14" />{{
               monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
-            }}</button
-          ><RouterLink :to="`/app/monitors/${monitor.id}/edit`" class="button"
-            ><Pencil :size="14" />{{ t('common.edit') }}</RouterLink
-          ><button
+            }}
+          </button><RouterLink :to="`/app/monitors/${monitor.id}/edit`" class="button">
+            <Pencil :size="14" />{{ t('common.edit') }}
+          </RouterLink><button
             v-if="monitor.type !== 'heartbeat'"
             class="button primary"
             :disabled="busy || !monitor.enabled"
             @click="act('check')"
           >
             <RefreshCw :size="14" />{{ t('monitorDetails.checkNow') }}
-          </button></template
-        ></PageHeader
-      >
+          </button>
+        </template>
+      </PageHeader>
       <div class="stats-grid">
         <div class="card stat-card">
           <div class="stat-label">
@@ -169,7 +178,9 @@ function viewRound(round: Round) {
               :paused="!monitor.enabled"
             />
           </div>
-          <p class="stat-meta">{{ formatDate(monitor.lastCheckedAt) }}</p>
+          <p class="stat-meta">
+            {{ formatDate(monitor.lastCheckedAt) }}
+          </p>
         </div>
         <div class="card stat-card">
           <div class="stat-label">
@@ -187,13 +198,14 @@ function viewRound(round: Round) {
             }}
           </div>
           <p class="stat-meta">
-            <template v-if="monitor.certificate">{{
-              t('common.certificateRiskIsExcludedFromUptime')
-            }}</template
-            ><template v-else
-              >{{ t('monitorDetails.effectiveDuration') }}
-              {{ duration(availability?.effectiveMs) }}</template
-            >
+            <template v-if="monitor.certificate">
+              {{
+                t('common.certificateRiskIsExcludedFromUptime')
+              }}
+            </template><template v-else>
+              {{ t('monitorDetails.effectiveDuration') }}
+              {{ duration(availability?.effectiveMs) }}
+            </template>
           </p>
         </div>
         <div class="card stat-card">
@@ -217,16 +229,18 @@ function viewRound(round: Round) {
             {{
               monitor.certificate
                 ? t('monitorDetails.warningThresholdsSummary', {
-                    thresholds: (monitor.certificate.warningDays || [])
-                      .map((days) => n(days))
-                      .join(', '),
-                  })
+                  thresholds: (monitor.certificate.warningDays || [])
+                    .map((days) => n(days))
+                    .join(', '),
+                })
                 : t('monitorDetails.missingDataNeverCountsAsUp')
             }}
           </p>
         </div>
         <div class="card stat-card">
-          <div class="stat-label">{{ t('monitorDetails.latestLatency') }}<Clock :size="15" /></div>
+          <div class="stat-label">
+            {{ t('monitorDetails.latestLatency') }}<Clock :size="15" />
+          </div>
           <div class="stat-value">
             {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
           </div>
@@ -260,11 +274,12 @@ function viewRound(round: Round) {
         <div v-if="monitor.heartbeat?.lastReceivedAt" class="note" un-mt="4">
           {{ t('monitorDetails.lastReport') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
           {{ monitor.heartbeat.lastSuccess ? t('monitorDetails.up') : t('monitorDetails.down') }}
-          <p v-if="monitor.heartbeat.description" un-mt="2">{{ monitor.heartbeat.description }}</p>
+          <p v-if="monitor.heartbeat.description" un-mt="2">
+            {{ monitor.heartbeat.description }}
+          </p>
         </div>
         <div v-if="heartbeatToken" class="heartbeat-url">
-          <code>{{ heartbeatUrl }}</code
-          ><button class="button small ghost" @click="copy(heartbeatUrl)">
+          <code>{{ heartbeatUrl }}</code><button class="button small ghost" @click="copy(heartbeatUrl)">
             <Copy :size="13" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
           </button>
           <p class="muted" un-mt="3">
@@ -273,8 +288,7 @@ function viewRound(round: Round) {
         </div>
       </div>
       <div v-if="monitor.certificate" class="alert-strip">
-        <ShieldCheck :size="16" /><span
-          >{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
+        <ShieldCheck :size="16" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
               days: monitor.certificate.expiresAt
@@ -282,32 +296,40 @@ function viewRound(round: Round) {
                 : '—',
             })
           }}
-          · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span
-        >
+          · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span>
       </div>
       <div class="detail-layout">
         <section class="card">
-          <Tabs.Root v-model="tab"
-            ><Tabs.List class="tabs-list"
-              ><Tabs.Trigger class="tabs-trigger" value="history">{{
-                t('monitorDetails.historyTrends')
-              }}</Tabs.Trigger
-              ><Tabs.Trigger class="tabs-trigger" value="configuration">{{
-                t('monitorDetails.configuration')
-              }}</Tabs.Trigger>
+          <Tabs.Root v-model="tab">
+            <Tabs.List class="tabs-list">
+              <Tabs.Trigger class="tabs-trigger" value="history">
+                {{
+                  t('monitorDetails.historyTrends')
+                }}
+              </Tabs.Trigger><Tabs.Trigger class="tabs-trigger" value="configuration">
+                {{
+                  t('monitorDetails.configuration')
+                }}
+              </Tabs.Trigger>
               <div un-ml="auto" class="historical-period">
                 <select
                   v-model="period"
                   un-w="auto!"
                   :aria-label="t('monitorDetails.statisticsWindow')"
                 >
-                  <option value="24h">{{ t('counts.hours', { count: 24 }, 24) }}</option>
-                  <option value="7d">{{ t('counts.days', { count: 7 }, 7) }}</option>
-                  <option value="30d">{{ t('counts.days', { count: 30 }, 30) }}</option>
+                  <option value="24h">
+                    {{ t('counts.hours', { count: 24 }, 24) }}
+                  </option>
+                  <option value="7d">
+                    {{ t('counts.days', { count: 7 }, 7) }}
+                  </option>
+                  <option value="30d">
+                    {{ t('counts.days', { count: 30 }, 30) }}
+                  </option>
                 </select>
-              </div></Tabs.List
-            ><Tabs.Content value="history"
-              ><div class="card-body">
+              </div>
+            </Tabs.List><Tabs.Content value="history">
+              <div class="card-body">
                 <div un-flex="~ justify-between items-center" un-mb="4">
                   <h3>{{ t('monitorDetails.responseLatency') }}</h3>
                   <span class="mini-label">ms</span>
@@ -326,7 +348,8 @@ function viewRound(round: Round) {
                 :pending="history.isPending.value"
                 :error="history.error.value"
                 @retry="refreshHistory()"
-                ><EmptyState
+              >
+                <EmptyState
                   v-if="!history.data.value?.rounds.length"
                   :title="t('monitorDetails.noCheckRecordsYet')"
                   :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')"
@@ -344,7 +367,9 @@ function viewRound(round: Round) {
                     </thead>
                     <tbody>
                       <tr v-for="round in history.data.value.rounds" :key="round.id">
-                        <td class="muted" un-text="10px">{{ formatDate(round.startedAt) }}</td>
+                        <td class="muted" un-text="10px">
+                          {{ formatDate(round.startedAt) }}
+                        </td>
                         <td><StateBadge :state="round.success ? 'up' : 'down'" /></td>
                         <td>{{ round.attempts?.length || 0 }}</td>
                         <td>{{ duration(round.latencyMs) }}</td>
@@ -356,18 +381,20 @@ function viewRound(round: Round) {
                       </tr>
                     </tbody>
                   </table>
-                </div></AsyncState
-              ></Tabs.Content
-            ><Tabs.Content value="configuration"
-              ><div class="card-body">
+                </div>
+              </AsyncState>
+            </Tabs.Content><Tabs.Content value="configuration">
+              <div class="card-body">
                 <pre class="json-output">{{ JSON.stringify(monitor, null, 2) }}</pre>
-              </div></Tabs.Content
-            ></Tabs.Root
-          >
+              </div>
+            </Tabs.Content>
+          </Tabs.Root>
         </section>
         <aside>
           <section class="card card-body">
-            <h2 un-mb="6">{{ t('monitorDetails.monitorInformation') }}</h2>
+            <h2 un-mb="6">
+              {{ t('monitorDetails.monitorInformation') }}
+            </h2>
             <dl class="definition-list">
               <div>
                 <dt>{{ t('monitorDetails.type') }}</dt>
@@ -393,22 +420,24 @@ function viewRound(round: Round) {
                 <dt>{{ t('monitorDetails.failureRecoveryThreshold') }}</dt>
                 <dd>{{ monitor.failureThreshold }} / {{ monitor.recoveryThreshold }}</dd>
               </div>
-              <template v-if="monitor.heartbeat"
-                ><div>
+              <template v-if="monitor.heartbeat">
+                <div>
                   <dt>{{ t('monitorDetails.expectedPeriod2') }}</dt>
                   <dd>{{ monitor.heartbeat.periodSeconds }} s</dd>
                 </div>
                 <div>
                   <dt>{{ t('monitorDetails.gracePeriod') }}</dt>
                   <dd>{{ monitor.heartbeat.graceSeconds }} s</dd>
-                </div></template
-              >
+                </div>
+              </template>
               <div>
                 <dt>{{ t('common.created') }}</dt>
                 <dd>{{ formatDate(monitor.createdAt) }}</dd>
               </div>
             </dl>
-            <p v-if="monitor.description" class="note" un-mt="6">{{ monitor.description }}</p>
+            <p v-if="monitor.description" class="note" un-mt="6">
+              {{ monitor.description }}
+            </p>
             <div un-flex="~ wrap gap-2" un-mt="4">
               <span v-for="tag in monitor.tags" :key="tag" class="pill">{{ tag }}</span>
             </div>
@@ -420,21 +449,23 @@ function viewRound(round: Round) {
             <Trash2 :size="14" />{{ t('common.deleteMonitor') }}
           </button>
         </aside>
-      </div></template
-    ></AsyncState
-  ><Modal
+      </div>
+    </template>
+  </AsyncState><Modal
     v-model:open="confirmDelete"
     :title="t('common.deleteMonitor')"
     :description="t('monitorDetails.thisDeletesTheMonitorConfigurationConfirmItIs')"
-    ><template #footer
-      ><button class="button" @click="confirmDelete = false">{{ t('common.cancel') }}</button
-      ><button class="button danger" :disabled="busy" @click="act('delete')">
+  >
+    <template #footer>
+      <button class="button" @click="confirmDelete = false">
+        {{ t('common.cancel') }}
+      </button><button class="button danger" :disabled="busy" @click="act('delete')">
         {{ t('monitorDetails.delete') }}
-      </button></template
-    ></Modal
-  ><Modal v-model:open="diagnosticsOpen" :title="t('monitorDetails.roundDiagnostics')" wide
-    ><template v-if="selectedRound"
-      ><p class="muted" un-mb="4">
+      </button>
+    </template>
+  </Modal><Modal v-model:open="diagnosticsOpen" :title="t('monitorDetails.roundDiagnostics')" wide>
+    <template v-if="selectedRound">
+      <p class="muted" un-mb="4">
         {{ formatDate(selectedRound.startedAt) }} · {{ duration(selectedRound.latencyMs) }}
       </p>
       <div
@@ -447,9 +478,11 @@ function viewRound(round: Round) {
           <h3>{{ t('monitorDetails.attemptNumber', { number: n(attempt.number) }) }}</h3>
           <StateBadge :state="attempt.success ? 'up' : 'down'" />
         </div>
-        <p v-if="attempt.error" class="inline-error">{{ attempt.error }}</p>
+        <p v-if="attempt.error" class="inline-error">
+          {{ attempt.error }}
+        </p>
         <pre class="json-output" un-mt="4">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
-      </div></template
-    ></Modal
-  >
+      </div>
+    </template>
+  </Modal>
 </template>

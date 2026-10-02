@@ -1,5 +1,6 @@
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { computed } from 'vue'
+import { locale } from './i18n.ts'
 import {
   datetimeInput,
   datetimeMilliseconds,
@@ -9,26 +10,25 @@ import {
   statusLabel,
   timezone,
 } from './preferences.ts'
-import { locale } from './i18n.ts'
 
-test('maintenance wall-clock input uses the selected zone, not the process zone', () => {
+it('maintenance wall-clock input uses the selected zone, not the process zone', () => {
   const timestamp = datetimeMilliseconds('2026-10-02T09:30', 'Asia/Shanghai')
   expect(timestamp).toBe(Date.UTC(2026, 9, 2, 1, 30))
   expect(datetimeInput(timestamp, 'Asia/Shanghai')).toBe('2026-10-02T09:30')
   expect(datetimeInput(timestamp, 'UTC')).toBe('2026-10-02T01:30')
 })
 
-test('nonexistent spring DST times are rejected', () => {
+it('nonexistent spring DST times are rejected', () => {
   expect(() => datetimeMilliseconds('2026-03-08T02:30', 'America/New_York')).toThrow()
 })
 
-test('normal DST time round-trips in the selected zone', () => {
+it('normal DST time round-trips in the selected zone', () => {
   const timestamp = datetimeMilliseconds('2026-07-01T15:45', 'America/New_York')
   expect(timestamp).toBe(Date.UTC(2026, 6, 1, 19, 45))
   expect(datetimeInput(timestamp, 'America/New_York')).toBe('2026-07-01T15:45')
 })
 
-test('missing statistics never appear as perfect uptime', () => {
+it('missing statistics never appear as perfect uptime', () => {
   expect(formatPercent(null)).toBe('—')
   expect(formatPercent(undefined)).toBe('—')
   expect(formatPercent(Number.NaN)).toBe('—')
@@ -42,7 +42,7 @@ test('missing statistics never appear as perfect uptime', () => {
   expect(duration(Infinity)).toBe('—')
 })
 
-test('human dates follow the active locale and selected display zone', () => {
+it('human dates follow the active locale and selected display zone', () => {
   const originalLocale = locale.value
   const originalTimezone = timezone.value
   const timestamp = Date.UTC(2026, 9, 2, 1, 30)
@@ -66,13 +66,14 @@ test('human dates follow the active locale and selected display zone', () => {
     expect(formatDate('')).toBe('—')
     expect(formatDate('not a timestamp')).toBe('—')
     expect(formatDate(Number.NaN)).toBe('—')
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
     timezone.value = originalTimezone
   }
 })
 
-test('duration units and status labels react to the shared locale', () => {
+it('duration units and status labels react to the shared locale', () => {
   const originalLocale = locale.value
   const status = computed(() => statusLabel('investigating'))
   try {
@@ -92,19 +93,21 @@ test('duration units and status labels react to the shared locale', () => {
     expect(duration(86400000)).toBe('1.0 天')
     expect(statusLabel('new_api_state')).toBe('new_api_state')
     expect(statusLabel('constructor')).toBe('constructor')
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
   }
 })
 
-test('date validation errors use the current language', () => {
+it('date validation errors use the current language', () => {
   const originalLocale = locale.value
   try {
     locale.value = 'en'
     expect(() => datetimeMilliseconds('invalid')).toThrow(/Invalid date and time/)
     locale.value = 'zh-CN'
     expect(() => datetimeMilliseconds('invalid')).toThrow(/日期时间无效/)
-  } finally {
+  }
+  finally {
     locale.value = originalLocale
   }
 })

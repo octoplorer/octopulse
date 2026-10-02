@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { ref, reactive, computed } from 'vue'
-import { Plus, MessageSquare } from '@lucide/vue'
-import type { Incident, Page, Monitor } from '../../../lib/types'
-import { canEdit } from '../../../composables/api'
-import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
+import type { Incident, Monitor, Page } from '../../../lib/types'
+import { MessageSquare, Plus } from '@lucide/vue'
+import { useMutation, useQuery } from '@pinia/colada'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
-  listIncidentsQuery,
-  listPagesQuery,
-  listMonitorsQuery,
   createIncidentsMutation,
-  updateIncidentsMutation,
   createIncidentUpdateMutation,
+  listIncidentsQuery,
+  listMonitorsQuery,
+  listPagesQuery,
+  updateIncidentsMutation,
 } from '../../../client/@pinia/colada.gen'
-import { formatDate, statusLabel } from '../../../composables/preferences'
-import { errorText } from '../../../lib/errors'
-import { notify } from '../../../composables/notices'
-import { clone } from '../../../lib/form'
-import PageHeader from '../../../components/PageHeader.vue'
-import Field from '../../../components/Field.vue'
-import Modal from '../../../components/Modal.vue'
 import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
+import Field from '../../../components/Field.vue'
+import Modal from '../../../components/Modal.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import { canEdit } from '../../../composables/api'
+import { notify } from '../../../composables/notices'
+import { formatDate, statusLabel } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
+import { clone } from '../../../lib/form'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -52,27 +53,29 @@ const error = ref('')
 const updateBody = ref('')
 const updateStatus = ref<Incident['status']>('investigating')
 const filter = ref('active')
-const empty = (): Incident => ({
-  id: '',
-  title: '',
-  body: '',
-  status: 'investigating',
-  impact: 'none',
-  pageIds: [],
-  monitorIds: [],
-  updates: [],
-  createdAt: 0,
-  updatedAt: 0,
-  resolvedAt: 0,
-})
+function empty(): Incident {
+  return {
+    id: '',
+    title: '',
+    body: '',
+    status: 'investigating',
+    impact: 'none',
+    pageIds: [],
+    monitorIds: [],
+    updates: [],
+    createdAt: 0,
+    updatedAt: 0,
+    resolvedAt: 0,
+  }
+}
 const form = reactive(empty())
 const items = computed(
   () =>
     query.data.value?.items
       .filter(
-        (x) =>
-          filter.value === 'all' ||
-          (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'),
+        x =>
+          filter.value === 'all'
+          || (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'),
       )
       .sort((a, b) => b.updatedAt - a.updatedAt) || [],
 )
@@ -97,19 +100,23 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    if (form.id) await updateIncident.mutateAsync({ path: { id: form.id }, body: form })
+    if (form.id)
+      await updateIncident.mutateAsync({ path: { id: form.id }, body: form })
     else await createIncident.mutateAsync({ body: form })
     open.value = false
     notify(t('incidents.incidentSaved'))
     await query.refresh()
-  } catch (e) {
+  }
+  catch (e) {
     error.value = errorText(e)
-  } finally {
+  }
+  finally {
     saving.value = false
   }
 }
 async function update() {
-  if (!selected.value) return
+  if (!selected.value)
+    return
   saving.value = true
   try {
     const result = await publishIncidentUpdate.mutateAsync({
@@ -120,32 +127,44 @@ async function update() {
     updateBody.value = ''
     notify(t('incidents.updatePublished'))
     await query.refresh()
-  } catch (e) {
+  }
+  catch (e) {
     notify(errorText(e), 'error')
-  } finally {
+  }
+  finally {
     saving.value = false
   }
 }
 </script>
+
 <template>
   <PageHeader
     :title="t('navigation.incidents')"
     :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')"
-    ><button v-if="canEdit()" class="button primary" @click="create">
-      <Plus :size="15" />{{ t('incidents.createIncident') }}
-    </button></PageHeader
   >
+    <button v-if="canEdit()" class="button primary" @click="create">
+      <Plus :size="15" />{{ t('incidents.createIncident') }}
+    </button>
+  </PageHeader>
   <section class="card">
     <div class="filter-bar">
-      <h2 un-text="sm">{{ t('incidents.incidentAnnouncements') }}</h2>
+      <h2 un-text="sm">
+        {{ t('incidents.incidentAnnouncements') }}
+      </h2>
       <select v-model="filter" un-w="auto!" :aria-label="t('incidents.incidentFilter')">
-        <option value="active">{{ t('incidents.active') }}</option>
-        <option value="resolved">{{ t('incidents.resolved') }}</option>
-        <option value="all">{{ t('incidents.all') }}</option>
+        <option value="active">
+          {{ t('incidents.active') }}
+        </option>
+        <option value="resolved">
+          {{ t('incidents.resolved') }}
+        </option>
+        <option value="all">
+          {{ t('incidents.all') }}
+        </option>
       </select>
     </div>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
-      ><EmptyState
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+      <EmptyState
         v-if="!items.length"
         :title="t('incidents.noIncidentsHere')"
         :description="t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')"
@@ -165,8 +184,8 @@ async function update() {
             <tr v-for="incident in items" :key="incident.id">
               <td>
                 <button class="button ghost" un-p="0!" @click="detail(incident)">
-                  <MessageSquare :size="15" />{{ incident.title }}</button
-                ><span class="monitor-sub">{{
+                  <MessageSquare :size="15" />{{ incident.title }}
+                </button><span class="monitor-sub">{{
                   t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
                 }}</span>
               </td>
@@ -174,7 +193,9 @@ async function update() {
                 <span class="pill">{{ statusLabel(incident.status) }}</span>
               </td>
               <td>{{ statusLabel(incident.impact) }}</td>
-              <td class="muted" un-text="10px">{{ formatDate(incident.updatedAt) }}</td>
+              <td class="muted" un-text="10px">
+                {{ formatDate(incident.updatedAt) }}
+              </td>
               <td>
                 <button class="button small" @click="detail(incident)">
                   {{ t('incidents.viewUpdates') }}
@@ -183,8 +204,8 @@ async function update() {
             </tr>
           </tbody>
         </table>
-      </div></AsyncState
-    >
+      </div>
+    </AsyncState>
   </section>
   <p class="note" un-mt="5">
     {{ t('incidents.activeIncidentsMayRaiseAPageSImpact') }}
@@ -193,14 +214,15 @@ async function update() {
     v-model:open="open"
     :title="form.id ? t('incidents.editIncident') : t('incidents.createIncident2')"
     wide
-    ><form id="incident-form" @submit.prevent="save">
+  >
+    <form id="incident-form" @submit.prevent="save">
       <div class="form-grid">
-        <Field class="span-full" :label="t('incidents.title')"
-          ><input v-model="form.title" required /></Field
-        ><Field class="span-full" :label="t('incidents.description')">
-          <textarea v-model="form.body" rows="5" required /></Field
-        ><Field :label="t('incidents.progressStatus')"
-          ><select v-model="form.status">
+        <Field class="span-full" :label="t('incidents.title')">
+          <input v-model="form.title" required>
+        </Field><Field class="span-full" :label="t('incidents.description')">
+          <textarea v-model="form.body" rows="5" required />
+        </Field><Field :label="t('incidents.progressStatus')">
+          <select v-model="form.status">
             <option
               v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
               :key="state"
@@ -208,22 +230,26 @@ async function update() {
             >
               {{ statusLabel(state) }}
             </option>
-          </select></Field
-        ><Field :label="t('incidents.impactLevel')"
-          ><select v-model="form.impact">
-            <option value="none">{{ t('incidents.informational') }}</option>
-            <option value="partial">{{ t('incidents.partialOutage') }}</option>
-            <option value="outage">{{ t('incidents.majorOutage') }}</option>
-          </select></Field
-        >
+          </select>
+        </Field><Field :label="t('incidents.impactLevel')">
+          <select v-model="form.impact">
+            <option value="none">
+              {{ t('incidents.informational') }}
+            </option>
+            <option value="partial">
+              {{ t('incidents.partialOutage') }}
+            </option>
+            <option value="outage">
+              {{ t('incidents.majorOutage') }}
+            </option>
+          </select>
+        </Field>
         <div class="span-full">
           <label class="field-label">{{ t('incidents.publishToStatusPages') }}</label>
           <div class="checkbox-group" un-mt="3">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label"
-              ><input v-model="form.pageIds" type="checkbox" :value="page.id" />{{
-                page.name
-              }}</label
-            >
+            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
+              page.name
+            }}</label>
           </div>
         </div>
         <div class="span-full">
@@ -233,25 +259,29 @@ async function update() {
               v-for="monitor in monitors.data.value?.items"
               :key="monitor.id"
               class="checkbox-label"
-              ><input v-model="form.monitorIds" type="checkbox" :value="monitor.id" />{{
-                monitor.name
-              }}</label
-            >
+            ><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
+              monitor.name
+            }}</label>
           </div>
         </div>
       </div>
-      <p v-if="error" class="inline-error">{{ error }}</p>
+      <p v-if="error" class="inline-error">
+        {{ error }}
+      </p>
     </form>
-    <template #footer
-      ><button class="button" @click="open = false">{{ t('common.cancel') }}</button
-      ><button class="button primary" form="incident-form" :disabled="saving">
+    <template #footer>
+      <button class="button" @click="open = false">
+        {{ t('common.cancel') }}
+      </button><button class="button primary" form="incident-form" :disabled="saving">
         {{ t('incidents.saveIncident') }}
-      </button></template
-    ></Modal
-  ><Modal v-model:open="detailOpen" :title="selected?.title || ''" wide
-    ><template v-if="selected"
-      ><div un-flex="~ items-start justify-between gap-4" un-mb="5">
-        <p class="muted">{{ selected.body }}</p>
+      </button>
+    </template>
+  </Modal><Modal v-model:open="detailOpen" :title="selected?.title || ''" wide>
+    <template v-if="selected">
+      <div un-flex="~ items-start justify-between gap-4" un-mb="5">
+        <p class="muted">
+          {{ selected.body }}
+        </p>
         <button v-if="canEdit()" class="button small" @click="edit(selected)">
           {{ t('incidents.editIncident2') }}
         </button>
@@ -261,17 +291,19 @@ async function update() {
           <h3>{{ t('incidents.initialAnnouncement') }}</h3>
           <small>{{ formatDate(selected.createdAt) }}</small>
         </div>
-        <div v-for="update in selected.updates" :key="update.id" class="timeline-entry">
-          <h3>{{ statusLabel(update.status) }}</h3>
-          <p>{{ update.body }}</p>
-          <small>{{ formatDate(update.createdAt) }}</small>
+        <div v-for="entry in selected.updates" :key="entry.id" class="timeline-entry">
+          <h3>{{ statusLabel(entry.status) }}</h3>
+          <p>{{ entry.body }}</p>
+          <small>{{ formatDate(entry.createdAt) }}</small>
         </div>
       </div>
       <form v-if="canEdit()" @submit.prevent="update">
         <div class="section-divider" />
-        <h3 un-mb="4">{{ t('incidents.publishAnUpdate') }}</h3>
-        <Field :label="t('incidents.progress2')"
-          ><select v-model="updateStatus">
+        <h3 un-mb="4">
+          {{ t('incidents.publishAnUpdate') }}
+        </h3>
+        <Field :label="t('incidents.progress2')">
+          <select v-model="updateStatus">
             <option
               v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
               :key="state"
@@ -279,13 +311,13 @@ async function update() {
             >
               {{ statusLabel(state) }}
             </option>
-          </select></Field
-        ><Field :label="t('incidents.update')" un-mt="4">
-          <textarea v-model="updateBody" required rows="4" /></Field
-        ><button class="button primary" :disabled="saving" un-mt="4">
+          </select>
+        </Field><Field :label="t('incidents.update')" un-mt="4">
+          <textarea v-model="updateBody" required rows="4" />
+        </Field><button class="button primary" :disabled="saving" un-mt="4">
           {{ t('incidents.publishUpdate') }}
         </button>
-      </form></template
-    ></Modal
-  >
+      </form>
+    </template>
+  </Modal>
 </template>

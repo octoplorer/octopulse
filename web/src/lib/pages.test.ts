@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { publishedEntry } from './pages.ts'
 
-test('public entry remains on the published route while a draft moves', () => {
+it('public entry remains on the published route while a draft moves', () => {
   expect(
     publishedEntry({
       slug: 'draft',
@@ -11,12 +11,12 @@ test('public entry remains on the published route while a draft moves', () => {
     }),
   ).toStrictEqual({ slug: 'live', domain: 'live.example.com', url: 'https://live.example.com/' })
 })
-test('an omitted snapshot domain does not publish the draft domain', () => {
+it('an omitted snapshot domain does not publish the draft domain', () => {
   expect(
     publishedEntry({ slug: 'draft', domain: 'draft.example.com', publishedSlug: 'live' }),
   ).toStrictEqual({ slug: 'live', domain: '', url: '/live' })
 })
-test('old page records use their existing entry until republished', () => {
+it('old page records use their existing entry until republished', () => {
   expect(publishedEntry({ slug: 'legacy', domain: 'status.example.com' })).toStrictEqual({
     slug: 'legacy',
     domain: 'status.example.com',

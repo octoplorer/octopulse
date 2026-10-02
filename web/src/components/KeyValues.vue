@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { Plus, X } from '@lucide/vue'
 import type { NameValue, Secret } from '../lib/types'
+import { Plus, X } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
 import SecretSelect from './SecretSelect.vue'
+
+defineProps<{ secrets: Secret[], nameLabel?: string }>()
+
 const { t } = useI18n({ useScope: 'global' })
 
 const values = defineModel<NameValue[]>({ required: true })
-defineProps<{ secrets: Secret[]; nameLabel?: string }>()
 </script>
+
 <template>
   <div>
     <div
@@ -22,17 +25,16 @@ defineProps<{ secrets: Secret[]; nameLabel?: string }>()
         v-model="item.name"
         :placeholder="nameLabel || t('common.name')"
         :aria-label="t('common.name')"
-      /><input
+      ><input
         v-if="!item.secretRef"
         v-model="item.value"
         :placeholder="t('common.value')"
         :aria-label="t('common.value')"
-      /><span v-else class="note" un-text="10px">{{ t('keyValues.valueFromSecret') }}</span
-      ><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
+      ><span v-else class="note" un-text="10px">{{ t('keyValues.valueFromSecret') }}</span><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
         type="button"
         class="icon-button"
-        @click="values.splice(index, 1)"
         :aria-label="t('keyValues.removeField')"
+        @click="values.splice(index, 1)"
       >
         <X :size="15" />
       </button>
@@ -42,6 +44,7 @@ defineProps<{ secrets: Secret[]; nameLabel?: string }>()
     </button>
   </div>
 </template>
+
 <style scoped>
 @media (max-width: 700px) {
   .kv-row {
