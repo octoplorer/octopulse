@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Secret } from '../../../lib/types'
-import { KeyRound, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -94,11 +93,11 @@ function cancel() {
     :description="t('secrets.manageSensitiveValuesUsedByRequestsTlsProxies')"
   >
     <button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('common.addSecret') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addSecret') }}
     </button>
   </PageHeader>
   <div class="alert-strip">
-    <KeyRound :size="16" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
+    <span class="i-lucide-key-round" un-w="16px" un-h="16px" aria-hidden="true" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
   <section class="card">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
@@ -131,13 +130,13 @@ function cancel() {
               <td>
                 <div v-if="isAdmin()" un-flex="~ gap-2">
                   <button class="button small" @click="edit(secret)">
-                    <Pencil :size="12" />{{ t('secrets.replace') }}
+                    <span class="i-lucide-pencil" un-w="12px" un-h="12px" aria-hidden="true" />{{ t('secrets.replace') }}
                   </button><button
                     class="icon-button"
                     :aria-label="t('common.delete')"
                     @click="confirmDelete(secret)"
                   >
-                    <Trash2 :size="14" />
+                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </div>
               </td>

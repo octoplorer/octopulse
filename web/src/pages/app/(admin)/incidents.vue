@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Incident, Monitor, Page } from '../../../lib/types'
-import { MessageSquare, Plus } from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -143,7 +142,7 @@ async function update() {
     :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')"
   >
     <button v-if="canEdit()" class="button primary" @click="create">
-      <Plus :size="15" />{{ t('incidents.createIncident') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('incidents.createIncident') }}
     </button>
   </PageHeader>
   <section class="card">
@@ -184,7 +183,7 @@ async function update() {
             <tr v-for="incident in items" :key="incident.id">
               <td>
                 <button class="button ghost" un-p="0!" @click="detail(incident)">
-                  <MessageSquare :size="15" />{{ incident.title }}
+                  <span class="i-lucide-message-square" un-w="15px" un-h="15px" aria-hidden="true" />{{ incident.title }}
                 </button><span class="monitor-sub">{{
                   t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
                 }}</span>

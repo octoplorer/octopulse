@@ -1,23 +1,4 @@
 <script setup lang="ts">
-import {
-  Activity,
-  Bell,
-  CalendarClock,
-  ChevronRight,
-  Globe,
-  KeyRound,
-  Languages,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  MessageSquare,
-  Moon,
-  ScrollText,
-  Server,
-  Settings,
-  Sun,
-  Users,
-} from '@lucide/vue'
 import { useMutation } from '@pinia/colada'
 import { onKeyStroke, useIntervalFn, useMediaQuery } from '@vueuse/core'
 import { computed, ref } from 'vue'
@@ -46,18 +27,18 @@ onKeyStroke('Escape', () => {
   menuOpen.value = false
 })
 const nav = [
-  { path: '/app', icon: LayoutDashboard, label: 'navigation.overview' },
-  { path: '/app/monitors', icon: Activity, label: 'common.monitors' },
-  { path: '/app/pages', icon: Globe, label: 'navigation.statusPages' },
-  { path: '/app/incidents', icon: MessageSquare, label: 'navigation.incidents' },
-  { path: '/app/maintenance', icon: CalendarClock, label: 'navigation.maintenance' },
-  { path: '/app/notifications', icon: Bell, label: 'navigation.notifications' },
-  { path: '/app/servers', icon: Server, label: 'navigation.servers' },
+  { path: '/app', icon: 'i-lucide-layout-dashboard', label: 'navigation.overview' },
+  { path: '/app/monitors', icon: 'i-lucide-activity', label: 'common.monitors' },
+  { path: '/app/pages', icon: 'i-lucide-globe', label: 'navigation.statusPages' },
+  { path: '/app/incidents', icon: 'i-lucide-message-square', label: 'navigation.incidents' },
+  { path: '/app/maintenance', icon: 'i-lucide-calendar-clock', label: 'navigation.maintenance' },
+  { path: '/app/notifications', icon: 'i-lucide-bell', label: 'navigation.notifications' },
+  { path: '/app/servers', icon: 'i-lucide-server', label: 'navigation.servers' },
 ]
 const adminNav = [
-  { path: '/app/users', icon: Users, label: 'navigation.members' },
-  { path: '/app/secrets', icon: KeyRound, label: 'navigation.secrets' },
-  { path: '/app/audit', icon: ScrollText, label: 'navigation.auditLog' },
+  { path: '/app/users', icon: 'i-lucide-users', label: 'navigation.members' },
+  { path: '/app/secrets', icon: 'i-lucide-key-round', label: 'navigation.secrets' },
+  { path: '/app/audit', icon: 'i-lucide-scroll-text', label: 'navigation.auditLog' },
 ]
 const title = computed(() => {
   const value = route.meta.title
@@ -95,7 +76,7 @@ async function signout() {
           :active-class="item.path === '/app' ? '' : 'router-link-active'"
           @click="menuOpen = false"
         >
-          <component :is="item.icon" :size="17" />{{ t(item.label) }}
+          <span :class="item.icon" un-w="17px" un-h="17px" aria-hidden="true" />{{ t(item.label) }}
         </RouterLink>
       </nav>
       <div class="nav-label">
@@ -110,10 +91,10 @@ async function signout() {
             class="nav-link"
             @click="menuOpen = false"
           >
-            <component :is="item.icon" :size="17" />{{ t(item.label) }}
+            <span :class="item.icon" un-w="17px" un-h="17px" aria-hidden="true" />{{ t(item.label) }}
           </RouterLink>
         </template><RouterLink to="/app/settings" class="nav-link" @click="menuOpen = false">
-          <Settings :size="17" />{{ t('common.settings') }}
+          <span class="i-lucide-settings" un-w="17px" un-h="17px" aria-hidden="true" />{{ t('common.settings') }}
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
@@ -128,7 +109,7 @@ async function signout() {
             </div>
           </div>
           <button class="icon-button" :aria-label="t('navigation.signOut')" @click="signout">
-            <LogOut :size="16" />
+            <span class="i-lucide-log-out" un-w="16px" un-h="16px" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -145,8 +126,8 @@ async function signout() {
             aria-controls="workspace-navigation"
             @click="menuOpen = !menuOpen"
           >
-            <Menu :size="20" />
-          </button><span class="topbar-crumb">{{ t('common.workspace') }}<ChevronRight un-inline="" un-mx="2" :size="11" /><strong>{{
+            <span class="i-lucide-menu" un-w="20px" un-h="20px" aria-hidden="true" />
+          </button><span class="topbar-crumb">{{ t('common.workspace') }}<span class="i-lucide-chevron-right" un-mx="2" un-w="11px" un-h="11px" aria-hidden="true" /><strong>{{
             title
           }}</strong></span>
         </div>
@@ -156,13 +137,13 @@ async function signout() {
             :aria-label="t('common.switchLanguage')"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
-            <Languages :size="17" />
+            <span class="i-lucide-languages" un-w="17px" un-h="17px" aria-hidden="true" />
           </button><button
             class="icon-button"
             :aria-label="t('navigation.toggleColorScheme')"
             @click="theme = dark ? 'light' : 'dark'"
           >
-            <Sun v-if="dark" :size="17" /><Moon v-else :size="17" />
+            <span v-if="dark" class="i-lucide-sun" un-w="17px" un-h="17px" aria-hidden="true" /><span v-else class="i-lucide-moon" un-w="17px" un-h="17px" aria-hidden="true" />
           </button>
         </div>
       </header>

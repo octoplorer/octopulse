@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../../client/types.gen'
 import type { Page } from '../../../../lib/types'
-import { ArrowUpRight, Globe, Pencil, Plus } from '@lucide/vue'
 import { useQuery } from '@pinia/colada'
 import { useI18n } from 'vue-i18n'
 import { listPagesQuery } from '../../../../client/@pinia/colada.gen'
@@ -29,7 +28,7 @@ const query = useQuery({
     :description="t('pages.shareServiceHealthAndUpdatesWithYourOwn')"
   >
     <RouterLink v-if="canEdit()" to="/app/pages/new" class="button primary">
-      <Plus :size="15" />{{ t('common.createStatusPage') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.createStatusPage') }}
     </RouterLink>
   </PageHeader><AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
     <EmptyState
@@ -65,11 +64,11 @@ const query = useQuery({
           un-text="11px"
           un-flex="~ items-center gap-1.5"
         >
-          <Globe :size="11" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
+          <span class="i-lucide-globe" un-w="11px" un-h="11px" aria-hidden="true" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
         </p>
         <div class="tile-actions">
           <RouterLink :to="`/app/pages/${page.id}`" class="button small">
-            <Pencil :size="12" />{{
+            <span class="i-lucide-pencil" un-w="12px" un-h="12px" aria-hidden="true" />{{
               canEdit() ? t('pages.customize') : t('pages.view')
             }}
           </RouterLink><a
@@ -78,7 +77,7 @@ const query = useQuery({
             target="_blank"
             rel="noopener"
             class="button small ghost"
-          >{{ t('pages.visit') }}<ArrowUpRight :size="13" /></a><span v-else class="muted" un-text="10px">{{ formatDate(page.updatedAt) }}</span>
+          >{{ t('pages.visit') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" /></a><span v-else class="muted" un-text="10px">{{ formatDate(page.updatedAt) }}</span>
         </div>
       </article>
     </div>

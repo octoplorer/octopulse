@@ -2,17 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Incident, Maintenance, Monitor, Page } from '../../../lib/types'
-import {
-  Activity,
-  AlertTriangle,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Globe,
-  Plus,
-  RefreshCw,
-  Server,
-} from '@lucide/vue'
 import { useQuery } from '@pinia/colada'
 import { useIntervalFn } from '@vueuse/core'
 import { computed } from 'vue'
@@ -87,15 +76,15 @@ useIntervalFn(() => monitors.refetch(), 30000)
     eyebrow="YOUR INFRASTRUCTURE, AT A GLANCE"
   >
     <button class="button" @click="monitors.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
+      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
     </button><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-      <Plus :size="15" />{{ t('common.addMonitor') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMonitor') }}
     </RouterLink>
   </PageHeader>
   <div class="stats-grid">
     <div class="card stat-card">
       <div class="stat-label">
-        {{ t('overview.totalMonitors') }}<span class="stat-icon"><Activity :size="15" /></span>
+        {{ t('overview.totalMonitors') }}<span class="stat-icon"><span class="i-lucide-activity" un-w="15px" un-h="15px" aria-hidden="true" /></span>
       </div>
       <div class="stat-value">
         {{ items.length }}
@@ -107,7 +96,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
     </div>
     <div class="card stat-card">
       <div class="stat-label">
-        {{ t('overview.operational') }}<span class="stat-icon"><CheckCircle2 :size="15" /></span>
+        {{ t('overview.operational') }}<span class="stat-icon"><span class="i-lucide-circle-check" un-w="15px" un-h="15px" aria-hidden="true" /></span>
       </div>
       <div class="stat-value" un-text="[var(--accent)]">
         {{ up.length }}
@@ -119,7 +108,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
     <div class="card stat-card">
       <div class="stat-label">
         {{ t('overview.needsAttention')
-        }}<span class="stat-icon"><AlertTriangle :size="15" /></span>
+        }}<span class="stat-icon"><span class="i-lucide-triangle-alert" un-w="15px" un-h="15px" aria-hidden="true" /></span>
       </div>
       <div class="stat-value" :style="{ color: down.length ? 'var(--danger)' : undefined }">
         {{ down.length }}
@@ -130,7 +119,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
     </div>
     <div class="card stat-card">
       <div class="stat-label">
-        {{ t('overview.waitingForData') }}<span class="stat-icon"><Clock :size="15" /></span>
+        {{ t('overview.waitingForData') }}<span class="stat-icon"><span class="i-lucide-clock" un-w="15px" un-h="15px" aria-hidden="true" /></span>
       </div>
       <div class="stat-value">
         {{ unknown.length }}
@@ -151,7 +140,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
             </p>
           </div>
           <RouterLink to="/app/monitors" class="button small ghost">
-            {{ t('overview.viewAll') }}<ArrowUpRight :size="13" />
+            {{ t('overview.viewAll') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" />
           </RouterLink>
         </div>
         <AsyncState
@@ -165,7 +154,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
             :description="t('overview.httpTcpDnsHeartbeatAndCertificateChecksAre')"
           >
             <RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-              <Plus :size="14" />{{ t('common.createMonitor') }}
+              <span class="i-lucide-plus" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.createMonitor') }}
             </RouterLink>
           </EmptyState>
           <div v-else class="table-wrap">
@@ -182,9 +171,8 @@ useIntervalFn(() => monitors.refetch(), 30000)
                 <tr v-for="monitor in ordered" :key="monitor.id">
                   <td>
                     <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3">
-                      <span class="monitor-type-icon"><Globe v-if="monitor.type === 'http'" :size="16" /><Server
-                        v-else
-                        :size="16"
+                      <span class="monitor-type-icon"><span v-if="monitor.type === 'http'" class="i-lucide-globe" un-w="16px" un-h="16px" aria-hidden="true" /><span
+                        v-else class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true"
                       /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
                     </RouterLink>
                   </td>
@@ -222,7 +210,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
         <div class="card-header">
           <h2>{{ t('overview.publicStatusPages') }}</h2>
           <RouterLink to="/app/pages" class="button small ghost">
-            {{ t('overview.managePages') }}<ArrowUpRight :size="13" />
+            {{ t('overview.managePages') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" />
           </RouterLink>
         </div>
         <div class="card-body">
@@ -238,7 +226,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
             un-py="3"
           >
             <div un-flex="~ items-center gap-3">
-              <Globe :size="18" un-text="[var(--accent)]" />
+              <span un-text="[var(--accent)]" class="i-lucide-globe" un-w="18px" un-h="18px" aria-hidden="true" />
               <div>
                 <h3 un-text="xs">
                   {{ page.name }}
@@ -301,7 +289,7 @@ useIntervalFn(() => monitors.refetch(), 30000)
             to="/app/maintenance"
             class="activity-item"
           >
-            <Clock :size="15" un-text="[var(--muted)]" un-mt="1" />
+            <span un-text="[var(--muted)]" un-mt="1" class="i-lucide-clock" un-w="15px" un-h="15px" aria-hidden="true" />
             <div>
               <h3>{{ window.name }}</h3>
               <p>{{ formatDate(window.startsAt) }}</p>

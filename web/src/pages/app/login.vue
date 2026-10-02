@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight, ShieldCheck } from '@lucide/vue'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -103,7 +102,7 @@ async function submit() {
         </p>
       </div>
       <div class="auth-bottom" un-flex="~ items-center gap-2">
-        <ShieldCheck :size="15" />{{ t('login.selfHostedYourInfrastructureYourData') }}
+        <span class="i-lucide-shield-check" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('login.selfHostedYourInfrastructureYourData') }}
       </div>
     </section>
     <section class="auth-main">
@@ -159,7 +158,7 @@ async function submit() {
                 : required
                   ? t('login.createWorkspace')
                   : t('login.signIn')
-            }}<ArrowRight :size="16" />
+            }}<span class="i-lucide-arrow-right" un-w="16px" un-h="16px" aria-hidden="true" />
           </button>
         </form>
         <p class="muted" un-text="10px" un-mt="7">

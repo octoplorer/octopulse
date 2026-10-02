@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../../client/types.gen'
 import type { Monitor } from '../../../../lib/types'
-import { ChevronRight, Globe, Plus, RefreshCw, Search, Server } from '@lucide/vue'
 import { useQuery } from '@pinia/colada'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
@@ -51,15 +50,15 @@ useIntervalFn(() => query.refetch(), 30000)
     :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')"
   >
     <button class="button" @click="query.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
+      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
     </button><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-      <Plus :size="15" />{{ t('common.addMonitor') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMonitor') }}
     </RouterLink>
   </PageHeader>
   <section class="card">
     <div class="filter-bar">
       <div class="search-box">
-        <Search :size="16" /><input
+        <span class="i-lucide-search" un-w="16px" un-h="16px" aria-hidden="true" /><input
           v-model="search"
           :placeholder="t('monitors.searchNameTargetOrTags')"
           :aria-label="t('monitors.searchMonitors')"
@@ -128,10 +127,9 @@ useIntervalFn(() => query.refetch(), 30000)
             <tr v-for="monitor in filtered" :key="monitor.id">
               <td>
                 <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3">
-                  <span class="monitor-type-icon"><Globe
-                    v-if="monitor.type === 'http' || monitor.type === 'dns'"
-                    :size="16"
-                  /><Server v-else :size="16" /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
+                  <span class="monitor-type-icon"><span
+                    v-if="monitor.type === 'http' || monitor.type === 'dns'" class="i-lucide-globe" un-w="16px" un-h="16px" aria-hidden="true"
+                  /><span v-else class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true" /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
                 </RouterLink>
               </td>
               <td>
@@ -163,7 +161,7 @@ useIntervalFn(() => query.refetch(), 30000)
                   class="icon-button"
                   :aria-label="t('monitors.viewDetails')"
                 >
-                  <ChevronRight :size="16" />
+                  <span class="i-lucide-chevron-right" un-w="16px" un-h="16px" aria-hidden="true" />
                 </RouterLink>
               </td>
             </tr>

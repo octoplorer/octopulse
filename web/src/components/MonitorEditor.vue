@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Channel, Monitor, Secret } from '../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { ArrowLeft, Save, Upload, X } from '@lucide/vue'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -239,9 +238,9 @@ const charsetOptions = [
     :description="t('monitorEditor.defineTheTargetSuccessCriteriaAndConfirmationPolicy')"
   >
     <RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'" class="button">
-      <ArrowLeft :size="15" />{{ t('monitorEditor.back') }}
+      <span class="i-lucide-arrow-left" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('monitorEditor.back') }}
     </RouterLink><button class="button primary" :disabled="saving || !canEdit()" form="monitor-form">
-      <Save :size="15" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
+      <span class="i-lucide-save" un-w="15px" un-h="15px" aria-hidden="true" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
     </button>
   </PageHeader><AsyncState :pending="loading">
     <form id="monitor-form" @submit.prevent="save">
@@ -437,10 +436,10 @@ const charsetOptions = [
                         :aria-label="t('monitorEditor.removeFile')"
                         @click="form.http.body.files.splice(index, 1)"
                       >
-                        <X :size="15" />
+                        <span class="i-lucide-x" un-w="15px" un-h="15px" aria-hidden="true" />
                       </button>
                     </div>
-                    <label class="button small" un-mt="3"><Upload :size="13" />{{ t('monitorEditor.addFiles')
+                    <label class="button small" un-mt="3"><span class="i-lucide-upload" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('monitorEditor.addFiles')
                     }}<input type="file" multiple un-hidden="" @change="addFile"></label>
                     <p class="field-hint" un-mt="2">
                       {{
@@ -925,7 +924,7 @@ const charsetOptions = [
         <RouterLink to="/app/monitors" class="button">
           {{ t('common.cancel') }}
         </RouterLink><button type="submit" class="button primary" :disabled="saving || !canEdit()">
-          <Save :size="15" />{{ t('common.saveMonitor') }}
+          <span class="i-lucide-save" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.saveMonitor') }}
         </button>
       </div>
     </form>

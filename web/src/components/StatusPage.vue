@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PublicPage } from '../lib/types'
-import { Activity, AlertTriangle, ArrowUpRight, Check, Clock, Languages } from '@lucide/vue'
 import { usePreferredDark } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -78,7 +77,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
             v-else
             class="brand-icon"
             :style="{ background: page.config.brandColor || '#0c8b76' }"
-          ><Activity :size="20" /></span>{{ page.config.title || 'Octopulse' }}
+          ><span class="i-lucide-activity" un-w="20px" un-h="20px" aria-hidden="true" /></span>{{ page.config.title || 'Octopulse' }}
         </div>
         <nav class="public-nav">
           <a
@@ -87,13 +86,13 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
             :href="safeLink(link.url)"
             target="_blank"
             rel="noopener noreferrer"
-          >{{ link.label }}<ArrowUpRight :size="11" un-inline="" un-ml="1" /></a><button
+          >{{ link.label }}<span un-ml="1" class="i-lucide-arrow-up-right" un-w="11px" un-h="11px" aria-hidden="true" /></a><button
             v-if="!preview"
             class="icon-button"
             :aria-label="t('common.switchLanguage')"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
-            <Languages :size="16" /><span un-text="10px" un-ml="1">{{
+            <span class="i-lucide-languages" un-w="16px" un-h="16px" aria-hidden="true" /><span un-text="10px" un-ml="1">{{
               locale === 'zh-CN' ? 'EN' : '中'
             }}</span>
           </button>
@@ -109,10 +108,9 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
         <span
           class="public-overall-icon"
           :style="!good ? { background: '#e8b65719', color: '#c18a34' } : {}"
-        ><Check v-if="good" :size="24" /><Clock
-          v-else-if="page.state === 'maintenance'"
-          :size="23"
-        /><AlertTriangle v-else :size="23" /></span>
+        ><span v-if="good" class="i-lucide-check" un-w="24px" un-h="24px" aria-hidden="true" /><span
+          v-else-if="page.state === 'maintenance'" class="i-lucide-clock" un-w="23px" un-h="23px" aria-hidden="true"
+        /><span v-else class="i-lucide-triangle-alert" un-w="23px" un-h="23px" aria-hidden="true" /></span>
         <div>
           <h1>{{ heading }}</h1>
           <p>
@@ -231,7 +229,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
         }}
       </RouterLink>
       <footer class="public-footer">
-        <span un-flex="~ items-center gap-1.5"><Activity :size="13" />{{ t('publicPage.poweredBy') }}</span>
+        <span un-flex="~ items-center gap-1.5"><span class="i-lucide-activity" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('publicPage.poweredBy') }}</span>
       </footer>
     </div>
   </div>

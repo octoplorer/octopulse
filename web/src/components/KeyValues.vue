@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NameValue, Secret } from '../lib/types'
-import { Plus, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import SecretSelect from './SecretSelect.vue'
@@ -36,11 +35,11 @@ const values = defineModel<NameValue[]>({ required: true })
         :aria-label="t('keyValues.removeField')"
         @click="values.splice(index, 1)"
       >
-        <X :size="15" />
+        <span class="i-lucide-x" un-w="15px" un-h="15px" aria-hidden="true" />
       </button>
     </div>
     <button type="button" class="button small ghost" @click="values.push({ name: '', value: '' })">
-      <Plus :size="13" />{{ t('keyValues.addField') }}
+      <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('keyValues.addField') }}
     </button>
   </div>
 </template>

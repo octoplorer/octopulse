@@ -3,20 +3,6 @@ import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../../../client/types.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import {
-  Activity,
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Copy,
-  KeyRound,
-  Pause,
-  Pencil,
-  Play,
-  RefreshCw,
-  ShieldCheck,
-  Trash2,
-} from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { useClipboard, useIntervalFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
@@ -149,28 +135,28 @@ function viewRound(round: Round) {
     <template v-if="monitor">
       <PageHeader :title="monitor.name" :description="targetOf(monitor)">
         <RouterLink to="/app/monitors" class="button ghost">
-          <ArrowLeft :size="14" />{{ t('monitorDetails.allMonitors') }}
+          <span class="i-lucide-arrow-left" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('monitorDetails.allMonitors') }}
         </RouterLink><template v-if="canEdit()">
           <button class="button" :disabled="busy" @click="act('toggle')">
-            <Pause v-if="monitor.enabled" :size="14" /><Play v-else :size="14" />{{
+            <span v-if="monitor.enabled" class="i-lucide-pause" un-w="14px" un-h="14px" aria-hidden="true" /><span v-else class="i-lucide-play" un-w="14px" un-h="14px" aria-hidden="true" />{{
               monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
             }}
           </button><RouterLink :to="`/app/monitors/${monitor.id}/edit`" class="button">
-            <Pencil :size="14" />{{ t('common.edit') }}
+            <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.edit') }}
           </RouterLink><button
             v-if="monitor.type !== 'heartbeat'"
             class="button primary"
             :disabled="busy || !monitor.enabled"
             @click="act('check')"
           >
-            <RefreshCw :size="14" />{{ t('monitorDetails.checkNow') }}
+            <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('monitorDetails.checkNow') }}
           </button>
         </template>
       </PageHeader>
       <div class="stats-grid">
         <div class="card stat-card">
           <div class="stat-label">
-            {{ t('monitorDetails.currentState') }}<Activity :size="15" />
+            {{ t('monitorDetails.currentState') }}<span class="i-lucide-activity" un-w="15px" un-h="15px" aria-hidden="true" />
           </div>
           <div un-mt="5" un-mb="4">
             <StateBadge
@@ -188,7 +174,7 @@ function viewRound(round: Round) {
               monitor.certificate
                 ? t('common.certificateExpires')
                 : t('monitorDetails.durationUptime')
-            }}<CheckCircle2 :size="15" />
+            }}<span class="i-lucide-circle-check" un-w="15px" un-h="15px" aria-hidden="true" />
           </div>
           <div class="stat-value" :style="monitor.certificate ? { fontSize: '16px' } : undefined">
             {{
@@ -214,7 +200,7 @@ function viewRound(round: Round) {
               monitor.certificate
                 ? t('monitorDetails.daysRemaining')
                 : t('monitorDetails.observationCoverage')
-            }}<ShieldCheck :size="15" />
+            }}<span class="i-lucide-shield-check" un-w="15px" un-h="15px" aria-hidden="true" />
           </div>
           <div class="stat-value">
             {{
@@ -239,7 +225,7 @@ function viewRound(round: Round) {
         </div>
         <div class="card stat-card">
           <div class="stat-label">
-            {{ t('monitorDetails.latestLatency') }}<Clock :size="15" />
+            {{ t('monitorDetails.latestLatency') }}<span class="i-lucide-clock" un-w="15px" un-h="15px" aria-hidden="true" />
           </div>
           <div class="stat-value">
             {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
@@ -268,7 +254,7 @@ function viewRound(round: Round) {
             </p>
           </div>
           <button v-if="canEdit()" class="button" :disabled="busy" @click="act('rotate')">
-            <KeyRound :size="14" />{{ t('monitorDetails.generateRotateToken') }}
+            <span class="i-lucide-key-round" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('monitorDetails.generateRotateToken') }}
           </button>
         </div>
         <div v-if="monitor.heartbeat?.lastReceivedAt" class="note" un-mt="4">
@@ -280,7 +266,7 @@ function viewRound(round: Round) {
         </div>
         <div v-if="heartbeatToken" class="heartbeat-url">
           <code>{{ heartbeatUrl }}</code><button class="button small ghost" @click="copy(heartbeatUrl)">
-            <Copy :size="13" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
+            <span class="i-lucide-copy" un-w="13px" un-h="13px" aria-hidden="true" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
           </button>
           <p class="muted" un-mt="3">
             {{ t('monitorDetails.postReportsStatusUpOrStatusDownWith') }}
@@ -288,7 +274,7 @@ function viewRound(round: Round) {
         </div>
       </div>
       <div v-if="monitor.certificate" class="alert-strip">
-        <ShieldCheck :size="16" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
+        <span class="i-lucide-shield-check" un-w="16px" un-h="16px" aria-hidden="true" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
               days: monitor.certificate.expiresAt
@@ -446,7 +432,7 @@ function viewRound(round: Round) {
             {{ t('monitorDetails.uptimeUsesConfirmedStateDurationUnknownPausedAnd') }}
           </p>
           <button v-if="canEdit()" class="button danger" un-mt="5" @click="confirmDelete = true">
-            <Trash2 :size="14" />{{ t('common.deleteMonitor') }}
+            <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.deleteMonitor') }}
           </button>
         </aside>
       </div>

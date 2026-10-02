@@ -1,5 +1,16 @@
-import { defineConfig, presetAttributify, presetWind4 } from 'unocss'
+import { defineConfig, presetAttributify, presetIcons, presetWind4 } from 'unocss'
 
 export default defineConfig({
-  presets: [presetWind4(), presetAttributify({ prefix: 'un-', prefixedOnly: true })],
+  presets: [
+    presetWind4(),
+    presetAttributify({ prefix: 'un-', prefixedOnly: true }),
+    presetIcons({
+      extraProperties: {
+        'display': 'inline-block',
+        'vertical-align': 'middle',
+        'flex-shrink': '0',
+      },
+      warn: true,
+    }),
+  ],
 })

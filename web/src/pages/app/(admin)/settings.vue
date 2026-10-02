@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Settings as OrganizationSettings } from '../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { Save } from '@lucide/vue'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -198,7 +197,7 @@ async function saveProfile() {
               </div>
               <div class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('settings.savePreferences') }}
+                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.savePreferences') }}
                 </button>
               </div>
             </div>
@@ -239,7 +238,7 @@ async function saveProfile() {
               </div>
               <div v-if="isAdmin()" class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('settings.saveOrganization') }}
+                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.saveOrganization') }}
                 </button>
               </div>
             </div>
@@ -287,7 +286,7 @@ async function saveProfile() {
               </p>
               <div class="form-actions">
                 <button class="button primary" :disabled="saving">
-                  <Save :size="14" />{{ t('settings.saveRetention') }}
+                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.saveRetention') }}
                 </button>
               </div>
             </div>

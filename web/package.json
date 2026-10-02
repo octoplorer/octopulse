@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@ark-ui/vue": "5.39.2",
-    "@lucide/vue": "1.49.0",
     "@pinia/colada": "1.4.6",
     "@unhead/vue": "3.4.2",
     "@vueuse/core": "15.0.0",
@@ -31,6 +30,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "9.5.1",
     "@hey-api/openapi-ts": "0.99.0",
+    "@iconify-json/lucide": "1.2.138",
     "@types/node": "24.10.1",
     "@vitejs/plugin-vue": "6.0.9",
     "eslint": "10.11.0",

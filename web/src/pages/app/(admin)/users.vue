@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { User } from '../../../lib/types'
-import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -126,7 +125,7 @@ function cancel() {
     :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')"
   >
     <button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('common.addMember') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMember') }}
     </button>
   </PageHeader>
   <section class="card">
@@ -161,14 +160,14 @@ function cancel() {
               <td>
                 <div v-if="isAdmin()" un-flex="~ gap-2">
                   <button class="icon-button" :aria-label="t('common.edit')" @click="edit(user)">
-                    <Pencil :size="14" />
+                    <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :disabled="user.id === currentUser?.id"
                     :aria-label="t('common.delete')"
                     @click="confirmDelete(user)"
                   >
-                    <Trash2 :size="14" />
+                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </div>
               </td>

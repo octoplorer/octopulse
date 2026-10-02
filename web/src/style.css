@@ -189,9 +189,6 @@ code {
   color: var(--accent);
   font-weight: 700;
 }
-.nav-link svg {
-  flex-shrink: 0;
-}
 .sidebar-footer {
   margin-top: auto;
   border-top: 1px solid var(--border);

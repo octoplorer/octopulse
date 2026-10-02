@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Dialog } from '@ark-ui/vue/dialog'
-import { X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { dark } from '../composables/preferences'
 
@@ -31,7 +30,7 @@ const open = defineModel<boolean>('open', { default: false })
               </Dialog.Description>
             </div>
             <Dialog.CloseTrigger class="icon-button" :aria-label="t('modal.closeDialog')">
-              <X :size="20" />
+              <span class="i-lucide-x" un-w="20px" un-h="20px" aria-hidden="true" />
             </Dialog.CloseTrigger>
           </div>
           <div class="modal-body">

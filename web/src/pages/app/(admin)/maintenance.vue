@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Maintenance, Monitor, Page } from '../../../lib/types'
-import { CalendarClock, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -134,7 +133,7 @@ function confirmDelete(value: Maintenance) {
     :description="t('maintenance.plannedWorkKeepsCollectionRunningExcludesDurationAnd')"
   >
     <button v-if="canEdit()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('common.scheduleMaintenance') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.scheduleMaintenance') }}
     </button>
   </PageHeader>
   <section class="card">
@@ -158,7 +157,7 @@ function confirmDelete(value: Maintenance) {
           <tbody>
             <tr v-for="window in query.data.value.items" :key="window.id">
               <td>
-                <span class="monitor-name" un-flex="~ items-center gap-2"><CalendarClock :size="15" />{{ window.name }}</span><span class="monitor-sub">{{ window.description }}</span>
+                <span class="monitor-name" un-flex="~ items-center gap-2"><span class="i-lucide-calendar-clock" un-w="15px" un-h="15px" aria-hidden="true" />{{ window.name }}</span><span class="monitor-sub">{{ window.description }}</span>
               </td>
               <td class="muted" un-text="10px">
                 {{ formatDate(window.startsAt) }}<br>{{ formatDate(window.endsAt) }}
@@ -178,13 +177,13 @@ function confirmDelete(value: Maintenance) {
               <td>
                 <div v-if="canEdit()" un-flex="~ gap-1">
                   <button class="icon-button" :aria-label="t('common.edit')" @click="edit(window)">
-                    <Pencil :size="14" />
+                    <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :aria-label="t('common.delete')"
                     @click="confirmDelete(window)"
                   >
-                    <Trash2 :size="14" />
+                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </div>
               </td>

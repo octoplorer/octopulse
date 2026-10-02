@@ -1,17 +1,5 @@
 <script setup lang="ts">
 import type { Monitor, Page, PublicPage, Settings } from '../lib/types'
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowUp,
-  ExternalLink,
-  Plus,
-  Save,
-  Send,
-  Trash2,
-  Upload,
-  X,
-} from '@lucide/vue'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -328,12 +316,12 @@ async function remove() {
     :description="t('pageEditor.customizeEachPageIndependentlySaveADraftThen')"
   >
     <RouterLink to="/app/pages" class="button ghost">
-      <ArrowLeft :size="14" />{{ t('pageEditor.allPages') }}
+      <span class="i-lucide-arrow-left" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.allPages') }}
     </RouterLink><template v-if="canEdit()">
       <button class="button" :disabled="saving" @click="save()">
-        <Save :size="14" />{{ t('common.saveDraft') }}
+        <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
       </button><button class="button primary" :disabled="saving" @click="save(true)">
-        <Send :size="14" />{{ t('pageEditor.publishPage') }}
+        <span class="i-lucide-send" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.publishPage') }}
       </button>
     </template>
   </PageHeader><AsyncState :pending="loading">
@@ -385,7 +373,7 @@ async function remove() {
                 class="button small ghost"
                 target="_blank"
                 rel="noopener"
-              ><ExternalLink :size="12" />{{ t('pageEditor.visitPublicPage') }}</a>
+              ><span class="i-lucide-external-link" un-w="12px" un-h="12px" aria-hidden="true" />{{ t('pageEditor.visitPublicPage') }}</a>
             </p>
           </div>
           <div class="form-section">
@@ -404,7 +392,7 @@ async function remove() {
                     v-model="form.draft.logoUrl"
                     :disabled="!canEdit()"
                     :placeholder="t('pageEditor.logoPlaceholder')"
-                  ><label v-if="canEdit()" class="button"><Upload :size="14" />{{ t('pageEditor.upload')
+                  ><label v-if="canEdit()" class="button"><span class="i-lucide-upload" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.upload')
                   }}<input
                     type="file"
                     accept="image/png,image/jpeg,image/gif"
@@ -460,7 +448,7 @@ async function remove() {
                     :aria-label="t('pageEditor.removeLink')"
                     @click="form.draft.links.splice(index, 1)"
                   >
-                    <X :size="14" />
+                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </div>
                 <button
@@ -469,7 +457,7 @@ async function remove() {
                   un-mt="2"
                   @click="form.draft.links.push({ label: '', url: '' })"
                 >
-                  <Plus :size="13" />{{ t('pageEditor.addLink') }}
+                  <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.addLink') }}
                 </button>
               </div>
             </div>
@@ -493,20 +481,20 @@ async function remove() {
                     :aria-label="t('pageEditor.moveGroupUp')"
                     @click="move(form.draft.groups, index, -1)"
                   >
-                    <ArrowUp :size="13" />
+                    <span class="i-lucide-arrow-up" un-w="13px" un-h="13px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :disabled="index === form.draft.groups.length - 1"
                     :aria-label="t('pageEditor.moveGroupDown')"
                     @click="move(form.draft.groups, index, 1)"
                   >
-                    <ArrowDown :size="13" />
+                    <span class="i-lucide-arrow-down" un-w="13px" un-h="13px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :aria-label="t('pageEditor.removeGroup')"
                     @click="form.draft.groups.splice(index, 1)"
                   >
-                    <X :size="14" />
+                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </template>
               </div>
@@ -540,20 +528,20 @@ async function remove() {
                     :aria-label="t('pageEditor.moveServiceUp')"
                     @click="move(group.monitors, mIndex, -1)"
                   >
-                    <ArrowUp :size="13" />
+                    <span class="i-lucide-arrow-up" un-w="13px" un-h="13px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :disabled="mIndex === group.monitors.length - 1"
                     :aria-label="t('pageEditor.moveServiceDown')"
                     @click="move(group.monitors, mIndex, 1)"
                   >
-                    <ArrowDown :size="13" />
+                    <span class="i-lucide-arrow-down" un-w="13px" un-h="13px" aria-hidden="true" />
                   </button><button
                     class="icon-button"
                     :aria-label="t('pageEditor.removeService')"
                     @click="group.monitors.splice(mIndex, 1)"
                   >
-                    <X :size="14" />
+                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
                   </button>
                 </template>
               </div>
@@ -566,7 +554,7 @@ async function remove() {
                     {{ monitor.name }} · {{ monitor.type }}
                   </option>
                 </select><button class="button small" @click="addMonitor(group.id)">
-                  <Plus :size="13" />{{ t('pageEditor.add') }}
+                  <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.add') }}
                 </button>
               </div>
             </div>
@@ -582,7 +570,7 @@ async function remove() {
                 })
               "
             >
-              <Plus :size="13" />{{ t('pageEditor.addGroup') }}
+              <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.addGroup') }}
             </button>
           </div>
         </section>
@@ -593,9 +581,9 @@ async function remove() {
             un-mr="auto"
             @click="deleteOpen = true"
           >
-            <Trash2 :size="13" />{{ t('pageEditor.deletePage') }}
+            <span class="i-lucide-trash-2" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.deletePage') }}
           </button><button v-if="canEdit()" class="button primary" :disabled="saving" @click="save()">
-            <Save :size="14" />{{ t('common.saveDraft') }}
+            <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
           </button>
         </div>
       </div>

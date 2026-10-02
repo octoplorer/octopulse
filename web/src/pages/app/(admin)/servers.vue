@@ -12,7 +12,6 @@ import type {
   Secret,
 } from '../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { ArrowUpRight, RefreshCw, Save, Server, Settings } from '@lucide/vue'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { useIntervalFn } from '@vueuse/core'
 import { reactive, ref } from 'vue'
@@ -168,13 +167,13 @@ useIntervalFn(() => query.refetch(), 30000)
     :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')"
   >
     <button class="button" @click="query.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
+      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
     </button><button v-if="isAdmin()" class="button primary" @click="configure">
-      <Settings :size="14" />{{ t('servers.beszelConnection') }}
+      <span class="i-lucide-settings" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('servers.beszelConnection') }}
     </button>
   </PageHeader>
   <div class="alert-strip">
-    <Server :size="16" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
+    <span class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
   </div>
@@ -195,7 +194,7 @@ useIntervalFn(() => query.refetch(), 30000)
       <article v-for="server in query.data.value.items" :key="server.id" class="card server-card">
         <div un-flex="~ items-center justify-between gap-3">
           <div un-flex="~ items-center gap-3">
-            <span class="monitor-type-icon"><Server :size="17" /></span>
+            <span class="monitor-type-icon"><span class="i-lucide-server" un-w="17px" un-h="17px" aria-hidden="true" /></span>
             <div>
               <h2>{{ server.name }}</h2>
               <p class="muted" un-text="10px">
@@ -234,7 +233,7 @@ useIntervalFn(() => query.refetch(), 30000)
         </div>
         <div class="section-divider" />
         <button class="button ghost" un-p="0!" @click="detail(server)">
-          {{ t('servers.historyContainers') }}<ArrowUpRight :size="14" />
+          {{ t('servers.historyContainers') }}<span class="i-lucide-arrow-up-right" un-w="14px" un-h="14px" aria-hidden="true" />
         </button>
       </article>
     </div>
@@ -272,7 +271,7 @@ useIntervalFn(() => query.refetch(), 30000)
       <button class="button" @click="configOpen = false">
         {{ t('common.cancel') }}
       </button><button class="button primary" form="beszel-form" :disabled="saving">
-        <Save :size="14" />{{ t('servers.saveConnection') }}
+        <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('servers.saveConnection') }}
       </button>
     </template>
   </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>

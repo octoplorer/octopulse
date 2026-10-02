@@ -2,7 +2,6 @@
 import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Audit } from '../../../lib/types'
-import { RefreshCw, Search } from '@lucide/vue'
 import { useQuery } from '@pinia/colada'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -39,13 +38,13 @@ const items = computed(
     :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')"
   >
     <button class="button" @click="query.refetch()">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
+      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
     </button>
   </PageHeader>
   <section class="card">
     <div class="filter-bar">
       <div class="search-box">
-        <Search :size="16" /><input
+        <span class="i-lucide-search" un-w="16px" un-h="16px" aria-hidden="true" /><input
           v-model="search"
           :placeholder="t('audit.searchActorActionOrResource')"
           :aria-label="t('audit.searchAuditLog')"

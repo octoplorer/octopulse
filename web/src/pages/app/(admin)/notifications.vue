@@ -3,7 +3,6 @@ import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Channel, Delivery, Monitor, Secret } from '../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { Bell, Pencil, Plus, RefreshCw, Send, Trash2 } from '@lucide/vue'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -139,9 +138,9 @@ function refresh() {
     :description="t('notifications.connectChannelsThroughShoutrrrAndKeepEveryDelivery')"
   >
     <button class="button" @click="refresh">
-      <RefreshCw :size="14" />{{ t('common.refresh') }}
+      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
     </button><button v-if="isAdmin()" class="button primary" @click="edit()">
-      <Plus :size="15" />{{ t('notifications.addChannel') }}
+      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('notifications.addChannel') }}
     </button>
   </PageHeader>
   <section class="card">
@@ -187,7 +186,7 @@ function refresh() {
               <tbody>
                 <tr v-for="channel in query.data.value.items" :key="channel.id">
                   <td>
-                    <span class="monitor-name" un-flex="~ items-center gap-2"><Bell :size="15" />{{ channel.name }}</span>
+                    <span class="monitor-name" un-flex="~ items-center gap-2"><span class="i-lucide-bell" un-w="15px" un-h="15px" aria-hidden="true" />{{ channel.name }}</span>
                   </td>
                   <td class="muted">
                     {{
@@ -210,19 +209,19 @@ function refresh() {
                         :disabled="testing === channel.id || !channel.enabled"
                         @click="test(channel)"
                       >
-                        <Send :size="12" />{{ t('notifications.test') }}
+                        <span class="i-lucide-send" un-w="12px" un-h="12px" aria-hidden="true" />{{ t('notifications.test') }}
                       </button><button
                         class="icon-button"
                         :aria-label="t('common.edit')"
                         @click="edit(channel)"
                       >
-                        <Pencil :size="14" />
+                        <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />
                       </button><button
                         class="icon-button"
                         :aria-label="t('common.delete')"
                         @click="confirmDelete(channel)"
                       >
-                        <Trash2 :size="14" />
+                        <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
                       </button>
                     </div>
                   </td>
