@@ -4,14 +4,15 @@ import type { ErrorModel } from '../../../../../client/types.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery } from '@pinia/colada'
-import { useClipboard, useIntervalFn } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { useClipboard } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   checkMonitorMutation,
   deleteMonitorMutation,
   getMonitorHistoryQuery,
+  getMonitorHistoryQueryKey,
   getMonitorQuery,
   rotateHeartbeatMutation,
   updateMonitorMutation,
@@ -24,6 +25,7 @@ import Sparkline from '../../../../../components/Sparkline.vue'
 import StateBadge from '../../../../../components/StateBadge.vue'
 import { canEdit } from '../../../../../composables/api'
 import { notify } from '../../../../../composables/notices'
+import { usePollingEnabled } from '../../../../../composables/polling'
 import { duration, formatDate, formatPercent } from '../../../../../composables/preferences'
 import { errorText } from '../../../../../lib/errors'
 import { targetOf } from '../../../../../lib/monitor'
@@ -39,28 +41,36 @@ const deleteMonitor = useMutation(deleteMonitorMutation())
 
 const route = useRoute('/app/(admin)/monitors/[id]/')
 const router = useRouter()
+const pollingEnabled = usePollingEnabled()
 const query = useQuery(
   () =>
     ({
       ...getMonitorQuery({ path: { id: route.params.id } }),
       staleTime: 5000,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
     }) as DefineQueryOptions<Monitor, ErrorModel>,
 )
 const period = ref('24h')
-const historyTo = ref(Date.now())
-const historyWindow = computed(() => ({
-  from: historyTo.value - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
-  to: historyTo.value,
-}))
 const history = useQuery(
-  () =>
-    ({
-      ...getMonitorHistoryQuery({
-        path: { id: route.params.id },
-        query: historyWindow.value,
-      }),
+  () => {
+    const id = route.params.id
+    const days = period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1
+    return {
+      // Cache the relative range; compute its absolute window for each request.
+      key: [...getMonitorHistoryQueryKey({ path: { id } }), { period: period.value }],
+      query: (context) => {
+        const to = Date.now()
+        return getMonitorHistoryQuery({
+          path: { id },
+          query: { from: to - days * 86400000, to },
+        }).query(context)
+      },
       staleTime: 5000,
-    }) as DefineQueryOptions<MonitorHistory, ErrorModel>,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
+    } as DefineQueryOptions<MonitorHistory, ErrorModel>
+  },
 )
 const busy = ref(false)
 const confirmDelete = ref(false)
@@ -72,17 +82,9 @@ const tab = ref('history')
 const { copy, copied } = useClipboard()
 const monitor = computed(() => query.data.value)
 const availability = computed(() => history.data.value?.availability)
-watch([period, () => route.params.id], () => {
-  historyTo.value = Date.now()
-})
 function refreshHistory() {
-  historyTo.value = Date.now()
-  return history.refresh()
+  return history.refetch()
 }
-useIntervalFn(() => {
-  query.refetch()
-  refreshHistory()
-}, 30000)
 async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
   if (!monitor.value)
     return

@@ -1,4 +1,5 @@
 import { PiniaColada, useQueryCache } from '@pinia/colada'
+import { PiniaColadaAutoRefetch } from '@pinia/colada-plugin-auto-refetch'
 import { createHead } from '@unhead/vue/client'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
@@ -13,6 +14,7 @@ const app = createApp(App)
   .use(i18n)
   .use(createPinia())
   .use(PiniaColada, {
+    plugins: [PiniaColadaAutoRefetch()],
     mutationOptions: {
       onSuccess: invalidateActiveQueries,
     },

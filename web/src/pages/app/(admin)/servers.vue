@@ -13,7 +13,6 @@ import type {
 } from '../../../lib/types'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
-import { useIntervalFn } from '@vueuse/core'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -34,6 +33,7 @@ import Sparkline from '../../../components/Sparkline.vue'
 import Toggle from '../../../components/Toggle.vue'
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
+import { usePollingEnabled } from '../../../composables/polling'
 import { duration, formatDate } from '../../../composables/preferences'
 import { errorText } from '../../../lib/errors'
 
@@ -43,10 +43,16 @@ definePage({ meta: { title: 'navigation.servers' } })
 
 const updateConfig = useMutation(updateBeszelConfigMutation())
 const queryCache = useQueryCache()
-const query = useQuery({
-  ...listBeszelSystemsQuery(),
-  staleTime: 5000,
-} as DefineQueryOptions<BeszelSystems, ErrorModel>)
+const pollingEnabled = usePollingEnabled()
+const query = useQuery(
+  () =>
+    ({
+      ...listBeszelSystemsQuery(),
+      staleTime: 5000,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
+    }) as DefineQueryOptions<BeszelSystems, ErrorModel>,
+)
 const secrets = useQuery({
   ...listSecretsQuery(),
   staleTime: 10000,
@@ -158,7 +164,6 @@ function percentage(value: number | undefined) {
         maximumFractionDigits: 1,
       })
 }
-useIntervalFn(() => query.refetch(), 30000)
 </script>
 
 <template>

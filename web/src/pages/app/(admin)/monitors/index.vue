@@ -3,7 +3,6 @@ import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../../client/types.gen'
 import type { Monitor } from '../../../../lib/types'
 import { useQuery } from '@pinia/colada'
-import { useIntervalFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { listMonitorsQuery } from '../../../../client/@pinia/colada.gen'
@@ -12,6 +11,7 @@ import EmptyState from '../../../../components/EmptyState.vue'
 import PageHeader from '../../../../components/PageHeader.vue'
 import StateBadge from '../../../../components/StateBadge.vue'
 import { canEdit } from '../../../../composables/api'
+import { usePollingEnabled } from '../../../../composables/polling'
 import { formatDate } from '../../../../composables/preferences'
 import { monitorTypes, targetOf } from '../../../../lib/monitor'
 
@@ -19,10 +19,16 @@ const { t, locale } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'common.monitors' } })
 
-const query = useQuery({
-  ...listMonitorsQuery(),
-  staleTime: 10000,
-} as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>)
+const pollingEnabled = usePollingEnabled()
+const query = useQuery(
+  () =>
+    ({
+      ...listMonitorsQuery(),
+      staleTime: 10000,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
+    }) as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>,
+)
 const search = ref('')
 const state = ref('all')
 const type = ref('all')
@@ -41,7 +47,6 @@ const filtered = computed(() =>
         && (type.value === 'all' || m.type === type.value),
   ),
 )
-useIntervalFn(() => query.refetch(), 30000)
 </script>
 
 <template>

@@ -3,7 +3,6 @@ import type { DefineQueryOptions } from '@pinia/colada'
 import type { ErrorModel } from '../../../client/types.gen'
 import type { Incident, Maintenance, Monitor, Page } from '../../../lib/types'
 import { useQuery } from '@pinia/colada'
-import { useIntervalFn } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -17,6 +16,7 @@ import EmptyState from '../../../components/EmptyState.vue'
 import PageHeader from '../../../components/PageHeader.vue'
 import StateBadge from '../../../components/StateBadge.vue'
 import { canEdit } from '../../../composables/api'
+import { usePollingEnabled } from '../../../composables/polling'
 import { formatDate, statusLabel } from '../../../composables/preferences'
 import { targetOf } from '../../../lib/monitor'
 import { publishedEntry } from '../../../lib/pages'
@@ -25,10 +25,16 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.overview' } })
 
-const monitors = useQuery({
-  ...listMonitorsQuery(),
-  staleTime: 10000,
-} as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>)
+const pollingEnabled = usePollingEnabled()
+const monitors = useQuery(
+  () =>
+    ({
+      ...listMonitorsQuery(),
+      staleTime: 10000,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
+    }) as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>,
+)
 const incidents = useQuery({
   ...listIncidentsQuery(),
   staleTime: 10000,
@@ -66,7 +72,6 @@ const nextMaintenance = computed(
       .sort((a, b) => a.startsAt - b.startsAt)
       .slice(0, 3) || [],
 )
-useIntervalFn(() => monitors.refetch(), 30000)
 </script>
 
 <template>

@@ -4,7 +4,6 @@ import type { ErrorModel } from '../../client/types.gen'
 import type { PublicPage } from '../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { useHead } from '@unhead/vue'
-import { useIntervalFn } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -12,9 +11,11 @@ import { useRoute } from 'vue-router'
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
 import AsyncState from '../../components/AsyncState.vue'
 import StatusPage from '../../components/StatusPage.vue'
+import { usePollingEnabled } from '../../composables/polling'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute('/[[slug]]/[[...rest]]+')
+const pollingEnabled = usePollingEnabled()
 const isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents')
 const query = useQuery(
   () =>
@@ -23,6 +24,8 @@ const query = useQuery(
         ? resolvePublicPageQuery({ query: { host: location.hostname } })
         : getPublicPageQuery({ path: { slug: String(route.params.slug) } })),
       staleTime: 5000,
+      enabled: pollingEnabled.value,
+      autoRefetch: 30000,
     }) as DefineQueryOptions<PublicPage, ErrorModel>,
 )
 const rest = computed(() =>
@@ -35,7 +38,6 @@ const incidentId = computed(() =>
       ? rest.value.split('/')[1]
       : undefined,
 )
-useIntervalFn(() => query.refetch(), 30000)
 useHead(() => {
   const config = query.data.value?.config
   return {
