@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/octoplorer/octopulse/internal/domain"
 	"github.com/octoplorer/octopulse/internal/probe"
 	"github.com/octoplorer/octopulse/internal/store"
+	"github.com/octoplorer/octopulse/internal/testutil"
 )
 
 type harness struct {
@@ -24,7 +24,7 @@ type harness struct {
 
 func newHarness(t *testing.T, m domain.Monitor) *harness {
 	t.Helper()
-	s, err := store.Open(context.Background(), store.Config{Driver: "sqlite", DSN: filepath.Join(t.TempDir(), "engine.db")})
+	s, err := store.Open(context.Background(), testutil.Database(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestNoOverlapPauseAndObsoleteConfigurationRejection(t *testing.T) {
 	}
 }
 
-func TestParentDeadlineBoundsRetryWaitAndExplicitCancellationDiscardsObservation(t *testing.T) {
+func TestStandaloneParentDeadlineBoundsRetryWaitAndCancellationDiscardsObservation(t *testing.T) {
 	m := activeHTTP()
 	m.RetryDelaySeconds = 5
 	h := newHarness(t, m)
@@ -250,6 +250,9 @@ func TestParentDeadlineBoundsRetryWaitAndExplicitCancellationDiscardsObservation
 	}
 	if h.state(t).State != domain.StateDown {
 		t.Fatal("failed attempt must confirm the round when the remaining retry budget expires")
+	}
+	if err := h.s.Close(); err != nil {
+		t.Fatal(err)
 	}
 	h2 := newHarness(t, activeHTTP())
 	began := make(chan struct{})

@@ -84,6 +84,15 @@ func (e *Engine) commitOnce(ctx context.Context, record store.Monitor, m domain.
 			next.HeartbeatAt = round.FinishedAt
 			meta.HasHeartbeatReport = true
 			meta.HeartbeatSuccess = round.Success
+			var report struct {
+				Description string `json:"description"`
+			}
+			if len(round.Attempts) > 0 {
+				if err := json.Unmarshal(round.Attempts[0].Detail, &report); err != nil {
+					return fmt.Errorf("invalid heartbeat report detail: %w", err)
+				}
+			}
+			meta.HeartbeatDescription = report.Description
 		}
 		if m.Type == domain.MonitorCertificate {
 			if result.Certificate == nil {

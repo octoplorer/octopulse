@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/octoplorer/octopulse/internal/domain"
 	"github.com/octoplorer/octopulse/internal/probe"
@@ -12,8 +13,8 @@ import (
 )
 
 func (e *Engine) Heartbeat(ctx context.Context, id string, success bool, description string) error {
-	if len(description) > 1024 {
-		return errors.New("heartbeat description exceeds 1024 bytes")
+	if utf8.RuneCountInString(description) > 1000 {
+		return errors.New("heartbeat description exceeds 1000 characters")
 	}
 	description = strings.TrimSpace(description)
 	// Reports do not acquire the active-check mutex: an arrival can race an
@@ -54,7 +55,7 @@ func (e *Engine) Heartbeat(ctx context.Context, id string, success bool, descrip
 	return ErrSuperseded
 }
 
-func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m domain.Monitor, runtime store.Runtime) error {
+func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m domain.Monitor, runtime store.Runtime, evaluationEpoch uint64) error {
 	now := e.now()
 	meta := Metadata{}
 	err := e.Store.Get(ctx, "engineMonitor", m.ID, &meta)
@@ -85,7 +86,7 @@ func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m 
 				if err = e.finishUnknownMaintenanceEvaluation(ctx, m.ID); err != nil {
 					return err
 				}
-				e.clearPendingEvaluation(ctx, m.ID)
+				e.clearPendingEvaluation(ctx, m.ID, record.ConfigVersion, evaluationEpoch)
 			}
 			return nil
 		}
@@ -108,7 +109,7 @@ func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m 
 	round := store.Round{ID: domain.ID(), MonitorID: m.ID, ConfigVersion: record.ConfigVersion, Generation: record.Generation, StartedAt: now, FinishedAt: now, Success: success, Attempts: []store.Attempt{{Number: 1, StartedAt: now, FinishedAt: now, Success: success}}}
 	err = e.commit(ctx, record, m, runtime, round, probe.Result{Success: success}, false)
 	if err == nil {
-		e.clearPendingEvaluation(ctx, m.ID)
+		e.clearPendingEvaluation(ctx, m.ID, record.ConfigVersion, evaluationEpoch)
 	}
 	return err
 }

@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	ErrBusy       = errors.New("monitor already has an active check")
-	ErrPaused     = errors.New("monitor is paused")
-	ErrSuperseded = errors.New("check superseded by current configuration")
+	ErrBusy          = errors.New("monitor already has an active check")
+	ErrPaused        = errors.New("monitor is paused")
+	ErrSuperseded    = errors.New("check superseded by current configuration")
+	ErrCheckAccepted = errors.New("caller stopped waiting for an accepted check")
 )
 
 const StatePaused = "paused"
@@ -34,25 +35,27 @@ type schedule struct {
 	enabled           bool
 	maintenance       bool
 	pendingEvaluation bool
+	evaluationEpoch   uint64
 }
 type Engine struct {
 	Store  *store.Store
 	Runner *probe.Runner
 	// Now and Attempt permit deterministic state-machine tests without replacing
 	// production scheduling. Attempt defaults to Runner.Run.
-	Now          func() time.Time
-	Attempt      func(context.Context, domain.Monitor) probe.Result
-	PollInterval time.Duration
-	OnError      func(error)
-	mu           sync.Mutex
-	running      map[string]inFlight
-	schedules    map[string]schedule
-	semaphore    chan struct{}
-	wake         chan struct{}
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
-	started      bool
+	Now             func() time.Time
+	Attempt         func(context.Context, domain.Monitor) probe.Result
+	PollInterval    time.Duration
+	OnError         func(error)
+	mu              sync.Mutex
+	running         map[string]inFlight
+	schedules       map[string]schedule
+	semaphore       chan struct{}
+	wake            chan struct{}
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
+	started         bool
+	evaluationEpoch uint64
 }
 
 type Metadata struct {
@@ -66,6 +69,7 @@ type Metadata struct {
 	PendingRecovery        bool                     `json:"pendingRecovery"`
 	HasHeartbeatReport     bool                     `json:"hasHeartbeatReport"`
 	HeartbeatSuccess       bool                     `json:"heartbeatSuccess"`
+	HeartbeatDescription   string                   `json:"heartbeatDescription"`
 	CertificateFingerprint string                   `json:"certificateFingerprint"`
 	CertificateWarnings    []int                    `json:"certificateWarnings"`
 	Certificate            *probe.CertificateResult `json:"certificate,omitempty"`
@@ -154,6 +158,21 @@ func (e *Engine) Wake() {
 	case e.wake <- struct{}{}:
 	default:
 	}
+}
+
+// NextCheckAt returns the current fixed-cadence plan, in UTC milliseconds.
+// A paused, unplanned or stopped monitor has no scheduled next check.
+func (e *Engine) NextCheckAt(id string) int64 {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.ctx != nil && e.ctx.Err() != nil {
+		return 0
+	}
+	plan, ok := e.schedules[id]
+	if !ok || !plan.enabled {
+		return 0
+	}
+	return plan.next
 }
 
 func (e *Engine) initialize(ctx context.Context) error {
@@ -401,13 +420,16 @@ func (e *Engine) poll(ctx context.Context) error {
 			active.cancel()
 		}
 		if !present || plan.version != record.ConfigVersion || plan.enabled != record.Enabled {
-			plan = schedule{version: record.ConfigVersion, next: now, enabled: record.Enabled, maintenance: activeMaintenance, pendingEvaluation: true}
+			e.evaluationEpoch++
+			plan = schedule{version: record.ConfigVersion, next: now, enabled: record.Enabled, maintenance: activeMaintenance, pendingEvaluation: true, evaluationEpoch: e.evaluationEpoch}
 		}
 		maintenanceEnded := plan.maintenance && !activeMaintenance
 		maintenanceEntered := !plan.maintenance && activeMaintenance
 		plan.maintenance = activeMaintenance
 		if maintenanceEnded {
 			plan.pendingEvaluation = true
+			e.evaluationEpoch++
+			plan.evaluationEpoch = e.evaluationEpoch
 		}
 		if !record.Enabled {
 			e.schedules[m.ID] = plan
@@ -471,7 +493,14 @@ func inMaintenance(raw []json.RawMessage, id string, now int64) bool {
 	return false
 }
 
+// Check accepts one non-overlapping round and waits for its result. Once the
+// engine has started, the round belongs to the engine lifecycle: cancelling the
+// caller stops waiting without shortening a target's configured probe budget.
+// Without Start, the caller supplies the lifetime for standalone execution.
 func (e *Engine) Check(ctx context.Context, id string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	record, err := e.Store.GetMonitor(ctx, id)
 	if err != nil {
 		return err
@@ -483,16 +512,71 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 	if !record.Enabled {
 		return ErrPaused
 	}
-	roundContext, cancel := context.WithTimeout(ctx, time.Duration(m.IntervalSeconds)*time.Second)
-	defer cancel()
 	e.mu.Lock()
+	lifetime := e.ctx
+	managed := lifetime != nil
+	if !managed {
+		lifetime = ctx
+	}
+	if err := lifetime.Err(); err != nil {
+		e.mu.Unlock()
+		return err
+	}
 	if _, ok := e.running[id]; ok {
 		e.mu.Unlock()
 		return ErrBusy
 	}
+	roundContext, cancel := context.WithTimeout(lifetime, time.Duration(m.IntervalSeconds)*time.Second)
+	evaluationEpoch := e.schedules[id].evaluationEpoch
 	e.running[id] = inFlight{cancel: cancel, version: record.ConfigVersion, generation: record.Generation}
+	if managed {
+		// Start's loop keeps the wait group live; registering under the same
+		// mutex as Stop's cancellation prevents a new round after shutdown.
+		e.wg.Add(1)
+	}
 	e.mu.Unlock()
-	defer func() { e.mu.Lock(); delete(e.running, id); e.mu.Unlock() }()
+	run := func() error {
+		defer cancel()
+		defer func() { e.mu.Lock(); delete(e.running, id); e.mu.Unlock() }()
+		return e.checkRound(lifetime, roundContext, record, m, evaluationEpoch)
+	}
+	if !managed {
+		return run()
+	}
+	result := make(chan error, 1)
+	abandoned := make(chan struct{})
+	go func() {
+		defer e.wg.Done()
+		result <- run()
+		select {
+		case <-abandoned:
+			select {
+			case err := <-result:
+				e.report(err)
+			default:
+			}
+		default:
+		}
+	}()
+	select {
+	case err := <-result:
+		return err
+	case <-ctx.Done():
+		// Either this caller drains an already completed result or the tracked
+		// worker drains its later result. Exactly one reports a detached error,
+		// and shutdown never leaves an untracked result-waiting goroutine.
+		close(abandoned)
+		select {
+		case err := <-result:
+			e.report(err)
+		default:
+		}
+		return fmt.Errorf("%w: %w", ErrCheckAccepted, ctx.Err())
+	}
+}
+
+func (e *Engine) checkRound(lifetime, roundContext context.Context, record store.Monitor, m domain.Monitor, evaluationEpoch uint64) error {
+	id := record.ID
 	select {
 	case e.semaphore <- struct{}{}:
 		defer func() { <-e.semaphore }()
@@ -510,7 +594,7 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 	e.running[id] = active
 	e.mu.Unlock()
 	if m.Type == domain.MonitorHeartbeat {
-		return e.evaluateHeartbeat(roundContext, record, m, runtime)
+		return e.evaluateHeartbeat(roundContext, record, m, runtime, evaluationEpoch)
 	}
 	if e.Attempt == nil {
 		return errors.New("probe runner unavailable")
@@ -549,8 +633,8 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 			}
 		}
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+	if lifetime.Err() != nil {
+		return lifetime.Err()
 	}
 	if roundContext.Err() != nil {
 		return ErrSuperseded
@@ -562,18 +646,33 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 	round.LatencyMS = round.FinishedAt - started
 	err = e.commit(roundContext, record, m, runtime, round, result, false)
 	if err == nil {
-		e.clearPendingEvaluation(roundContext, id)
+		e.clearPendingEvaluation(lifetime, id, record.ConfigVersion, evaluationEpoch)
 	}
 	return err
 }
 
-func (e *Engine) clearPendingEvaluation(ctx context.Context, id string) {
+func (e *Engine) clearPendingEvaluation(ctx context.Context, id string, version int64, evaluationEpoch uint64) {
+	e.mu.Lock()
+	plan, present := e.schedules[id]
+	if !present || plan.version != version || plan.evaluationEpoch != evaluationEpoch {
+		e.mu.Unlock()
+		return
+	}
+	if e.ctx != nil {
+		// A successful commit may advance Generation before poll observes it.
+		// Poll can then cancel that round's old generation; committed housekeeping
+		// belongs to the live engine, while version/epoch still protect ownership.
+		ctx = e.ctx
+	}
+	e.mu.Unlock()
 	var meta Metadata
-	if e.Store.Get(ctx, "engineMonitor", id, &meta) == nil && meta.EvaluationAfter == 0 {
+	if e.Store.Get(ctx, "engineMonitor", id, &meta) == nil && meta.ConfigVersion == version && meta.EvaluationAfter == 0 {
 		e.mu.Lock()
-		plan := e.schedules[id]
-		plan.pendingEvaluation = false
-		e.schedules[id] = plan
+		plan, present := e.schedules[id]
+		if present && plan.version == version && plan.evaluationEpoch == evaluationEpoch {
+			plan.pendingEvaluation = false
+			e.schedules[id] = plan
+		}
 		e.mu.Unlock()
 	}
 }
