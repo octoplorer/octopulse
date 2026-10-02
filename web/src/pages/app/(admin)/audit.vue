@@ -2,8 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 import { Search, RefreshCw } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
+import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import { listAuditQuery } from '../../../client/@pinia/colada.gen'
+import type { ErrorModel } from '../../../client/types.gen'
 import type { Audit } from '../../../lib/types'
 import { formatDate } from '../../../lib/preferences'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -14,7 +15,10 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.auditLog', roles: ['admin'] } })
 
-const query = useCollection<Audit>('audit', listAuditQuery()),
+const query = useQuery({
+    ...listAuditQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Audit[] }, ErrorModel>),
   search = ref(''),
   items = computed(
     () =>
@@ -31,7 +35,7 @@ const query = useCollection<Audit>('audit', listAuditQuery()),
   <PageHeader
     :title="t('navigation.auditLog')"
     :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')"
-    ><button class="button" @click="query.refresh()">
+    ><button class="button" @click="query.refetch()">
       <RefreshCw :size="14" />{{ t('common.refresh') }}
     </button></PageHeader
   >
@@ -48,7 +52,7 @@ const query = useCollection<Audit>('audit', listAuditQuery()),
         t('counts.records', { count: items.length }, items.length)
       }}</span>
     </div>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState v-if="!items.length" :title="t('audit.noMatchingRecords')" />
       <div v-else class="table-wrap">
         <table class="data-table">

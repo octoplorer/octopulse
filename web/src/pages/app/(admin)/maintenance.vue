@@ -2,14 +2,17 @@
 import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, Pencil, Trash2, CalendarClock } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
 import type { Maintenance, Monitor, Page } from '../../../lib/types'
 import { canEdit } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
 import {
   listMaintenanceQuery,
   listMonitorsQuery,
   listPagesQuery,
+  createMaintenanceMutation,
+  updateMaintenanceMutation,
+  deleteMaintenanceMutation,
 } from '../../../client/@pinia/colada.gen'
 import { formatDate, timezone, datetimeInput, datetimeMilliseconds } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
@@ -24,9 +27,22 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.maintenance' } })
 
-const query = useCollection<Maintenance>('maintenance', listMaintenanceQuery()),
-  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
-  pages = useCollection<Page>('pages', listPagesQuery()),
+const createMaintenance = useMutation(createMaintenanceMutation()),
+  updateMaintenance = useMutation(updateMaintenanceMutation()),
+  deleteMaintenance = useMutation(deleteMaintenanceMutation())
+
+const query = useQuery({ ...listMaintenanceQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Maintenance[] },
+    ErrorModel
+  >),
+  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Monitor[] },
+    ErrorModel
+  >),
+  pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Page[] },
+    ErrorModel
+  >),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -63,8 +79,8 @@ async function save() {
       startsAt: datetimeMilliseconds(start.value, form.timezone),
       endsAt: datetimeMilliseconds(end.value, form.timezone),
     }
-    if (form.id) await sdk.updateMaintenance({ path: { id: form.id }, body, throwOnError: true })
-    else await sdk.createMaintenance({ body, throwOnError: true })
+    if (form.id) await updateMaintenance.mutateAsync({ path: { id: form.id }, body })
+    else await createMaintenance.mutateAsync({ body })
     open.value = false
     notify(t('maintenance.maintenanceSaved'))
     await query.refresh()
@@ -77,7 +93,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await sdk.deleteMaintenance({ path: { id: deleteTarget.value.id }, throwOnError: true })
+    await deleteMaintenance.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     notify(t('maintenance.maintenanceDeleted'))
     await query.refresh()
@@ -106,7 +122,7 @@ function confirmDelete(value: Maintenance) {
     </button></PageHeader
   >
   <section class="card">
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState
         v-if="!query.data.value?.items.length"
         :title="t('maintenance.noScheduledMaintenance')"

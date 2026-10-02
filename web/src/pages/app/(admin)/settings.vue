@@ -3,9 +3,14 @@ import { useI18n } from 'vue-i18n'
 import { reactive, ref, onMounted } from 'vue'
 import { Save } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { response, isAdmin, currentUser } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
-import type { Settings as OrganizationSettings, User } from '../../../lib/types'
+import { useMutation, useQueryCache } from '@pinia/colada'
+import { isAdmin, currentUser } from '../../../lib/api'
+import {
+  getSettingsQuery,
+  updateSettingsMutation,
+  updateProfileMutation,
+} from '../../../client/@pinia/colada.gen'
+import type { Settings as OrganizationSettings } from '../../../lib/types'
 import { languageOptions } from '../../../lib/i18n'
 import { theme, timezone } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
@@ -16,6 +21,9 @@ const { t, locale } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'common.settings' } })
 
+const updateSettings = useMutation(updateSettingsMutation())
+const updateProfile = useMutation(updateProfileMutation())
+const queryCache = useQueryCache()
 const loading = ref(true),
   saving = ref(false),
   error = ref(''),
@@ -37,10 +45,11 @@ const loading = ref(true),
   })
 onMounted(async () => {
   try {
-    Object.assign(
-      form,
-      await response<OrganizationSettings>(sdk.getSettings({ throwOnError: true })),
+    const state = await queryCache.refresh(
+      queryCache.ensure({ ...getSettingsQuery(), staleTime: 0 }),
     )
+    if (state.status !== 'success') throw state.error || new Error(t('errors.requestFailed'))
+    Object.assign(form, structuredClone(state.data))
     domains.value = form.allowedDomains.join('\n')
   } catch (e) {
     error.value = errorText(e)
@@ -56,10 +65,7 @@ async function saveOrganization() {
       .split('\n')
       .map((x) => x.trim())
       .filter(Boolean)
-    Object.assign(
-      form,
-      await response<OrganizationSettings>(sdk.updateSettings({ body: form, throwOnError: true })),
-    )
+    Object.assign(form, structuredClone(await updateSettings.mutateAsync({ body: form })))
     notify(t('settings.organizationSettingsSaved'))
   } catch (e) {
     error.value = errorText(e)
@@ -71,19 +77,16 @@ async function saveProfile() {
   saving.value = true
   error.value = ''
   try {
-    currentUser.value = await response<User>(
-      sdk.updateProfile({
-        body: {
-          name: profile.name,
-          locale: profile.locale,
-          timezone: profile.timezone,
-          ...(profile.password
-            ? { password: profile.password, oldPassword: profile.oldPassword }
-            : {}),
-        },
-        throwOnError: true,
-      }),
-    )
+    currentUser.value = await updateProfile.mutateAsync({
+      body: {
+        name: profile.name,
+        locale: profile.locale,
+        timezone: profile.timezone,
+        ...(profile.password
+          ? { password: profile.password, oldPassword: profile.oldPassword }
+          : {}),
+      },
+    })
     locale.value = profile.locale
     timezone.value = profile.timezone
     profile.password = ''

@@ -14,8 +14,19 @@ import {
   Trash2,
   ExternalLink,
 } from '@lucide/vue'
-import { response, canEdit } from '../lib/api'
-import * as sdk from '../client/sdk.gen'
+import { useMutation, useQueryCache } from '@pinia/colada'
+import { canEdit } from '../lib/api'
+import {
+  createPagesMutation,
+  deletePagesMutation,
+  getPagesQuery,
+  getSettingsQuery,
+  listMonitorsQuery,
+  previewPageQuery,
+  publishPageMutation,
+  updatePagesMutation,
+  uploadAssetMutation,
+} from '../client/@pinia/colada.gen'
 import type { Page, Monitor, Settings, PublicPage } from '../lib/types'
 import { publishedEntry } from '../lib/pages'
 import { formatDate } from '../lib/preferences'
@@ -27,6 +38,12 @@ import StatusPage from './StatusPage.vue'
 import AsyncState from './AsyncState.vue'
 import Modal from './Modal.vue'
 const { t } = useI18n({ useScope: 'global' })
+const queryCache = useQueryCache()
+const createPage = useMutation(createPagesMutation())
+const updatePage = useMutation(updatePagesMutation())
+const publishPage = useMutation(publishPageMutation())
+const uploadAsset = useMutation(uploadAssetMutation())
+const deletePage = useMutation(deletePagesMutation())
 
 const origin = location.origin
 const newID = () =>
@@ -68,25 +85,31 @@ function replacePage(data: Page) {
   Object.assign(
     form,
     { publishedSlug: undefined, publishedDomain: undefined, published: undefined },
-    data,
+    clone(data),
   )
 }
 async function load() {
   loading.value = true
   try {
     const [m, s] = await Promise.all([
-      response<{ items: Monitor[] }>(sdk.listMonitors({ throwOnError: true })),
-      response<Settings>(sdk.getSettings({ throwOnError: true })),
+      queryCache.refresh(queryCache.ensure({ ...listMonitorsQuery(), staleTime: 0 })),
+      queryCache.refresh(queryCache.ensure({ ...getSettingsQuery(), staleTime: 0 })),
     ])
-    monitors.value = m.items
-    allowedDomains.value = s.allowedDomains || []
+    if (m.status !== 'success') throw m.error || new Error(t('errors.requestFailed'))
+    if (s.status !== 'success') throw s.error || new Error(t('errors.requestFailed'))
+    monitors.value = clone(m.data.items) as Monitor[]
+    allowedDomains.value = clone((s.data as Settings).allowedDomains || [])
     if (editing.value) {
-      replacePage(
-        await response<Page>(sdk.getPages({ path: { id: id.value! }, throwOnError: true })),
+      const page = await queryCache.refresh(
+        queryCache.ensure({ ...getPagesQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
-      savedPreview.value = await response<PublicPage>(
-        sdk.previewPage({ path: { id: id.value! }, throwOnError: true }),
+      if (page.status !== 'success') throw page.error || new Error(t('errors.requestFailed'))
+      replacePage(page.data as Page)
+      const preview = await queryCache.refresh(
+        queryCache.ensure({ ...previewPageQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
+      if (preview.status !== 'success') throw preview.error || new Error(t('errors.requestFailed'))
+      savedPreview.value = clone(preview.data) as PublicPage
     }
   } catch (e) {
     error.value = errorText(e)
@@ -211,20 +234,24 @@ async function save(publish = false) {
     )
       throw new Error(t('pageEditor.logoMustUseHttpsOrAnUploadedAsset'))
     const body = clone(form)
-    const data = await response<Page>(
-      editing.value
-        ? sdk.updatePages({ path: { id: form.id }, body, throwOnError: true })
-        : sdk.createPages({ body, throwOnError: true }),
-    )
+    const data = (await (editing.value
+      ? updatePage.mutateAsync({ path: { id: form.id }, body })
+      : createPage.mutateAsync({ body }))) as Page
     replacePage(data)
     if (publish) {
-      await sdk.publishPage({ path: { id: form.id }, throwOnError: true })
-      replacePage(await response<Page>(sdk.getPages({ path: { id: form.id }, throwOnError: true })))
+      await publishPage.mutateAsync({ path: { id: form.id } })
+      const page = await queryCache.refresh(
+        queryCache.ensure({ ...getPagesQuery({ path: { id: form.id } }), staleTime: 0 }),
+      )
+      if (page.status !== 'success') throw page.error || new Error(t('errors.requestFailed'))
+      replacePage(page.data as Page)
       notify(t('pageEditor.statusPagePublished'))
     } else notify(t('pageEditor.draftSaved'))
-    savedPreview.value = await response<PublicPage>(
-      sdk.previewPage({ path: { id: form.id }, throwOnError: true }),
+    const preview = await queryCache.refresh(
+      queryCache.ensure({ ...previewPageQuery({ path: { id: form.id } }), staleTime: 0 }),
     )
+    if (preview.status !== 'success') throw preview.error || new Error(t('errors.requestFailed'))
+    savedPreview.value = clone(preview.data) as PublicPage
     if (!id.value) await router.replace(`/app/pages/${form.id}`)
   } catch (e) {
     error.value = errorText(e)
@@ -247,12 +274,9 @@ async function uploadLogo(event: Event) {
       reader.readAsDataURL(file)
     })
     form.draft.logoUrl = (
-      await response<{ url: string }>(
-        sdk.uploadAsset({
-          body: { filename: file.name, contentType: file.type, base64 },
-          throwOnError: true,
-        }),
-      )
+      await uploadAsset.mutateAsync({
+        body: { filename: file.name, contentType: file.type, base64 },
+      })
     ).url
     notify(t('pageEditor.logoUploaded'))
   } catch (e) {
@@ -261,7 +285,7 @@ async function uploadLogo(event: Event) {
 }
 async function remove() {
   try {
-    await sdk.deletePages({ path: { id: form.id }, throwOnError: true })
+    await deletePage.mutateAsync({ path: { id: form.id } })
     notify(t('pageEditor.statusPageDeleted'))
     router.push('/app/pages')
   } catch (e) {

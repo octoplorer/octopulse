@@ -22,10 +22,16 @@ import {
   ChevronRight,
 } from '@lucide/vue'
 import { dark, theme, formatDate, statusLabel } from '../../lib/preferences'
-import { currentUser, logout, isAdmin } from '../../lib/api'
+import { currentUser, applySession, isAdmin } from '../../lib/api'
+import { useMutation } from '@pinia/colada'
+import { deleteSessionMutation } from '../../client/@pinia/colada.gen'
 import { useIntervalFn, useMediaQuery, onKeyStroke } from '@vueuse/core'
 import Brand from '../../components/Brand.vue'
 const { t, locale } = useI18n({ useScope: 'global' })
+const deleteSession = useMutation({
+  ...deleteSessionMutation(),
+  onSuccess: () => applySession(null),
+})
 
 const route = useRoute(),
   router = useRouter(),
@@ -57,7 +63,7 @@ const title = computed(() => {
   return value ? t(value) : 'Octopulse'
 })
 async function signout() {
-  await logout()
+  await deleteSession.mutateAsync({})
   router.push('/app/login')
 }
 </script>

@@ -3,15 +3,19 @@ import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, Bell, Send, Pencil, Trash2, RefreshCw } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useCollection } from '../../../lib/data'
 import type { Channel, Secret, Delivery, Monitor } from '../../../lib/types'
 import { isAdmin } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
 import {
   listChannelsQuery,
   listSecretsQuery,
   listDeliveriesQuery,
   listMonitorsQuery,
+  createChannelsMutation,
+  updateChannelsMutation,
+  deleteChannelsMutation,
+  testChannelMutation,
 } from '../../../client/@pinia/colada.gen'
 import { formatDate, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
@@ -27,10 +31,27 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.notifications' } })
 
-const query = useCollection<Channel>('channels', listChannelsQuery()),
-  secrets = useCollection<Secret>('secrets', listSecretsQuery()),
-  deliveries = useCollection<Delivery>('deliveries', listDeliveriesQuery()),
-  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
+const createChannel = useMutation(createChannelsMutation()),
+  updateChannel = useMutation(updateChannelsMutation()),
+  deleteChannel = useMutation(deleteChannelsMutation()),
+  testChannel = useMutation(testChannelMutation())
+
+const query = useQuery({ ...listChannelsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Channel[] },
+    ErrorModel
+  >),
+  secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Secret[] },
+    ErrorModel
+  >),
+  deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Delivery[] },
+    ErrorModel
+  >),
+  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Monitor[] },
+    ErrorModel
+  >),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -56,8 +77,8 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    if (form.id) await sdk.updateChannels({ path: { id: form.id }, body: form, throwOnError: true })
-    else await sdk.createChannels({ body: form, throwOnError: true })
+    if (form.id) await updateChannel.mutateAsync({ path: { id: form.id }, body: form })
+    else await createChannel.mutateAsync({ body: form })
     open.value = false
     await query.refresh()
     notify(t('notifications.channelSaved'))
@@ -70,7 +91,7 @@ async function save() {
 async function test(channel: Channel) {
   testing.value = channel.id
   try {
-    await sdk.testChannel({ path: { id: channel.id }, throwOnError: true })
+    await testChannel.mutateAsync({ path: { id: channel.id } })
     notify(t('notifications.testSubmittedCheckDeliveryHistory'))
   } catch (e) {
     notify(errorText(e), 'error')
@@ -82,7 +103,7 @@ async function test(channel: Channel) {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await sdk.deleteChannels({ path: { id: deleteTarget.value.id }, throwOnError: true })
+    await deleteChannel.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     await query.refresh()
     notify(t('notifications.channelDeleted'))
@@ -95,8 +116,8 @@ function confirmDelete(value: Channel) {
   deleteOpen.value = true
 }
 function refresh() {
-  query.refresh()
-  deliveries.refresh()
+  query.refetch()
+  deliveries.refetch()
 }
 </script>
 <template>
@@ -122,7 +143,7 @@ function refresh() {
         ><AsyncState
           :pending="query.isPending.value"
           :error="query.error.value"
-          @retry="query.refresh()"
+          @retry="query.refetch()"
           ><EmptyState
             v-if="!query.data.value?.items.length"
             :title="t('notifications.connectANotificationChannel')"
@@ -191,7 +212,7 @@ function refresh() {
         ><AsyncState
           :pending="deliveries.isPending.value"
           :error="deliveries.error.value"
-          @retry="deliveries.refresh()"
+          @retry="deliveries.refetch()"
           ><EmptyState
             v-if="!deliveries.data.value?.items.length"
             :title="t('notifications.noDeliveriesYet')"

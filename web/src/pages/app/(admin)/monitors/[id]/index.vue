@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Play,
@@ -17,10 +17,17 @@ import {
   CheckCircle2,
 } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useRecord } from '../../../../../lib/data'
-import { response, canEdit } from '../../../../../lib/api'
-import * as sdk from '../../../../../client/sdk.gen'
-import { getMonitorQuery, getMonitorHistoryQuery } from '../../../../../client/@pinia/colada.gen'
+import { canEdit } from '../../../../../lib/api'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../../../client/types.gen'
+import {
+  getMonitorQuery,
+  getMonitorHistoryQuery,
+  checkMonitorMutation,
+  updateMonitorMutation,
+  rotateHeartbeatMutation,
+  deleteMonitorMutation,
+} from '../../../../../client/@pinia/colada.gen'
 import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
 import { targetOf } from '../../../../../lib/monitor'
 import { formatDate, formatPercent, duration } from '../../../../../lib/preferences'
@@ -36,22 +43,36 @@ const { t, n } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.monitorDetails' } })
 
+const checkMonitor = useMutation(checkMonitorMutation()),
+  updateMonitor = useMutation(updateMonitorMutation()),
+  rotateHeartbeat = useMutation(rotateHeartbeatMutation()),
+  deleteMonitor = useMutation(deleteMonitorMutation())
+
 const route = useRoute('/app/(admin)/monitors/[id]/'),
   router = useRouter(),
-  query = useRecord<Monitor>(
-    () => `monitors/${route.params.id}`,
-    () => getMonitorQuery({ path: { id: route.params.id } }),
+  query = useQuery(
+    () =>
+      ({
+        ...getMonitorQuery({ path: { id: route.params.id } }),
+        staleTime: 5000,
+      }) as DefineQueryOptions<Monitor, ErrorModel>,
   ),
   period = ref('24h'),
-  from = () =>
-    Date.now() - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
-  history = useRecord<MonitorHistory>(
-    () => `monitors/${route.params.id}/history?from=${from()}&to=${Date.now()}`,
+  historyTo = ref(Date.now()),
+  historyWindow = computed(() => ({
+    from:
+      historyTo.value - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
+    to: historyTo.value,
+  })),
+  history = useQuery(
     () =>
-      getMonitorHistoryQuery({
-        path: { id: route.params.id },
-        query: { from: from(), to: Date.now() },
-      }),
+      ({
+        ...getMonitorHistoryQuery({
+          path: { id: route.params.id },
+          query: historyWindow.value,
+        }),
+        staleTime: 5000,
+      }) as DefineQueryOptions<MonitorHistory, ErrorModel>,
   ),
   busy = ref(false),
   confirmDelete = ref(false),
@@ -63,28 +84,32 @@ const route = useRoute('/app/(admin)/monitors/[id]/'),
 const { copy, copied } = useClipboard(),
   monitor = computed(() => query.data.value),
   availability = computed(() => history.data.value?.availability)
+watch([period, () => route.params.id], () => {
+  historyTo.value = Date.now()
+})
+function refreshHistory() {
+  historyTo.value = Date.now()
+  return history.refresh()
+}
 useIntervalFn(() => {
-  query.refresh()
-  history.refresh()
+  query.refetch()
+  refreshHistory()
 }, 30000)
 async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
   if (!monitor.value) return
   busy.value = true
   try {
     if (action === 'check') {
-      await sdk.checkMonitor({ path: { id: monitor.value.id }, throwOnError: true })
+      await checkMonitor.mutateAsync({ path: { id: monitor.value.id } })
       notify(t('monitorDetails.checkRequestAcceptedResultsUpdateWhenTheRound'))
     } else if (action === 'toggle') {
-      await sdk.updateMonitor({
+      await updateMonitor.mutateAsync({
         path: { id: monitor.value.id },
         body: { ...monitor.value, enabled: !monitor.value.enabled },
-        throwOnError: true,
       })
       notify(t('monitorDetails.monitorUpdated'))
     } else if (action === 'rotate') {
-      const data = await response<{ token: string; url: string }>(
-        sdk.rotateHeartbeat({ path: { id: monitor.value.id }, throwOnError: true }),
-      )
+      const data = await rotateHeartbeat.mutateAsync({ path: { id: monitor.value.id } })
       heartbeatToken.value = data.token
       heartbeatUrl.value = new URL(
         data.url || `/api/heartbeat/${monitor.value.id}/${data.token}`,
@@ -92,13 +117,13 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
       ).href
       notify(t('monitorDetails.saveThisTokenItIsShownOnlyOnce'))
     } else {
-      await sdk.deleteMonitor({ path: { id: monitor.value.id }, throwOnError: true })
+      await deleteMonitor.mutateAsync({ path: { id: monitor.value.id } })
       notify(t('monitorDetails.monitorDeleted'))
       router.push('/app/monitors')
       return
     }
     await query.refresh()
-    await history.refresh()
+    await refreshHistory()
   } catch (e) {
     notify(errorText(e), 'error')
   } finally {
@@ -111,7 +136,7 @@ function viewRound(round: Round) {
 }
 </script>
 <template>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
     ><template v-if="monitor"
       ><PageHeader :title="monitor.name" :description="targetOf(monitor)"
         ><RouterLink to="/app/monitors" class="button ghost"
@@ -300,7 +325,7 @@ function viewRound(round: Round) {
               <AsyncState
                 :pending="history.isPending.value"
                 :error="history.error.value"
-                @retry="history.refresh()"
+                @retry="refreshHistory()"
                 ><EmptyState
                   v-if="!history.data.value?.rounds.length"
                   :title="t('monitorDetails.noCheckRecordsYet')"

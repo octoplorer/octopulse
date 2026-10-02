@@ -2,8 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { ref, computed } from 'vue'
 import { Plus, Search, RefreshCw, Globe, Server, ChevronRight } from '@lucide/vue'
-import { useCollection } from '../../../../lib/data'
+import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import { listMonitorsQuery } from '../../../../client/@pinia/colada.gen'
+import type { ErrorModel } from '../../../../client/types.gen'
 import { useIntervalFn } from '@vueuse/core'
 import type { Monitor } from '../../../../lib/types'
 import { targetOf, monitorTypes } from '../../../../lib/monitor'
@@ -18,7 +19,10 @@ const { t, locale } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'common.monitors' } })
 
-const query = useCollection<Monitor>('monitors', listMonitorsQuery()),
+const query = useQuery({
+    ...listMonitorsQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>),
   search = ref(''),
   state = ref('all'),
   type = ref('all')
@@ -37,13 +41,13 @@ const filtered = computed(() =>
       (type.value === 'all' || m.type === type.value),
   ),
 )
-useIntervalFn(() => query.refresh(), 30000)
+useIntervalFn(() => query.refetch(), 30000)
 </script>
 <template>
   <PageHeader
     :title="t('common.monitors')"
     :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')"
-    ><button class="button" @click="query.refresh()">
+    ><button class="button" @click="query.refetch()">
       <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary"
       ><Plus :size="15" />{{ t('common.addMonitor') }}</RouterLink
@@ -73,7 +77,7 @@ useIntervalFn(() => query.refresh(), 30000)
         </select>
       </div>
     </div>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState
         v-if="!filtered.length"
         :title="

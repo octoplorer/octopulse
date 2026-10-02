@@ -2,14 +2,17 @@
 import { useI18n } from 'vue-i18n'
 import { ref, reactive, computed } from 'vue'
 import { Plus, MessageSquare } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
 import type { Incident, Page, Monitor } from '../../../lib/types'
-import { response, canEdit } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
+import { canEdit } from '../../../lib/api'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
 import {
   listIncidentsQuery,
   listPagesQuery,
   listMonitorsQuery,
+  createIncidentsMutation,
+  updateIncidentsMutation,
+  createIncidentUpdateMutation,
 } from '../../../client/@pinia/colada.gen'
 import { formatDate, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
@@ -24,9 +27,22 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.incidents' } })
 
-const query = useCollection<Incident>('incidents', listIncidentsQuery()),
-  pages = useCollection<Page>('pages', listPagesQuery()),
-  monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
+const createIncident = useMutation(createIncidentsMutation()),
+  updateIncident = useMutation(updateIncidentsMutation()),
+  publishIncidentUpdate = useMutation(createIncidentUpdateMutation())
+
+const query = useQuery({ ...listIncidentsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Incident[] },
+    ErrorModel
+  >),
+  pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Page[] },
+    ErrorModel
+  >),
+  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Monitor[] },
+    ErrorModel
+  >),
   open = ref(false),
   detailOpen = ref(false),
   selected = ref<Incident | null>(null),
@@ -80,9 +96,8 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    if (form.id)
-      await sdk.updateIncidents({ path: { id: form.id }, body: form, throwOnError: true })
-    else await sdk.createIncidents({ body: form, throwOnError: true })
+    if (form.id) await updateIncident.mutateAsync({ path: { id: form.id }, body: form })
+    else await createIncident.mutateAsync({ body: form })
     open.value = false
     notify(t('incidents.incidentSaved'))
     await query.refresh()
@@ -96,14 +111,11 @@ async function update() {
   if (!selected.value) return
   saving.value = true
   try {
-    const result = await response<Incident>(
-      sdk.createIncidentUpdate({
-        path: { id: selected.value.id },
-        body: { body: updateBody.value, status: updateStatus.value },
-        throwOnError: true,
-      }),
-    )
-    selected.value = result
+    const result = await publishIncidentUpdate.mutateAsync({
+      path: { id: selected.value.id },
+      body: { body: updateBody.value, status: updateStatus.value },
+    })
+    selected.value = result as Incident
     updateBody.value = ''
     notify(t('incidents.updatePublished'))
     await query.refresh()
@@ -131,7 +143,7 @@ async function update() {
         <option value="all">{{ t('incidents.all') }}</option>
       </select>
     </div>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState
         v-if="!items.length"
         :title="t('incidents.noIncidentsHere')"

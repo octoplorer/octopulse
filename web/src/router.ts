@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
-import { currentUser, loadSession } from './lib/api'
+import { useQueryCache } from '@pinia/colada'
+import { getSessionQuery } from './client/@pinia/colada.gen'
+import { currentUser, applySession } from './lib/api'
 export const router = createRouter({
   history: createWebHistory(),
   routes,
@@ -12,7 +14,9 @@ router.beforeEach(async (to) => {
   if (!to.path.startsWith('/app') || to.path === '/app/login') return
   if (!sessionLoaded) {
     try {
-      await loadSession()
+      const cache = useQueryCache()
+      const state = await cache.refresh(cache.ensure({ ...getSessionQuery(), staleTime: 0 }))
+      if (state.status === 'success') applySession(state.data)
     } catch {}
     sessionLoaded = true
   }

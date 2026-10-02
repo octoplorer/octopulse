@@ -2,8 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
-import { useRecord } from '../../lib/data'
+import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
+import type { ErrorModel } from '../../client/types.gen'
 import type { PublicPage } from '../../lib/types'
 
 import { useIntervalFn } from '@vueuse/core'
@@ -13,15 +14,14 @@ import AsyncState from '../../components/AsyncState.vue'
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute('/[[slug]]/[[...rest]]+'),
   isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents'),
-  query = useRecord<PublicPage>(
+  query = useQuery(
     () =>
-      isDomain.value
-        ? `/api/public/resolve?host=${encodeURIComponent(location.hostname)}`
-        : `/api/public/pages/${encodeURIComponent(String(route.params.slug))}`,
-    () =>
-      isDomain.value
-        ? resolvePublicPageQuery({ query: { host: location.hostname } })
-        : getPublicPageQuery({ path: { slug: String(route.params.slug) } }),
+      ({
+        ...(isDomain.value
+          ? resolvePublicPageQuery({ query: { host: location.hostname } })
+          : getPublicPageQuery({ path: { slug: String(route.params.slug) } })),
+        staleTime: 5000,
+      }) as DefineQueryOptions<PublicPage, ErrorModel>,
   ),
   rest = computed(() =>
     Array.isArray(route.params.rest)
@@ -35,7 +35,7 @@ const route = useRoute('/[[slug]]/[[...rest]]+'),
         ? rest.value.split('/')[1]
         : undefined,
   )
-useIntervalFn(() => query.refresh(), 30000)
+useIntervalFn(() => query.refetch(), 30000)
 watchEffect(() => {
   const page = query.data.value
   if (page) document.title = `${page.config.title} · ${t('publicPage.serviceStatus')}`
@@ -57,7 +57,7 @@ watchEffect(() => {
           <p>
             {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
           </p>
-          <button class="button" @click="query.refresh()">{{ t('publicPage.tryAgain') }}</button
+          <button class="button" @click="query.refetch()">{{ t('publicPage.tryAgain') }}</button
           ><RouterLink to="/app/login" class="button ghost" un-ml="3">{{
             t('publicPage.adminSignIn')
           }}</RouterLink>

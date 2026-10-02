@@ -3,11 +3,16 @@ import { useI18n } from 'vue-i18n'
 import { languageOptions } from '../../../lib/i18n'
 import { ref, reactive } from 'vue'
 import { Plus, Pencil, Trash2 } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
 import type { User } from '../../../lib/types'
 import { isAdmin, currentUser } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
-import { listUsersQuery } from '../../../client/@pinia/colada.gen'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
+import {
+  listUsersQuery,
+  createUserMutation,
+  updateUserMutation,
+  deleteUserMutation,
+} from '../../../client/@pinia/colada.gen'
 import { formatDate, timezone, statusLabel } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { clone } from '../../../lib/form'
@@ -21,7 +26,14 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.members', roles: ['admin'] } })
 
-const query = useCollection<User>('users', listUsersQuery()),
+const createUser = useMutation(createUserMutation()),
+  updateUser = useMutation(updateUserMutation()),
+  deleteUser = useMutation(deleteUserMutation())
+
+const query = useQuery({ ...listUsersQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: User[] },
+    ErrorModel
+  >),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -62,12 +74,11 @@ async function save() {
   try {
     const { password, ...rest } = form
     if (form.id)
-      await sdk.updateUser({
+      await updateUser.mutateAsync({
         path: { id: form.id },
         body: { ...rest, ...(password ? { password } : {}) },
-        throwOnError: true,
       })
-    else await sdk.createUser({ body: { ...rest, password }, throwOnError: true })
+    else await createUser.mutateAsync({ body: { ...rest, password } })
     form.password = ''
     open.value = false
     await query.refresh()
@@ -81,7 +92,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await sdk.deleteUser({ path: { id: deleteTarget.value.id }, throwOnError: true })
+    await deleteUser.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     await query.refresh()
     notify(t('users.memberDeleted'))
@@ -107,7 +118,7 @@ function cancel() {
     </button></PageHeader
   >
   <section class="card">
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState v-if="!query.data.value?.items.length" :title="t('users.noMembers')" />
       <div v-else class="table-wrap">
         <table class="data-table">

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Plus, ArrowUpRight, Pencil, Globe } from '@lucide/vue'
-import { useCollection } from '../../../../lib/data'
+import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import { listPagesQuery } from '../../../../client/@pinia/colada.gen'
+import type { ErrorModel } from '../../../../client/types.gen'
 import type { Page } from '../../../../lib/types'
 import { formatDate } from '../../../../lib/preferences'
 import { publishedEntry } from '../../../../lib/pages'
@@ -14,7 +15,10 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.statusPages' } })
 
-const query = useCollection<Page>('pages', listPagesQuery())
+const query = useQuery({
+  ...listPagesQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Page[] }, ErrorModel>)
 </script>
 <template>
   <PageHeader
@@ -23,7 +27,7 @@ const query = useCollection<Page>('pages', listPagesQuery())
     ><RouterLink v-if="canEdit()" to="/app/pages/new" class="button primary"
       ><Plus :size="15" />{{ t('common.createStatusPage') }}</RouterLink
     ></PageHeader
-  ><AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+  ><AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
     ><EmptyState
       v-if="!query.data.value?.items.length"
       :title="t('pages.buildYourFirstStatusPage')"

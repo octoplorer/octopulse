@@ -13,20 +13,18 @@ import { watch } from 'vue'
 
 import { useQueryCache } from '@pinia/colada'
 import { notices, dismissNotice } from './lib/notices'
-import { currentUser, observeMutations } from './lib/api'
+import { currentUser } from './lib/api'
 const { t } = useI18n({ useScope: 'global' })
 
 const cache = useQueryCache()
-observeMutations(() => {
-  void cache.invalidateQueries().catch(() => {})
-})
 watch(
   () => currentUser.value?.id,
   (id, previous) => {
-    if (previous && id !== previous) {
+    if (id !== previous) {
       cache.cancelQueries()
       for (const entry of cache.getEntries()) cache.remove(entry)
     }
   },
+  { flush: 'sync' },
 )
 </script>

@@ -12,13 +12,14 @@ import {
   RefreshCw,
   Server,
 } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
+import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import {
   listMonitorsQuery,
   listIncidentsQuery,
   listPagesQuery,
   listMaintenanceQuery,
 } from '../../../client/@pinia/colada.gen'
+import type { ErrorModel } from '../../../client/types.gen'
 import type { Monitor, Incident, Page, Maintenance } from '../../../lib/types'
 import { targetOf } from '../../../lib/monitor'
 import { publishedEntry } from '../../../lib/pages'
@@ -34,10 +35,22 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.overview' } })
 
-const monitors = useCollection<Monitor>('monitors', listMonitorsQuery()),
-  incidents = useCollection<Incident>('incidents', listIncidentsQuery()),
-  pages = useCollection<Page>('pages', listPagesQuery()),
-  maintenance = useCollection<Maintenance>('maintenance', listMaintenanceQuery())
+const monitors = useQuery({
+    ...listMonitorsQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>),
+  incidents = useQuery({
+    ...listIncidentsQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Incident[] }, ErrorModel>),
+  pages = useQuery({
+    ...listPagesQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Page[] }, ErrorModel>),
+  maintenance = useQuery({
+    ...listMaintenanceQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Maintenance[] }, ErrorModel>)
 const items = computed(() => monitors.data.value?.items || []),
   active = computed(() => items.value.filter((m) => m.enabled)),
   up = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'up')),
@@ -61,14 +74,14 @@ const nextMaintenance = computed(
       .sort((a, b) => a.startsAt - b.startsAt)
       .slice(0, 3) || [],
 )
-useIntervalFn(() => monitors.refresh(), 30000)
+useIntervalFn(() => monitors.refetch(), 30000)
 </script>
 <template>
   <PageHeader
     :title="t('overview.serviceOverview')"
     :description="t('overview.aClearViewOfEveryServiceHeartbeat')"
     eyebrow="YOUR INFRASTRUCTURE, AT A GLANCE"
-    ><button class="button" @click="monitors.refresh()">
+    ><button class="button" @click="monitors.refetch()">
       <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary"
       ><Plus :size="15" />{{ t('common.addMonitor') }}</RouterLink
@@ -131,7 +144,7 @@ useIntervalFn(() => monitors.refresh(), 30000)
         <AsyncState
           :pending="monitors.isPending.value"
           :error="monitors.error.value"
-          @retry="monitors.refresh()"
+          @retry="monitors.refetch()"
           ><EmptyState
             v-if="!items.length"
             :title="t('overview.monitorYourFirstService')"

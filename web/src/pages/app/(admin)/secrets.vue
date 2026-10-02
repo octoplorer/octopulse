@@ -2,11 +2,16 @@
 import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Plus, KeyRound, Pencil, Trash2 } from '@lucide/vue'
-import { useCollection } from '../../../lib/data'
 import type { Secret } from '../../../lib/types'
 import { isAdmin } from '../../../lib/api'
-import * as sdk from '../../../client/sdk.gen'
-import { listSecretsQuery } from '../../../client/@pinia/colada.gen'
+import { useQuery, useMutation, type DefineQueryOptions } from '@pinia/colada'
+import type { ErrorModel } from '../../../client/types.gen'
+import {
+  listSecretsQuery,
+  createSecretMutation,
+  updateSecretMutation,
+  deleteSecretMutation,
+} from '../../../client/@pinia/colada.gen'
 import { formatDate } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -18,7 +23,14 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.secrets', roles: ['admin'] } })
 
-const query = useCollection<Secret>('secrets', listSecretsQuery()),
+const createSecret = useMutation(createSecretMutation()),
+  updateSecret = useMutation(updateSecretMutation()),
+  deleteSecret = useMutation(deleteSecretMutation())
+
+const query = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
+    { items: Secret[] },
+    ErrorModel
+  >),
   open = ref(false),
   saving = ref(false),
   error = ref(''),
@@ -35,8 +47,8 @@ async function save() {
   error.value = ''
   try {
     const body = { name: form.name, value: form.value }
-    if (form.id) await sdk.updateSecret({ path: { id: form.id }, body, throwOnError: true })
-    else await sdk.createSecret({ body, throwOnError: true })
+    if (form.id) await updateSecret.mutateAsync({ path: { id: form.id }, body })
+    else await createSecret.mutateAsync({ body })
     form.value = ''
     open.value = false
     await query.refresh()
@@ -50,7 +62,7 @@ async function save() {
 async function remove() {
   if (!deleteTarget.value) return
   try {
-    await sdk.deleteSecret({ path: { id: deleteTarget.value.id }, throwOnError: true })
+    await deleteSecret.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     await query.refresh()
     notify(t('secrets.secretDeleted'))
@@ -79,7 +91,7 @@ function cancel() {
     <KeyRound :size="16" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
   <section class="card">
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
       ><EmptyState
         v-if="!query.data.value?.items.length"
         :title="t('secrets.noSecretsYet')"

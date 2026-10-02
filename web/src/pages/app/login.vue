@@ -6,11 +6,23 @@ import { ArrowRight, ShieldCheck } from '@lucide/vue'
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
 import { dark } from '../../lib/preferences'
-import { response, login, loadSession } from '../../lib/api'
-import * as sdk from '../../client/sdk.gen'
+import { applySession } from '../../lib/api'
+import { useMutation, useQueryCache } from '@pinia/colada'
+import {
+  getSetupQuery,
+  getSessionQuery,
+  createSetupMutation,
+  createSessionMutation,
+} from '../../client/@pinia/colada.gen'
 import { errorText } from '../../lib/notices'
 
 const { t } = useI18n({ useScope: 'global' })
+const queryCache = useQueryCache()
+const createSession = useMutation({
+  ...createSessionMutation(),
+  onSuccess: applySession,
+})
+const setup = useMutation(createSetupMutation())
 const route = useRoute(),
   router = useRouter(),
   required = ref(false),
@@ -23,11 +35,20 @@ const route = useRoute(),
   timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
 onMounted(async () => {
   try {
-    required.value = (
-      await response<{ required: boolean }>(sdk.getSetup({ throwOnError: true }))
-    ).required
-    if (!required.value && (await loadSession()).user) {
-      router.replace('/app')
+    const setupState = await queryCache.refresh(
+      queryCache.ensure({ ...getSetupQuery(), staleTime: 0 }),
+    )
+    if (setupState.status !== 'success')
+      throw setupState.error || new Error(t('errors.requestFailed'))
+    required.value = setupState.data.required
+    if (!required.value) {
+      const sessionState = await queryCache.refresh(
+        queryCache.ensure({ ...getSessionQuery(), staleTime: 0 }),
+      )
+      if (sessionState.status !== 'success')
+        throw sessionState.error || new Error(t('errors.requestFailed'))
+      applySession(sessionState.data)
+      if (sessionState.data.user) router.replace('/app')
     }
   } catch (e) {
     error.value = errorText(e)
@@ -40,16 +61,17 @@ async function submit() {
   error.value = ''
   try {
     if (required.value)
-      await sdk.createSetup({
+      await setup.mutateAsync({
         body: {
           username: username.value,
           password: password.value,
           organizationName: organizationName.value,
           timezone: timezone.value,
         },
-        throwOnError: true,
       })
-    await login(username.value, password.value)
+    await createSession.mutateAsync({
+      body: { username: username.value, password: password.value },
+    })
     const next = String(route.query.next || '/app')
     router.replace(next.startsWith('/app') ? next : '/app')
   } catch (e) {

@@ -4,8 +4,15 @@ import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Save, ArrowLeft, X, Upload } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { response, canEdit } from '../lib/api'
-import * as sdk from '../client/sdk.gen'
+import { useMutation, useQueryCache } from '@pinia/colada'
+import { canEdit } from '../lib/api'
+import {
+  createMonitorMutation,
+  getMonitorQuery,
+  listChannelsQuery,
+  listSecretsQuery,
+  updateMonitorMutation,
+} from '../client/@pinia/colada.gen'
 import type { Monitor, Channel, Secret } from '../lib/types'
 import {
   newMonitor,
@@ -28,6 +35,9 @@ import TLSFields from './TLSFields.vue'
 import ConnectionFields from './ConnectionFields.vue'
 import AsyncState from './AsyncState.vue'
 const { t } = useI18n({ useScope: 'global' })
+const queryCache = useQueryCache()
+const createMonitor = useMutation(createMonitorMutation())
+const updateMonitor = useMutation(updateMonitorMutation())
 
 const route = useRoute<'/app/(admin)/monitors/new' | '/app/(admin)/monitors/[id]/edit'>(),
   router = useRouter(),
@@ -75,16 +85,19 @@ async function load() {
   loading.value = true
   try {
     const [c, s] = await Promise.all([
-      response<{ items: Channel[] }>(sdk.listChannels({ throwOnError: true })),
-      response<{ items: Secret[] }>(sdk.listSecrets({ throwOnError: true })),
+      queryCache.refresh(queryCache.ensure({ ...listChannelsQuery(), staleTime: 0 })),
+      queryCache.refresh(queryCache.ensure({ ...listSecretsQuery(), staleTime: 0 })),
     ])
-    channels.value = c.items
-    secrets.value = s.items
+    if (c.status !== 'success') throw c.error || new Error(t('errors.requestFailed'))
+    if (s.status !== 'success') throw s.error || new Error(t('errors.requestFailed'))
+    channels.value = clone(c.data.items) as Channel[]
+    secrets.value = clone(s.data.items) as Secret[]
     if (editing.value) {
-      Object.assign(
-        form,
-        await response<Monitor>(sdk.getMonitor({ path: { id: id.value! }, throwOnError: true })),
+      const monitor = await queryCache.refresh(
+        queryCache.ensure({ ...getMonitorQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
+      if (monitor.status !== 'success') throw monitor.error || new Error(t('errors.requestFailed'))
+      Object.assign(form, clone(monitor.data) as Monitor)
       if (form.http) form.http = defaults(emptyHTTP(), form.http)
       if (form.tcp) form.tcp = defaults(emptyTCP(), form.tcp)
       if (form.dns) form.dns = defaults(emptyDNS(), form.dns)
@@ -142,11 +155,9 @@ async function save() {
     }
     if (new Blob([JSON.stringify(payload)]).size > 8 * 1024 * 1024)
       throw new Error(t('monitorEditor.theMonitorConfigurationRequestMayNotExceed8'))
-    const result = await response<Monitor>(
-      editing.value
-        ? sdk.updateMonitor({ path: { id: form.id }, body: payload, throwOnError: true })
-        : sdk.createMonitor({ body: payload, throwOnError: true }),
-    )
+    const result = (await (editing.value
+      ? updateMonitor.mutateAsync({ path: { id: form.id }, body: payload })
+      : createMonitor.mutateAsync({ body: payload }))) as Monitor
     notify(t('monitorEditor.monitorSaved'))
     router.push(`/app/monitors/${result.id}`)
   } catch (e) {

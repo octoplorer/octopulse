@@ -3,10 +3,16 @@ import { useI18n } from 'vue-i18n'
 import { ref, reactive } from 'vue'
 import { Server, Settings, RefreshCw, ArrowUpRight, Save } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useRecord, useCollection } from '../../../lib/data'
-import { listBeszelSystemsQuery, listSecretsQuery } from '../../../client/@pinia/colada.gen'
-import * as sdk from '../../../client/sdk.gen'
-import type { GetBeszelHistoryData } from '../../../client/types.gen'
+import { useMutation, useQuery, useQueryCache, type DefineQueryOptions } from '@pinia/colada'
+import {
+  getBeszelConfigQuery,
+  getBeszelHistoryQuery,
+  listBeszelContainersQuery,
+  listBeszelSystemsQuery,
+  listSecretsQuery,
+  updateBeszelConfigMutation,
+} from '../../../client/@pinia/colada.gen'
+import type { ErrorModel, GetBeszelHistoryData } from '../../../client/types.gen'
 import type {
   BeszelConfig,
   BeszelSystem,
@@ -17,7 +23,7 @@ import type {
   BeszelContainers,
   Secret,
 } from '../../../lib/types'
-import { response, isAdmin } from '../../../lib/api'
+import { isAdmin } from '../../../lib/api'
 import { formatDate, duration } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import { useIntervalFn } from '@vueuse/core'
@@ -34,11 +40,16 @@ const { t, n } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.servers' } })
 
-const query = useRecord<BeszelSystems>(
-    () => 'beszel/systems',
-    () => listBeszelSystemsQuery(),
-  ),
-  secrets = useCollection<Secret>('secrets', listSecretsQuery()),
+const updateConfig = useMutation(updateBeszelConfigMutation())
+const queryCache = useQueryCache()
+const query = useQuery({
+    ...listBeszelSystemsQuery(),
+    staleTime: 5000,
+  } as DefineQueryOptions<BeszelSystems, ErrorModel>),
+  secrets = useQuery({
+    ...listSecretsQuery(),
+    staleTime: 10000,
+  } as DefineQueryOptions<{ items: Secret[] }, ErrorModel>),
   configOpen = ref(false),
   detailOpen = ref(false),
   selected = ref<BeszelSystem | null>(null),
@@ -59,9 +70,14 @@ const query = useRecord<BeszelSystems>(
     enabled: false,
     pollSeconds: 60,
   })
+let detailRequest = 0
 async function configure() {
   try {
-    Object.assign(config, await response<BeszelConfig>(sdk.getBeszelConfig({ throwOnError: true })))
+    const state = await queryCache.refresh(
+      queryCache.ensure({ ...getBeszelConfigQuery(), staleTime: 0 }),
+    )
+    if (state.status !== 'success') throw state.error || new Error(t('errors.requestFailed'))
+    Object.assign(config, structuredClone(state.data))
     error.value = ''
     configOpen.value = true
   } catch (e) {
@@ -72,10 +88,7 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    Object.assign(
-      config,
-      await response<BeszelConfig>(sdk.updateBeszelConfig({ body: config, throwOnError: true })),
-    )
+    Object.assign(config, await updateConfig.mutateAsync({ body: config }))
     configOpen.value = false
     notify(t('servers.beszelConnectionSaved'))
     await query.refresh()
@@ -86,34 +99,42 @@ async function save() {
   }
 }
 async function detail(server: BeszelSystem) {
+  const request = ++detailRequest
   selected.value = server
   detailOpen.value = true
   detailLoading.value = true
   detailError.value = ''
   try {
     const [h, c] = await Promise.all([
-      response<BeszelHistory>(
-        sdk.getBeszelHistory({
-          path: { id: server.id },
-          query: { range: historyRange.value },
-          throwOnError: true,
+      queryCache.refresh(
+        queryCache.ensure({
+          ...getBeszelHistoryQuery({
+            path: { id: server.id },
+            query: { range: historyRange.value },
+          }),
+          staleTime: 0,
         }),
       ),
-      response<BeszelContainers>(
-        sdk.listBeszelContainers({
-          path: { id: server.id },
-          throwOnError: true,
+      queryCache.refresh(
+        queryCache.ensure({
+          ...listBeszelContainersQuery({
+            path: { id: server.id },
+          }),
+          staleTime: 0,
         }),
       ),
     ])
-    historyMeta.value = h
-    containersMeta.value = c
-    history.value = h.items || []
-    containers.value = c.items || []
+    if (request !== detailRequest) return
+    if (h.status !== 'success') throw h.error || new Error(t('errors.requestFailed'))
+    if (c.status !== 'success') throw c.error || new Error(t('errors.requestFailed'))
+    historyMeta.value = h.data as BeszelHistory
+    containersMeta.value = c.data as BeszelContainers
+    history.value = h.data.items || []
+    containers.value = c.data.items || []
   } catch (e) {
-    detailError.value = errorText(e)
+    if (request === detailRequest) detailError.value = errorText(e)
   } finally {
-    detailLoading.value = false
+    if (request === detailRequest) detailLoading.value = false
   }
 }
 function percentage(value: number | undefined) {
@@ -125,13 +146,13 @@ function percentage(value: number | undefined) {
         maximumFractionDigits: 1,
       })
 }
-useIntervalFn(() => query.refresh(), 30000)
+useIntervalFn(() => query.refetch(), 30000)
 </script>
 <template>
   <PageHeader
     :title="t('navigation.servers')"
     :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')"
-    ><button class="button" @click="query.refresh()">
+    ><button class="button" @click="query.refetch()">
       <RefreshCw :size="14" />{{ t('common.refresh') }}</button
     ><button v-if="isAdmin()" class="button primary" @click="configure">
       <Settings :size="14" />{{ t('servers.beszelConnection') }}
@@ -147,7 +168,7 @@ useIntervalFn(() => query.refresh(), 30000)
   <div v-if="query.data.value?.error" class="error-banner" role="alert">
     {{ query.data.value.error }}
   </div>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refresh()"
+  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()"
     ><EmptyState
       v-if="!query.data.value?.items.length"
       :title="t('servers.connectYourBeszelHub')"
