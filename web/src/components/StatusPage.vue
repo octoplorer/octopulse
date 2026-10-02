@@ -16,12 +16,12 @@ const props = defineProps<{
   pathBase?: string
   stale?: boolean
 }>()
-const prefersDark = usePreferredDark(),
-  dark = computed(
-    () =>
-      props.page.config.colorScheme === 'dark' ||
-      (props.page.config.colorScheme === 'system' && prefersDark.value),
-  )
+const prefersDark = usePreferredDark()
+const dark = computed(
+  () =>
+    props.page.config.colorScheme === 'dark' ||
+    (props.page.config.colorScheme === 'system' && prefersDark.value),
+)
 const stateLabels: Record<string, string> = {
   operational: 'publicState.operational',
   normal: 'publicState.normal',
@@ -35,15 +35,17 @@ const stateLabels: Record<string, string> = {
   insufficient_data: 'publicState.insufficient_data',
 }
 const heading = computed(() =>
-    stateLabels[props.page.state] ? t(stateLabels[props.page.state]!) : props.page.state,
-  ),
-  good = computed(() => ['up', 'normal', 'operational'].includes(props.page.state)),
-  incidents = computed(() =>
-    props.incidentId
-      ? props.page.incidents.filter((x) => x.id === props.incidentId)
-      : props.page.incidents,
-  ),
-  activeMaintenance = computed(() => props.page.maintenance.filter((x) => x.endsAt > Date.now()))
+  stateLabels[props.page.state] ? t(stateLabels[props.page.state]!) : props.page.state,
+)
+const good = computed(() => ['up', 'normal', 'operational'].includes(props.page.state))
+const incidents = computed(() =>
+  props.incidentId
+    ? props.page.incidents.filter((x) => x.id === props.incidentId)
+    : props.page.incidents,
+)
+const activeMaintenance = computed(() =>
+  props.page.maintenance.filter((x) => x.endsAt > Date.now()),
+)
 function showMetric(id: string, field: 'showUptime' | 'showLatency') {
   return (
     props.page.config.groups.flatMap((g) => g.monitors).find((m) => m.monitorId === id)?.[field] ??

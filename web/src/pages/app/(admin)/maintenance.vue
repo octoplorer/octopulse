@@ -27,42 +27,42 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.maintenance' } })
 
-const createMaintenance = useMutation(createMaintenanceMutation()),
-  updateMaintenance = useMutation(updateMaintenanceMutation()),
-  deleteMaintenance = useMutation(deleteMaintenanceMutation())
+const createMaintenance = useMutation(createMaintenanceMutation())
+const updateMaintenance = useMutation(updateMaintenanceMutation())
+const deleteMaintenance = useMutation(deleteMaintenanceMutation())
 
 const query = useQuery({ ...listMaintenanceQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Maintenance[] },
-    ErrorModel
-  >),
-  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Monitor[] },
-    ErrorModel
-  >),
-  pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Page[] },
-    ErrorModel
-  >),
-  open = ref(false),
-  saving = ref(false),
-  error = ref(''),
-  start = ref(''),
-  end = ref(''),
-  deleteTarget = ref<Maintenance | null>(null),
-  deleteOpen = ref(false)
+  { items: Maintenance[] },
+  ErrorModel
+>)
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Monitor[] },
+  ErrorModel
+>)
+const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Page[] },
+  ErrorModel
+>)
+const open = ref(false)
+const saving = ref(false)
+const error = ref('')
+const start = ref('')
+const end = ref('')
+const deleteTarget = ref<Maintenance | null>(null)
+const deleteOpen = ref(false)
 const empty = (): Maintenance => ({
-    id: '',
-    name: '',
-    description: '',
-    monitorIds: [],
-    pageIds: [],
-    startsAt: Date.now() + 3600000,
-    endsAt: Date.now() + 7200000,
-    timezone: timezone.value,
-    createdAt: 0,
-    updatedAt: 0,
-  }),
-  form = reactive(empty())
+  id: '',
+  name: '',
+  description: '',
+  monitorIds: [],
+  pageIds: [],
+  startsAt: Date.now() + 3600000,
+  endsAt: Date.now() + 7200000,
+  timezone: timezone.value,
+  createdAt: 0,
+  updatedAt: 0,
+})
+const form = reactive(empty())
 function edit(value?: Maintenance) {
   Object.assign(form, value ? clone(value) : empty())
   start.value = datetimeInput(form.startsAt, form.timezone)

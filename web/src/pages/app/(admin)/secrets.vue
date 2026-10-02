@@ -23,20 +23,20 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.secrets', roles: ['admin'] } })
 
-const createSecret = useMutation(createSecretMutation()),
-  updateSecret = useMutation(updateSecretMutation()),
-  deleteSecret = useMutation(deleteSecretMutation())
+const createSecret = useMutation(createSecretMutation())
+const updateSecret = useMutation(updateSecretMutation())
+const deleteSecret = useMutation(deleteSecretMutation())
 
 const query = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Secret[] },
-    ErrorModel
-  >),
-  open = ref(false),
-  saving = ref(false),
-  error = ref(''),
-  form = reactive({ id: '', name: '', value: '' }),
-  deleteTarget = ref<Secret | null>(null),
-  deleteOpen = ref(false)
+  { items: Secret[] },
+  ErrorModel
+>)
+const open = ref(false)
+const saving = ref(false)
+const error = ref('')
+const form = reactive({ id: '', name: '', value: '' })
+const deleteTarget = ref<Secret | null>(null)
+const deleteOpen = ref(false)
 function edit(secret?: Secret) {
   Object.assign(form, { id: secret?.id || '', name: secret?.name || '', value: '' })
   error.value = ''

@@ -16,20 +16,20 @@ const { t } = useI18n({ useScope: 'global' })
 definePage({ meta: { title: 'navigation.auditLog', roles: ['admin'] } })
 
 const query = useQuery({
-    ...listAuditQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Audit[] }, ErrorModel>),
-  search = ref(''),
-  items = computed(
-    () =>
-      query.data.value?.items
-        .filter((x) =>
-          `${x.username} ${x.action} ${x.resourceType} ${x.resourceId}`
-            .toLowerCase()
-            .includes(search.value.toLowerCase()),
-        )
-        .sort((a, b) => b.createdAt - a.createdAt) || [],
-  )
+  ...listAuditQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Audit[] }, ErrorModel>)
+const search = ref('')
+const items = computed(
+  () =>
+    query.data.value?.items
+      .filter((x) =>
+        `${x.username} ${x.action} ${x.resourceType} ${x.resourceId}`
+          .toLowerCase()
+          .includes(search.value.toLowerCase()),
+      )
+      .sort((a, b) => b.createdAt - a.createdAt) || [],
+)
 </script>
 <template>
   <PageHeader

@@ -36,28 +36,30 @@ const { t } = useI18n({ useScope: 'global' })
 definePage({ meta: { title: 'navigation.overview' } })
 
 const monitors = useQuery({
-    ...listMonitorsQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>),
-  incidents = useQuery({
-    ...listIncidentsQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Incident[] }, ErrorModel>),
-  pages = useQuery({
-    ...listPagesQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Page[] }, ErrorModel>),
-  maintenance = useQuery({
-    ...listMaintenanceQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Maintenance[] }, ErrorModel>)
-const items = computed(() => monitors.data.value?.items || []),
-  active = computed(() => items.value.filter((m) => m.enabled)),
-  up = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'up')),
-  down = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'down')),
-  unknown = computed(() =>
-    active.value.filter((m) => m.type !== 'certificate' && m.state === 'unknown'),
-  )
+  ...listMonitorsQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>)
+const incidents = useQuery({
+  ...listIncidentsQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Incident[] }, ErrorModel>)
+const pages = useQuery({
+  ...listPagesQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Page[] }, ErrorModel>)
+const maintenance = useQuery({
+  ...listMaintenanceQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Maintenance[] }, ErrorModel>)
+const items = computed(() => monitors.data.value?.items || [])
+const active = computed(() => items.value.filter((m) => m.enabled))
+const up = computed(() => active.value.filter((m) => m.type !== 'certificate' && m.state === 'up'))
+const down = computed(() =>
+  active.value.filter((m) => m.type !== 'certificate' && m.state === 'down'),
+)
+const unknown = computed(() =>
+  active.value.filter((m) => m.type !== 'certificate' && m.state === 'unknown'),
+)
 const ordered = computed(() =>
   [...items.value]
     .sort(

@@ -33,10 +33,10 @@ const deleteSession = useMutation({
   onSuccess: () => applySession(null),
 })
 
-const route = useRoute(),
-  router = useRouter(),
-  menuOpen = ref(false),
-  now = ref(new Date())
+const route = useRoute()
+const router = useRouter()
+const menuOpen = ref(false)
+const now = ref(new Date())
 useIntervalFn(() => {
   now.value = new Date()
 }, 60000)

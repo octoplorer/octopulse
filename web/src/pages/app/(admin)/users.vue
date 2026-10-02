@@ -26,29 +26,29 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.members', roles: ['admin'] } })
 
-const createUser = useMutation(createUserMutation()),
-  updateUser = useMutation(updateUserMutation()),
-  deleteUser = useMutation(deleteUserMutation())
+const createUser = useMutation(createUserMutation())
+const updateUser = useMutation(updateUserMutation())
+const deleteUser = useMutation(deleteUserMutation())
 
 const query = useQuery({ ...listUsersQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: User[] },
-    ErrorModel
-  >),
-  open = ref(false),
-  saving = ref(false),
-  error = ref(''),
-  form = reactive({
-    id: '',
-    username: '',
-    name: '',
-    role: 'viewer' as User['role'],
-    locale: 'zh-CN' as User['locale'],
-    timezone: timezone.value,
-    enabled: true,
-    password: '',
-  }),
-  deleteTarget = ref<User | null>(null),
-  deleteOpen = ref(false)
+  { items: User[] },
+  ErrorModel
+>)
+const open = ref(false)
+const saving = ref(false)
+const error = ref('')
+const form = reactive({
+  id: '',
+  username: '',
+  name: '',
+  role: 'viewer' as User['role'],
+  locale: 'zh-CN' as User['locale'],
+  timezone: timezone.value,
+  enabled: true,
+  password: '',
+})
+const deleteTarget = ref<User | null>(null)
+const deleteOpen = ref(false)
 function edit(user?: User) {
   Object.assign(
     form,

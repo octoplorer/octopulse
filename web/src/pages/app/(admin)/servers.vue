@@ -43,33 +43,33 @@ definePage({ meta: { title: 'navigation.servers' } })
 const updateConfig = useMutation(updateBeszelConfigMutation())
 const queryCache = useQueryCache()
 const query = useQuery({
-    ...listBeszelSystemsQuery(),
-    staleTime: 5000,
-  } as DefineQueryOptions<BeszelSystems, ErrorModel>),
-  secrets = useQuery({
-    ...listSecretsQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Secret[] }, ErrorModel>),
-  configOpen = ref(false),
-  detailOpen = ref(false),
-  selected = ref<BeszelSystem | null>(null),
-  saving = ref(false),
-  error = ref(''),
-  history = ref<BeszelHistoryPoint[]>([]),
-  containers = ref<BeszelContainer[]>([]),
-  detailLoading = ref(false),
-  detailError = ref(''),
-  tab = ref('history'),
-  historyRange = ref<NonNullable<GetBeszelHistoryData['query']>['range']>('24h'),
-  historyMeta = ref<BeszelHistory | null>(null),
-  containersMeta = ref<BeszelContainers | null>(null),
-  config = reactive<BeszelConfig>({
-    url: '',
-    email: '',
-    passwordSecretId: '',
-    enabled: false,
-    pollSeconds: 60,
-  })
+  ...listBeszelSystemsQuery(),
+  staleTime: 5000,
+} as DefineQueryOptions<BeszelSystems, ErrorModel>)
+const secrets = useQuery({
+  ...listSecretsQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Secret[] }, ErrorModel>)
+const configOpen = ref(false)
+const detailOpen = ref(false)
+const selected = ref<BeszelSystem | null>(null)
+const saving = ref(false)
+const error = ref('')
+const history = ref<BeszelHistoryPoint[]>([])
+const containers = ref<BeszelContainer[]>([])
+const detailLoading = ref(false)
+const detailError = ref('')
+const tab = ref('history')
+const historyRange = ref<NonNullable<GetBeszelHistoryData['query']>['range']>('24h')
+const historyMeta = ref<BeszelHistory | null>(null)
+const containersMeta = ref<BeszelContainers | null>(null)
+const config = reactive<BeszelConfig>({
+  url: '',
+  email: '',
+  passwordSecretId: '',
+  enabled: false,
+  pollSeconds: 60,
+})
 let detailRequest = 0
 async function configure() {
   try {

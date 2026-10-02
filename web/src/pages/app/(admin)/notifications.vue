@@ -31,43 +31,43 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.notifications' } })
 
-const createChannel = useMutation(createChannelsMutation()),
-  updateChannel = useMutation(updateChannelsMutation()),
-  deleteChannel = useMutation(deleteChannelsMutation()),
-  testChannel = useMutation(testChannelMutation())
+const createChannel = useMutation(createChannelsMutation())
+const updateChannel = useMutation(updateChannelsMutation())
+const deleteChannel = useMutation(deleteChannelsMutation())
+const testChannel = useMutation(testChannelMutation())
 
 const query = useQuery({ ...listChannelsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Channel[] },
-    ErrorModel
-  >),
-  secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Secret[] },
-    ErrorModel
-  >),
-  deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Delivery[] },
-    ErrorModel
-  >),
-  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Monitor[] },
-    ErrorModel
-  >),
-  open = ref(false),
-  saving = ref(false),
-  error = ref(''),
-  tab = ref('channels'),
-  testing = ref(''),
-  deleteTarget = ref<Channel | null>(null),
-  deleteOpen = ref(false)
+  { items: Channel[] },
+  ErrorModel
+>)
+const secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Secret[] },
+  ErrorModel
+>)
+const deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Delivery[] },
+  ErrorModel
+>)
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Monitor[] },
+  ErrorModel
+>)
+const open = ref(false)
+const saving = ref(false)
+const error = ref('')
+const tab = ref('channels')
+const testing = ref('')
+const deleteTarget = ref<Channel | null>(null)
+const deleteOpen = ref(false)
 const empty = (): Channel => ({
-    id: '',
-    name: '',
-    serviceUrlSecretId: '',
-    enabled: true,
-    createdAt: 0,
-    updatedAt: 0,
-  }),
-  form = reactive(empty())
+  id: '',
+  name: '',
+  serviceUrlSecretId: '',
+  enabled: true,
+  createdAt: 0,
+  updatedAt: 0,
+})
+const form = reactive(empty())
 function edit(channel?: Channel) {
   Object.assign(form, channel ? clone(channel) : empty())
   error.value = ''

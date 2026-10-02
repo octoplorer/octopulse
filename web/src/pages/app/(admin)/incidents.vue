@@ -27,54 +27,54 @@ const { t } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.incidents' } })
 
-const createIncident = useMutation(createIncidentsMutation()),
-  updateIncident = useMutation(updateIncidentsMutation()),
-  publishIncidentUpdate = useMutation(createIncidentUpdateMutation())
+const createIncident = useMutation(createIncidentsMutation())
+const updateIncident = useMutation(updateIncidentsMutation())
+const publishIncidentUpdate = useMutation(createIncidentUpdateMutation())
 
 const query = useQuery({ ...listIncidentsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Incident[] },
-    ErrorModel
-  >),
-  pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Page[] },
-    ErrorModel
-  >),
-  monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-    { items: Monitor[] },
-    ErrorModel
-  >),
-  open = ref(false),
-  detailOpen = ref(false),
-  selected = ref<Incident | null>(null),
-  saving = ref(false),
-  error = ref(''),
-  updateBody = ref(''),
-  updateStatus = ref<Incident['status']>('investigating'),
-  filter = ref('active')
+  { items: Incident[] },
+  ErrorModel
+>)
+const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Page[] },
+  ErrorModel
+>)
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
+  { items: Monitor[] },
+  ErrorModel
+>)
+const open = ref(false)
+const detailOpen = ref(false)
+const selected = ref<Incident | null>(null)
+const saving = ref(false)
+const error = ref('')
+const updateBody = ref('')
+const updateStatus = ref<Incident['status']>('investigating')
+const filter = ref('active')
 const empty = (): Incident => ({
-    id: '',
-    title: '',
-    body: '',
-    status: 'investigating',
-    impact: 'none',
-    pageIds: [],
-    monitorIds: [],
-    updates: [],
-    createdAt: 0,
-    updatedAt: 0,
-    resolvedAt: 0,
-  }),
-  form = reactive(empty()),
-  items = computed(
-    () =>
-      query.data.value?.items
-        .filter(
-          (x) =>
-            filter.value === 'all' ||
-            (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'),
-        )
-        .sort((a, b) => b.updatedAt - a.updatedAt) || [],
-  )
+  id: '',
+  title: '',
+  body: '',
+  status: 'investigating',
+  impact: 'none',
+  pageIds: [],
+  monitorIds: [],
+  updates: [],
+  createdAt: 0,
+  updatedAt: 0,
+  resolvedAt: 0,
+})
+const form = reactive(empty())
+const items = computed(
+  () =>
+    query.data.value?.items
+      .filter(
+        (x) =>
+          filter.value === 'all' ||
+          (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'),
+      )
+      .sort((a, b) => b.updatedAt - a.updatedAt) || [],
+)
 function edit(incident: Incident) {
   Object.assign(form, clone(incident))
   error.value = ''

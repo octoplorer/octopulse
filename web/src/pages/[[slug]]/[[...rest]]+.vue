@@ -12,29 +12,27 @@ import StatusPage from '../../components/StatusPage.vue'
 import AsyncState from '../../components/AsyncState.vue'
 
 const { t } = useI18n({ useScope: 'global' })
-const route = useRoute('/[[slug]]/[[...rest]]+'),
-  isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents'),
-  query = useQuery(
-    () =>
-      ({
-        ...(isDomain.value
-          ? resolvePublicPageQuery({ query: { host: location.hostname } })
-          : getPublicPageQuery({ path: { slug: String(route.params.slug) } })),
-        staleTime: 5000,
-      }) as DefineQueryOptions<PublicPage, ErrorModel>,
-  ),
-  rest = computed(() =>
-    Array.isArray(route.params.rest)
-      ? route.params.rest.join('/')
-      : String(route.params.rest || ''),
-  ),
-  incidentId = computed(() =>
-    isDomain.value && route.params.slug === 'incidents'
-      ? rest.value.split('/')[0]
-      : rest.value.startsWith('incidents/')
-        ? rest.value.split('/')[1]
-        : undefined,
-  )
+const route = useRoute('/[[slug]]/[[...rest]]+')
+const isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents')
+const query = useQuery(
+  () =>
+    ({
+      ...(isDomain.value
+        ? resolvePublicPageQuery({ query: { host: location.hostname } })
+        : getPublicPageQuery({ path: { slug: String(route.params.slug) } })),
+      staleTime: 5000,
+    }) as DefineQueryOptions<PublicPage, ErrorModel>,
+)
+const rest = computed(() =>
+  Array.isArray(route.params.rest) ? route.params.rest.join('/') : String(route.params.rest || ''),
+)
+const incidentId = computed(() =>
+  isDomain.value && route.params.slug === 'incidents'
+    ? rest.value.split('/')[0]
+    : rest.value.startsWith('incidents/')
+      ? rest.value.split('/')[1]
+      : undefined,
+)
 useIntervalFn(() => query.refetch(), 30000)
 watchEffect(() => {
   const page = query.data.value

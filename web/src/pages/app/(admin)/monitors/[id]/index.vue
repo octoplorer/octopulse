@@ -43,47 +43,46 @@ const { t, n } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.monitorDetails' } })
 
-const checkMonitor = useMutation(checkMonitorMutation()),
-  updateMonitor = useMutation(updateMonitorMutation()),
-  rotateHeartbeat = useMutation(rotateHeartbeatMutation()),
-  deleteMonitor = useMutation(deleteMonitorMutation())
+const checkMonitor = useMutation(checkMonitorMutation())
+const updateMonitor = useMutation(updateMonitorMutation())
+const rotateHeartbeat = useMutation(rotateHeartbeatMutation())
+const deleteMonitor = useMutation(deleteMonitorMutation())
 
-const route = useRoute('/app/(admin)/monitors/[id]/'),
-  router = useRouter(),
-  query = useQuery(
-    () =>
-      ({
-        ...getMonitorQuery({ path: { id: route.params.id } }),
-        staleTime: 5000,
-      }) as DefineQueryOptions<Monitor, ErrorModel>,
-  ),
-  period = ref('24h'),
-  historyTo = ref(Date.now()),
-  historyWindow = computed(() => ({
-    from:
-      historyTo.value - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
-    to: historyTo.value,
-  })),
-  history = useQuery(
-    () =>
-      ({
-        ...getMonitorHistoryQuery({
-          path: { id: route.params.id },
-          query: historyWindow.value,
-        }),
-        staleTime: 5000,
-      }) as DefineQueryOptions<MonitorHistory, ErrorModel>,
-  ),
-  busy = ref(false),
-  confirmDelete = ref(false),
-  selectedRound = ref<Round | null>(null),
-  diagnosticsOpen = ref(false),
-  heartbeatToken = ref(''),
-  heartbeatUrl = ref(''),
-  tab = ref('history')
-const { copy, copied } = useClipboard(),
-  monitor = computed(() => query.data.value),
-  availability = computed(() => history.data.value?.availability)
+const route = useRoute('/app/(admin)/monitors/[id]/')
+const router = useRouter()
+const query = useQuery(
+  () =>
+    ({
+      ...getMonitorQuery({ path: { id: route.params.id } }),
+      staleTime: 5000,
+    }) as DefineQueryOptions<Monitor, ErrorModel>,
+)
+const period = ref('24h')
+const historyTo = ref(Date.now())
+const historyWindow = computed(() => ({
+  from: historyTo.value - (period.value === '7d' ? 7 : period.value === '30d' ? 30 : 1) * 86400000,
+  to: historyTo.value,
+}))
+const history = useQuery(
+  () =>
+    ({
+      ...getMonitorHistoryQuery({
+        path: { id: route.params.id },
+        query: historyWindow.value,
+      }),
+      staleTime: 5000,
+    }) as DefineQueryOptions<MonitorHistory, ErrorModel>,
+)
+const busy = ref(false)
+const confirmDelete = ref(false)
+const selectedRound = ref<Round | null>(null)
+const diagnosticsOpen = ref(false)
+const heartbeatToken = ref('')
+const heartbeatUrl = ref('')
+const tab = ref('history')
+const { copy, copied } = useClipboard()
+const monitor = computed(() => query.data.value)
+const availability = computed(() => history.data.value?.availability)
 watch([period, () => route.params.id], () => {
   historyTo.value = Date.now()
 })

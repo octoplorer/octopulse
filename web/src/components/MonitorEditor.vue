@@ -39,27 +39,27 @@ const queryCache = useQueryCache()
 const createMonitor = useMutation(createMonitorMutation())
 const updateMonitor = useMutation(updateMonitorMutation())
 
-const route = useRoute<'/app/(admin)/monitors/new' | '/app/(admin)/monitors/[id]/edit'>(),
-  router = useRouter(),
-  id = computed(() => ('id' in route.params ? route.params.id : undefined)),
-  editing = computed(() => !!id.value),
-  loading = ref(true),
-  saving = ref(false),
-  error = ref(''),
-  channels = ref<Channel[]>([]),
-  secrets = ref<Secret[]>([]),
-  form = reactive<Monitor>(newMonitor()),
-  tags = ref(''),
-  dnsValues = ref(''),
-  warningDays = ref('30, 14, 7, 1'),
-  statusCodes = ref(''),
-  statusRanges = ref('200-299'),
-  contains = ref(''),
-  notContains = ref(''),
-  regex = ref(''),
-  headerAssertions = ref('[]'),
-  jsonAssertions = ref('[]'),
-  activeTab = ref('target')
+const route = useRoute<'/app/(admin)/monitors/new' | '/app/(admin)/monitors/[id]/edit'>()
+const router = useRouter()
+const id = computed(() => ('id' in route.params ? route.params.id : undefined))
+const editing = computed(() => !!id.value)
+const loading = ref(true)
+const saving = ref(false)
+const error = ref('')
+const channels = ref<Channel[]>([])
+const secrets = ref<Secret[]>([])
+const form = reactive<Monitor>(newMonitor())
+const tags = ref('')
+const dnsValues = ref('')
+const warningDays = ref('30, 14, 7, 1')
+const statusCodes = ref('')
+const statusRanges = ref('200-299')
+const contains = ref('')
+const notContains = ref('')
+const regex = ref('')
+const headerAssertions = ref('[]')
+const jsonAssertions = ref('[]')
+const activeTab = ref('target')
 watch(
   () => form.type,
   (type, previous) => {

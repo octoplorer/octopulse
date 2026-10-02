@@ -23,16 +23,16 @@ const createSession = useMutation({
   onSuccess: applySession,
 })
 const setup = useMutation(createSetupMutation())
-const route = useRoute(),
-  router = useRouter(),
-  required = ref(false),
-  loading = ref(true),
-  saving = ref(false),
-  error = ref(''),
-  username = ref(''),
-  password = ref(''),
-  organizationName = ref('Octopulse'),
-  timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
+const route = useRoute()
+const router = useRouter()
+const required = ref(false)
+const loading = ref(true)
+const saving = ref(false)
+const error = ref('')
+const username = ref('')
+const password = ref('')
+const organizationName = ref('Octopulse')
+const timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
 onMounted(async () => {
   try {
     const setupState = await queryCache.refresh(

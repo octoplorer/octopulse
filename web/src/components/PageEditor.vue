@@ -48,18 +48,18 @@ const deletePage = useMutation(deletePagesMutation())
 const origin = location.origin
 const newID = () =>
   crypto.randomUUID?.() || `group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-const route = useRoute<'/app/(admin)/pages/new' | '/app/(admin)/pages/[id]'>(),
-  router = useRouter(),
-  id = computed(() => ('id' in route.params ? route.params.id : undefined)),
-  editing = computed(() => !!id.value || !!form.id),
-  loading = ref(true),
-  saving = ref(false),
-  error = ref(''),
-  monitors = ref<Monitor[]>([]),
-  allowedDomains = ref<string[]>([]),
-  savedPreview = ref<PublicPage | null>(null),
-  deleteOpen = ref(false),
-  newMonitorIds = reactive<Record<string, string>>({})
+const route = useRoute<'/app/(admin)/pages/new' | '/app/(admin)/pages/[id]'>()
+const router = useRouter()
+const id = computed(() => ('id' in route.params ? route.params.id : undefined))
+const editing = computed(() => !!id.value || !!form.id)
+const loading = ref(true)
+const saving = ref(false)
+const error = ref('')
+const monitors = ref<Monitor[]>([])
+const allowedDomains = ref<string[]>([])
+const savedPreview = ref<PublicPage | null>(null)
+const deleteOpen = ref(false)
+const newMonitorIds = reactive<Record<string, string>>({})
 const form = reactive<Page>({
   id: '',
   name: '',
@@ -199,8 +199,8 @@ function move<T>(values: T[], index: number, delta: number) {
   values.splice(target, 0, value!)
 }
 function addMonitor(groupId: string) {
-  const group = form.draft.groups.find((x) => x.id === groupId),
-    id = newMonitorIds[groupId]
+  const group = form.draft.groups.find((x) => x.id === groupId)
+  const id = newMonitorIds[groupId]
   if (!group || !id) return
   if (form.draft.groups.some((g) => g.monitors.some((m) => m.monitorId === id))) {
     notify(t('pageEditor.thisMonitorIsAlreadyOnThePage'), 'error')

@@ -21,18 +21,19 @@ const segments = computed(() => {
     .map((value, index) => ({ value, at: props.timestamps?.[index] ?? index }))
     .filter((p) => Number.isFinite(p.value) && Number.isFinite(p.at))
   if (!entries.length) return []
-  const max = Math.max(...entries.map((p) => p.value), 1),
-    min = Math.min(...entries.map((p) => p.value), 0),
-    spread = max - min || 1,
-    from = Math.min(...entries.map((p) => p.at)),
-    to = Math.max(...entries.map((p) => p.at)),
-    span = to - from || 1
+  const max = Math.max(...entries.map((p) => p.value), 1)
+  const min = Math.min(...entries.map((p) => p.value), 0)
+  const spread = max - min || 1
+  const from = Math.min(...entries.map((p) => p.at))
+  const to = Math.max(...entries.map((p) => p.at))
+  const span = to - from || 1
   const gaps = entries
-      .slice(1)
-      .map((p, i) => p.at - entries[i]!.at)
-      .filter((g) => g > 0)
-      .sort((a, b) => a - b),
-    gapLimit = props.timestamps && gaps.length ? gaps[Math.floor(gaps.length / 2)]! * 3 : Infinity
+    .slice(1)
+    .map((p, i) => p.at - entries[i]!.at)
+    .filter((g) => g > 0)
+    .sort((a, b) => a - b)
+  const gapLimit =
+    props.timestamps && gaps.length ? gaps[Math.floor(gaps.length / 2)]! * 3 : Infinity
   const paths: string[][] = [[]]
   entries.forEach((p, index) => {
     if (index && p.at - entries[index - 1]!.at > gapLimit) paths.push([])

@@ -24,25 +24,25 @@ definePage({ meta: { title: 'common.settings' } })
 const updateSettings = useMutation(updateSettingsMutation())
 const updateProfile = useMutation(updateProfileMutation())
 const queryCache = useQueryCache()
-const loading = ref(true),
-  saving = ref(false),
-  error = ref(''),
-  tab = ref('personal'),
-  domains = ref(''),
-  form = reactive<OrganizationSettings>({
-    organizationName: '',
-    timezone: 'UTC',
-    locale: 'zh-CN',
-    retention: { roundDays: 14, attemptDays: 3, fiveMinuteDays: 90, historyMonths: 13 },
-    allowedDomains: [],
-  }),
-  profile = reactive({
-    name: currentUser.value?.name || '',
-    locale: currentUser.value?.locale || 'zh-CN',
-    timezone: currentUser.value?.timezone || timezone.value,
-    oldPassword: '',
-    password: '',
-  })
+const loading = ref(true)
+const saving = ref(false)
+const error = ref('')
+const tab = ref('personal')
+const domains = ref('')
+const form = reactive<OrganizationSettings>({
+  organizationName: '',
+  timezone: 'UTC',
+  locale: 'zh-CN',
+  retention: { roundDays: 14, attemptDays: 3, fiveMinuteDays: 90, historyMonths: 13 },
+  allowedDomains: [],
+})
+const profile = reactive({
+  name: currentUser.value?.name || '',
+  locale: currentUser.value?.locale || 'zh-CN',
+  timezone: currentUser.value?.timezone || timezone.value,
+  oldPassword: '',
+  password: '',
+})
 onMounted(async () => {
   try {
     const state = await queryCache.refresh(

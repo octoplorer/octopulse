@@ -20,12 +20,12 @@ const { t, locale } = useI18n({ useScope: 'global' })
 definePage({ meta: { title: 'common.monitors' } })
 
 const query = useQuery({
-    ...listMonitorsQuery(),
-    staleTime: 10000,
-  } as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>),
-  search = ref(''),
-  state = ref('all'),
-  type = ref('all')
+  ...listMonitorsQuery(),
+  staleTime: 10000,
+} as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>)
+const search = ref('')
+const state = ref('all')
+const type = ref('all')
 const items = computed(() =>
   [...(query.data.value?.items || [])].sort((a, b) => a.name.localeCompare(b.name, locale.value)),
 )
