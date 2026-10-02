@@ -77,6 +77,8 @@ mise exec -- aube run --no-install build
 cd ..
 ```
 
+前端单元测试使用 Vitest，复用 `web/vite.config.ts`，在 Node 环境中递归发现 `src` 下的 `*.test.ts` 和 `*.spec.ts`。`test` 命令单次运行全部测试；开发时可在 `web` 目录执行 `mise exec -- aube run --no-install test:watch`，监听文件变化并重跑相关测试。测试文件显式从 `vitest` 导入 `test` 和 `expect`，由 `check` 命令检查类型。
+
 真实 PostgreSQL 的同一业务套件，在仓库根目录执行：
 
 ```sh

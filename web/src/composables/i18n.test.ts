@@ -1,5 +1,4 @@
-import test from 'node:test'
-import assert from 'node:assert/strict'
+import { expect, test } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { i18n, locale, messages, supportedLocales, t } from './i18n.ts'
@@ -26,16 +25,16 @@ test('every supported catalog has the same keys and compiles through Vue I18n', 
     const englishKeys = Object.keys(flattenMessages(messages.en)).sort()
     for (const language of supportedLocales) {
       const catalog = flattenMessages(messages[language])
-      assert.deepEqual(Object.keys(catalog).sort(), englishKeys)
+      expect(Object.keys(catalog).sort()).toStrictEqual(englishKeys)
       locale.value = language
       for (const key of Object.keys(catalog)) {
         const translated = t(key, { count: 2, label: 'Example', value: 42, shown: 1, total: 2 })
-        assert.ok(translated.length > 0, `${language}: ${key} must translate`)
-        assert.notEqual(translated, key, `${language}: ${key} must resolve its message`)
+        expect(translated.length, `${language}: ${key} must translate`).toBeGreaterThan(0)
+        expect(translated, `${language}: ${key} must resolve its message`).not.toBe(key)
       }
     }
-    assert.deepEqual(warnings, [], 'catalogs must compile without warnings')
-    assert.deepEqual(errors, [], 'catalogs must compile without errors')
+    expect(warnings, 'catalogs must compile without warnings').toStrictEqual([])
+    expect(errors, 'catalogs must compile without errors').toStrictEqual([])
   } finally {
     locale.value = originalLocale
     console.warn = originalWarn
@@ -48,14 +47,14 @@ test('translations react to locale changes, interpolate values, and pluralize co
   const translated = computed(() => t('common.monitors'))
   try {
     locale.value = 'en'
-    assert.equal(translated.value, 'Monitors')
-    assert.equal(t('overview.showingMonitors', { shown: 2, total: 5 }), 'Showing 2 of 5 monitors')
-    assert.equal(t('counts.monitors', 0), 'No monitors')
-    assert.equal(t('counts.monitors', 1), '1 monitor')
-    assert.equal(t('counts.monitors', 2), '2 monitors')
+    expect(translated.value).toBe('Monitors')
+    expect(t('overview.showingMonitors', { shown: 2, total: 5 })).toBe('Showing 2 of 5 monitors')
+    expect(t('counts.monitors', 0)).toBe('No monitors')
+    expect(t('counts.monitors', 1)).toBe('1 monitor')
+    expect(t('counts.monitors', 2)).toBe('2 monitors')
     locale.value = 'zh-CN'
-    assert.equal(translated.value, '监控项')
-    assert.equal(t('counts.monitors', 2), '2 个监控项')
+    expect(translated.value).toBe('监控项')
+    expect(t('counts.monitors', 2)).toBe('2 个监控项')
   } finally {
     locale.value = originalLocale
   }
@@ -65,8 +64,7 @@ test('literal JSON and at signs are handled by the message compiler', () => {
   const originalLocale = locale.value
   try {
     locale.value = 'en'
-    assert.equal(
-      t('monitorDetails.postReportsStatusUpOrStatusDownWith'),
+    expect(t('monitorDetails.postReportsStatusUpOrStatusDownWith')).toBe(
       'POST reports: {"status":"up"} or {"status":"down"}, with optional description.',
     )
     const composer = createI18n({
@@ -79,7 +77,7 @@ test('literal JSON and at signs are handled by the message compiler', () => {
         },
       },
     }).global
-    assert.equal(composer.t('common.monitors'), 'support@example.com')
+    expect(composer.t('common.monitors')).toBe('support@example.com')
   } finally {
     locale.value = originalLocale
   }
@@ -94,5 +92,5 @@ test('the configured fallback supplies translations when a locale has no catalog
     missingWarn: false,
     fallbackWarn: false,
   }).global
-  assert.equal(composer.t('common.monitors'), '监控项')
+  expect(composer.t('common.monitors')).toBe('监控项')
 })

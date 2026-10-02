@@ -1,9 +1,13 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import VueRouter from 'vue-router/vite'
 import UnoCSS from 'unocss/vite'
 export default defineConfig({
   plugins: [UnoCSS(), VueRouter(), vue()],
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.ts'],
+  },
   server: {
     port: 5173,
     // The backend compares Origin with Host for write requests. Preserve the browser's authority.

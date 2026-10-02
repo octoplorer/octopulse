@@ -1,5 +1,4 @@
-import test from 'node:test'
-import assert from 'node:assert/strict'
+import { expect, test } from 'vitest'
 import { computed } from 'vue'
 import {
   datetimeInput,
@@ -14,33 +13,33 @@ import { locale } from './i18n.ts'
 
 test('maintenance wall-clock input uses the selected zone, not the process zone', () => {
   const timestamp = datetimeMilliseconds('2026-10-02T09:30', 'Asia/Shanghai')
-  assert.equal(timestamp, Date.UTC(2026, 9, 2, 1, 30))
-  assert.equal(datetimeInput(timestamp, 'Asia/Shanghai'), '2026-10-02T09:30')
-  assert.equal(datetimeInput(timestamp, 'UTC'), '2026-10-02T01:30')
+  expect(timestamp).toBe(Date.UTC(2026, 9, 2, 1, 30))
+  expect(datetimeInput(timestamp, 'Asia/Shanghai')).toBe('2026-10-02T09:30')
+  expect(datetimeInput(timestamp, 'UTC')).toBe('2026-10-02T01:30')
 })
 
 test('nonexistent spring DST times are rejected', () => {
-  assert.throws(() => datetimeMilliseconds('2026-03-08T02:30', 'America/New_York'))
+  expect(() => datetimeMilliseconds('2026-03-08T02:30', 'America/New_York')).toThrow()
 })
 
 test('normal DST time round-trips in the selected zone', () => {
   const timestamp = datetimeMilliseconds('2026-07-01T15:45', 'America/New_York')
-  assert.equal(timestamp, Date.UTC(2026, 6, 1, 19, 45))
-  assert.equal(datetimeInput(timestamp, 'America/New_York'), '2026-07-01T15:45')
+  expect(timestamp).toBe(Date.UTC(2026, 6, 1, 19, 45))
+  expect(datetimeInput(timestamp, 'America/New_York')).toBe('2026-07-01T15:45')
 })
 
 test('missing statistics never appear as perfect uptime', () => {
-  assert.equal(formatPercent(null), '—')
-  assert.equal(formatPercent(undefined), '—')
-  assert.equal(formatPercent(Number.NaN), '—')
-  assert.equal(formatPercent(Infinity), '—')
-  assert.equal(formatPercent(0), '0.00%')
-  assert.equal(formatPercent(1), '100.00%')
-  assert.equal(formatPercent(0.123456), '12.35%')
-  assert.equal(formatPercent(99.99), '99.99%')
-  assert.equal(duration(null), '—')
-  assert.equal(duration(Number.NaN), '—')
-  assert.equal(duration(Infinity), '—')
+  expect(formatPercent(null)).toBe('—')
+  expect(formatPercent(undefined)).toBe('—')
+  expect(formatPercent(Number.NaN)).toBe('—')
+  expect(formatPercent(Infinity)).toBe('—')
+  expect(formatPercent(0)).toBe('0.00%')
+  expect(formatPercent(1)).toBe('100.00%')
+  expect(formatPercent(0.123456)).toBe('12.35%')
+  expect(formatPercent(99.99)).toBe('99.99%')
+  expect(duration(null)).toBe('—')
+  expect(duration(Number.NaN)).toBe('—')
+  expect(duration(Infinity)).toBe('—')
 })
 
 test('human dates follow the active locale and selected display zone', () => {
@@ -57,16 +56,16 @@ test('human dates follow the active locale and selected display zone', () => {
           timeStyle: 'short',
           timeZone: zone,
         }).format(new Date(timestamp))
-        assert.equal(formatDate(timestamp), expected)
-        assert.equal(formatDate(new Date(timestamp).toISOString()), expected)
+        expect(formatDate(timestamp)).toBe(expected)
+        expect(formatDate(new Date(timestamp).toISOString())).toBe(expected)
       }
-      assert.equal(formatDate(0), '—', 'the API uses zero for an unset timestamp')
+      expect(formatDate(0), 'the API uses zero for an unset timestamp').toBe('—')
     }
-    assert.equal(formatDate(undefined), '—')
-    assert.equal(formatDate(null), '—')
-    assert.equal(formatDate(''), '—')
-    assert.equal(formatDate('not a timestamp'), '—')
-    assert.equal(formatDate(Number.NaN), '—')
+    expect(formatDate(undefined)).toBe('—')
+    expect(formatDate(null)).toBe('—')
+    expect(formatDate('')).toBe('—')
+    expect(formatDate('not a timestamp')).toBe('—')
+    expect(formatDate(Number.NaN)).toBe('—')
   } finally {
     locale.value = originalLocale
     timezone.value = originalTimezone
@@ -78,21 +77,21 @@ test('duration units and status labels react to the shared locale', () => {
   const status = computed(() => statusLabel('investigating'))
   try {
     locale.value = 'en'
-    assert.equal(status.value, 'Investigating')
-    assert.equal(duration(42), '42 ms')
-    assert.equal(duration(1250), '1.3 s')
-    assert.equal(duration(90000), '2 min')
-    assert.equal(duration(5400000), '1.5 h')
-    assert.equal(duration(86400000), '1.0 d')
+    expect(status.value).toBe('Investigating')
+    expect(duration(42)).toBe('42 ms')
+    expect(duration(1250)).toBe('1.3 s')
+    expect(duration(90000)).toBe('2 min')
+    expect(duration(5400000)).toBe('1.5 h')
+    expect(duration(86400000)).toBe('1.0 d')
     locale.value = 'zh-CN'
-    assert.equal(status.value, '调查中')
-    assert.equal(duration(42), '42 毫秒')
-    assert.equal(duration(1250), '1.3 秒')
-    assert.equal(duration(90000), '2 分钟')
-    assert.equal(duration(5400000), '1.5 小时')
-    assert.equal(duration(86400000), '1.0 天')
-    assert.equal(statusLabel('new_api_state'), 'new_api_state')
-    assert.equal(statusLabel('constructor'), 'constructor')
+    expect(status.value).toBe('调查中')
+    expect(duration(42)).toBe('42 毫秒')
+    expect(duration(1250)).toBe('1.3 秒')
+    expect(duration(90000)).toBe('2 分钟')
+    expect(duration(5400000)).toBe('1.5 小时')
+    expect(duration(86400000)).toBe('1.0 天')
+    expect(statusLabel('new_api_state')).toBe('new_api_state')
+    expect(statusLabel('constructor')).toBe('constructor')
   } finally {
     locale.value = originalLocale
   }
@@ -102,9 +101,9 @@ test('date validation errors use the current language', () => {
   const originalLocale = locale.value
   try {
     locale.value = 'en'
-    assert.throws(() => datetimeMilliseconds('invalid'), /Invalid date and time/)
+    expect(() => datetimeMilliseconds('invalid')).toThrow(/Invalid date and time/)
     locale.value = 'zh-CN'
-    assert.throws(() => datetimeMilliseconds('invalid'), /日期时间无效/)
+    expect(() => datetimeMilliseconds('invalid')).toThrow(/日期时间无效/)
   } finally {
     locale.value = originalLocale
   }
