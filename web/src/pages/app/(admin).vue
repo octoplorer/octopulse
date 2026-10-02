@@ -21,10 +21,10 @@ import {
   LogOut,
   ChevronRight,
 } from '@lucide/vue'
-import { dark, locale, theme, t, formatDate, statusLabel } from '../lib/preferences'
-import { currentUser, logout, isAdmin } from '../lib/api'
+import { dark, locale, theme, t, formatDate, statusLabel } from '../../lib/preferences'
+import { currentUser, logout, isAdmin } from '../../lib/api'
 import { useIntervalFn, useMediaQuery, onKeyStroke } from '@vueuse/core'
-import Brand from './Brand.vue'
+import Brand from '../../components/Brand.vue'
 const route = useRoute(),
   router = useRouter(),
   menuOpen = ref(false),
@@ -51,7 +51,7 @@ const adminNav = [
   { path: '/app/audit', icon: ScrollText, zh: '审计日志', en: 'Audit log' },
 ]
 const title = computed(() => {
-  const value = route.meta.title as [string, string] | undefined
+  const value = route.meta.title
   return value ? t(...value) : 'Octopulse'
 })
 async function signout() {

@@ -2,19 +2,22 @@
 import { ref, reactive, computed } from 'vue'
 import { Plus, Bell, Send, Pencil, Trash2, RefreshCw } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useCollection } from '../lib/data'
-import type { Channel, Secret, Delivery, Monitor } from '../lib/types'
-import { api, isAdmin } from '../lib/api'
-import { t, formatDate, statusLabel } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import { clone } from '../lib/form'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Toggle from '../components/Toggle.vue'
-import SecretSelect from '../components/SecretSelect.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { Channel, Secret, Delivery, Monitor } from '../../../lib/types'
+import { api, isAdmin } from '../../../lib/api'
+import { t, formatDate, statusLabel } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import { clone } from '../../../lib/form'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Toggle from '../../../components/Toggle.vue'
+import SecretSelect from '../../../components/SecretSelect.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['通知与投递', 'Notifications'] } })
+
 const query = useCollection<Channel>('channels'),
   secrets = useCollection<Secret>('secrets'),
   deliveries = useCollection<Delivery>('deliveries'),

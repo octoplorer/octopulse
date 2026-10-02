@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { Plus, MessageSquare, CheckCircle2 } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Incident, Page, Monitor } from '../lib/types'
-import { api, canEdit } from '../lib/api'
-import { t, formatDate, statusLabel } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import { clone } from '../lib/form'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { Incident, Page, Monitor } from '../../../lib/types'
+import { api, canEdit } from '../../../lib/api'
+import { t, formatDate, statusLabel } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import { clone } from '../../../lib/form'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['事件公告', 'Incidents'] } })
+
 const query = useCollection<Incident>('incidents'),
   pages = useCollection<Page>('pages'),
   monitors = useCollection<Monitor>('monitors'),

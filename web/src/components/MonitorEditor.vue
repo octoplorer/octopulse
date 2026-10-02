@@ -17,17 +17,18 @@ import {
 import { clone, parseJSON, splitValues, defaults } from '../lib/form'
 import { t } from '../lib/preferences'
 import { errorText, notify } from '../lib/notices'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Toggle from '../components/Toggle.vue'
-import KeyValues from '../components/KeyValues.vue'
-import SecretSelect from '../components/SecretSelect.vue'
-import TLSFields from '../components/TLSFields.vue'
-import ConnectionFields from '../components/ConnectionFields.vue'
-import AsyncState from '../components/AsyncState.vue'
-const route = useRoute(),
+import PageHeader from './PageHeader.vue'
+import Field from './Field.vue'
+import Toggle from './Toggle.vue'
+import KeyValues from './KeyValues.vue'
+import SecretSelect from './SecretSelect.vue'
+import TLSFields from './TLSFields.vue'
+import ConnectionFields from './ConnectionFields.vue'
+import AsyncState from './AsyncState.vue'
+const route = useRoute<'/app/(admin)/monitors/new' | '/app/(admin)/monitors/[id]/edit'>(),
   router = useRouter(),
-  editing = computed(() => !!route.params.id),
+  id = computed(() => ('id' in route.params ? route.params.id : undefined)),
+  editing = computed(() => !!id.value),
   loading = ref(true),
   saving = ref(false),
   error = ref(''),
@@ -76,7 +77,7 @@ async function load() {
     channels.value = c.items
     secrets.value = s.items
     if (editing.value) {
-      Object.assign(form, await api<Monitor>(`monitors/${route.params.id}`))
+      Object.assign(form, await api<Monitor>(`monitors/${id.value}`))
       if (form.http) form.http = defaults(emptyHTTP(), form.http)
       if (form.tcp) form.tcp = defaults(emptyTCP(), form.tcp)
       if (form.dns) form.dns = defaults(emptyDNS(), form.dns)
@@ -203,7 +204,7 @@ const charsetOptions = [
         'Define the target, success criteria, and confirmation policy.',
       )
     "
-    ><RouterLink :to="editing ? `/app/monitors/${route.params.id}` : '/app/monitors'" class="button"
+    ><RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'" class="button"
       ><ArrowLeft :size="15" />{{ t('返回', 'Back') }}</RouterLink
     ><button class="button primary" :disabled="saving || !canEdit()" form="monitor-form">
       <Save :size="15" />{{ saving ? t('保存中…', 'Saving…') : t('保存监控项', 'Save monitor') }}

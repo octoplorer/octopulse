@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Plus, KeyRound, Pencil, Trash2 } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Secret } from '../lib/types'
-import { api, isAdmin } from '../lib/api'
-import { t, formatDate } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { Secret } from '../../../lib/types'
+import { api, isAdmin } from '../../../lib/api'
+import { t, formatDate } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['秘密凭据', 'Secrets'], roles: ['admin'] } })
+
 const query = useCollection<Secret>('secrets'),
   open = ref(false),
   saving = ref(false),

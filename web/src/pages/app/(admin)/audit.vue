@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Search, RefreshCw, ScrollText } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Audit } from '../lib/types'
-import { t, formatDate } from '../lib/preferences'
-import PageHeader from '../components/PageHeader.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { Audit } from '../../../lib/types'
+import { t, formatDate } from '../../../lib/preferences'
+import PageHeader from '../../../components/PageHeader.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['审计日志', 'Audit log'], roles: ['admin'] } })
+
 const query = useCollection<Audit>('audit'),
   search = ref(''),
   items = computed(

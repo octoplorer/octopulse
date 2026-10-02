@@ -2,11 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ShieldCheck } from '@lucide/vue'
-import Brand from '../components/Brand.vue'
-import Field from '../components/Field.vue'
-import { dark, t } from '../lib/preferences'
-import { api, login, loadSession } from '../lib/api'
-import { errorText } from '../lib/notices'
+import Brand from '../../components/Brand.vue'
+import Field from '../../components/Field.vue'
+import { dark, t } from '../../lib/preferences'
+import { api, login, loadSession } from '../../lib/api'
+import { errorText } from '../../lib/notices'
 const route = useRoute(),
   router = useRouter(),
   required = ref(false),

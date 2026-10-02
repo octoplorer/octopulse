@@ -1,17 +1,26 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Plus, Pencil, Trash2, CalendarClock } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Maintenance, Monitor, Page } from '../lib/types'
-import { api, canEdit } from '../lib/api'
-import { t, formatDate, timezone, datetimeInput, datetimeMilliseconds } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import { clone } from '../lib/form'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { Maintenance, Monitor, Page } from '../../../lib/types'
+import { api, canEdit } from '../../../lib/api'
+import {
+  t,
+  formatDate,
+  timezone,
+  datetimeInput,
+  datetimeMilliseconds,
+} from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import { clone } from '../../../lib/form'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['计划维护', 'Maintenance'] } })
+
 const query = useCollection<Maintenance>('maintenance'),
   monitors = useCollection<Monitor>('monitors'),
   pages = useCollection<Page>('pages'),
