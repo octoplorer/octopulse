@@ -42,7 +42,7 @@ mise run dev:web
 
 前端使用 Vite、Vue Router、VueUse、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。Huma 的 Go 路由与类型生成 OpenAPI，HeyAPI 生成 TypeScript、SDK 和 Colada 查询选项。
 
-页面路由由 Vue Router 5 的 `vue-router/vite` 插件从 `web/src/pages` 自动生成。`app/login.vue` 是独立登录页，`app/(admin).vue` 提供后台布局，`app/(admin)/` 内的页面通过 `definePage()` 声明双语标题和角色权限；`[id]` 目录用于动态参数。公开状态页使用 `[[slug]]/[[...rest]]+.vue`，兼容路径入口和独立域名。新增页面只需创建对应 `.vue` 文件；开发服务器会更新路由，类型检查和构建前会自动生成 `web/typed-router.d.ts`。也可在 `web` 目录执行 `mise exec -- aube run --no-install generate:routes` 单独生成路由类型。
+页面路由由 Vue Router 5 官方的 `vue-router/vite` 插件从 `web/src/pages` 自动生成。`app/login.vue` 是独立登录页，`app/(admin).vue` 提供后台布局，`app/(admin)/` 内的页面通过 `definePage()` 声明双语标题和角色权限；`[id]` 目录用于动态参数。公开状态页使用 `[[slug]]/[[...rest]]+.vue`，兼容路径入口和独立域名。新增页面只需创建对应 `.vue` 文件；开发服务器会更新路由，插件会在开发和构建时生成 `web/typed-router.d.ts`，页面变更应连同更新后的路由类型声明一起提交。
 
 ## 构建和二进制运行
 
