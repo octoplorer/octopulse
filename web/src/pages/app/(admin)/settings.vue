@@ -6,7 +6,7 @@ import { Tabs } from '@ark-ui/vue/tabs'
 import { response, isAdmin, currentUser } from '../../../lib/api'
 import * as sdk from '../../../client/sdk.gen'
 import type { Settings as OrganizationSettings, User } from '../../../lib/types'
-import { resolveLocale, languageOptions } from '../../../lib/i18n'
+import { languageOptions } from '../../../lib/i18n'
 import { theme, timezone } from '../../../lib/preferences'
 import { notify, errorText } from '../../../lib/notices'
 import PageHeader from '../../../components/PageHeader.vue'
@@ -30,7 +30,7 @@ const loading = ref(true),
   }),
   profile = reactive({
     name: currentUser.value?.name || '',
-    locale: currentUser.value?.locale || resolveLocale(locale.value),
+    locale: currentUser.value?.locale || 'zh-CN',
     timezone: currentUser.value?.timezone || timezone.value,
     oldPassword: '',
     password: '',

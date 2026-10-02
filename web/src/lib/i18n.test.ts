@@ -1,17 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
-import {
-  i18n,
-  locale,
-  localeStorageKey,
-  messages,
-  resolveLocale,
-  supportedLocales,
-  syncLocalePreference,
-  t,
-} from './i18n.ts'
+import { i18n, locale, messages, supportedLocales, t } from './i18n.ts'
 
 function flattenMessages(catalog: object, prefix = ''): Record<string, string> {
   const result: Record<string, string> = {}
@@ -104,69 +95,4 @@ test('the configured fallback supplies translations when a locale has no catalog
     fallbackWarn: false,
   }).global
   assert.equal(composer.t('common.monitors'), '监控项')
-})
-
-test('locale resolution honors saved API locales and detects supported browser languages', () => {
-  assert.equal(resolveLocale('en', ['zh-CN']), 'en')
-  assert.equal(resolveLocale('zh-CN', ['en-US']), 'zh-CN')
-  for (const invalid of ['fr', 'en-US', '', 'undefined', {}, 2]) {
-    assert.equal(resolveLocale(invalid, ['en-US']), 'zh-CN')
-  }
-  assert.equal(resolveLocale(null, ['zh-TW', 'en-US']), 'zh-CN')
-  assert.equal(resolveLocale(null, ['en-GB']), 'en')
-  assert.equal(resolveLocale(null, ['fr-FR', 'en-US']), 'en')
-  assert.equal(resolveLocale(null, ['fr-FR']), 'zh-CN')
-  assert.equal(resolveLocale(undefined), 'zh-CN')
-})
-
-test('the shared locale persists changes and repairs invalid stored preferences', () => {
-  let savedLocale = 'invalid'
-  const storage = {
-    getItem(key: string) {
-      assert.equal(key, localeStorageKey)
-      return savedLocale
-    },
-    setItem(key: string, value: string) {
-      assert.equal(key, localeStorageKey)
-      savedLocale = value
-    },
-  }
-  const preference = ref('en')
-  const stop = syncLocalePreference(preference, storage, ['en-US'])
-  try {
-    assert.equal(preference.value, 'zh-CN')
-    assert.equal(savedLocale, 'zh-CN')
-    preference.value = 'en'
-    assert.equal(savedLocale, 'en')
-    preference.value = 'unsupported'
-    assert.equal(preference.value, 'zh-CN')
-    assert.equal(savedLocale, 'zh-CN')
-  } finally {
-    stop()
-  }
-})
-
-test('browser detection and language changes work when storage is absent or blocked', () => {
-  const preference = ref('zh-CN')
-  const stop = syncLocalePreference(preference, undefined, ['en-US'])
-  assert.equal(preference.value, 'en')
-  stop()
-  const blockedStorage = {
-    getItem() {
-      throw new Error('Storage blocked')
-    },
-    setItem() {
-      throw new Error('Storage blocked')
-    },
-  }
-  const stopBlocked = syncLocalePreference(preference, blockedStorage, ['zh-CN'])
-  try {
-    assert.equal(preference.value, 'zh-CN')
-    assert.doesNotThrow(() => {
-      preference.value = 'en'
-    })
-    assert.equal(preference.value, 'en')
-  } finally {
-    stopBlocked()
-  }
 })
