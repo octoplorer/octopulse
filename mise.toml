@@ -34,6 +34,10 @@ run = "go test ./..."
 dir = "web"
 run = "aube run check"
 
+[tasks."lint:web"]
+dir = "web"
+run = "aube run lint"
+
 [tasks."build:web"]
 dir = "web"
 run = "aube run build"
@@ -43,7 +47,7 @@ run = "go build -trimpath -o bin/octopulse ./cmd/octopulse"
 depends = ["build:web"]
 
 [tasks.check]
-depends = ["test:go", "check:web"]
+depends = ["test:go", "check:web", "lint:web"]
 
 [tasks.build]
 depends = ["build:go"]

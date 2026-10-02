@@ -35,6 +35,8 @@ mise run dev:web
 
 前端使用 Vite、Vue Router、Vue I18n、VueUse、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。
 
+代码检查与格式化统一由 ESLint 和 `@antfu/eslint-config` 管理，配置位于 `web/eslint.config.js`；CSS 和 HTML 通过 `eslint-plugin-format` 格式化。生成的 `web/src/client`、`web/typed-router.d.ts`、构建产物 `web/dist` 和 `web/aube-lock.yaml` 不参与检查。在 `web` 目录执行 `mise exec -- aube run --no-install lint:fix` 自动修复；`format` 和 `format:check` 分别保留为 `lint:fix` 和 `lint` 的兼容入口。
+
 ### 页面路由
 
 页面路由由 Vue Router 5 官方的 `vue-router/vite` 插件从 `web/src/pages` 自动生成。`app/login.vue` 是独立登录页，`app/(admin).vue` 提供后台布局，`app/(admin)/` 内的页面通过 `definePage()` 声明标题的翻译 key 和角色权限；`[id]` 目录用于动态参数。公开状态页使用 `[[slug]]/[[...rest]]+.vue`，兼容路径入口和独立域名。新增页面只需创建对应 `.vue` 文件；开发服务器会更新路由，插件会在开发和构建时生成 `web/typed-router.d.ts`，页面变更应连同更新后的路由类型声明一起提交。
@@ -70,14 +72,16 @@ mise run generate:web
 mise exec -- go test -race -p 1 ./...
 mise exec -- go vet ./...
 cd web
-mise exec -- aube run --no-install format:check
+mise exec -- aube run --no-install lint
 mise exec -- aube run --no-install check
 mise exec -- aube run --no-install test
 mise exec -- aube run --no-install build
 cd ..
 ```
 
-前端单元测试使用 Vitest，复用 `web/vite.config.ts`，在 Node 环境中递归发现 `src` 下的 `*.test.ts` 和 `*.spec.ts`。`test` 命令单次运行全部测试；开发时可在 `web` 目录执行 `mise exec -- aube run --no-install test:watch`，监听文件变化并重跑相关测试。测试文件显式从 `vitest` 导入 `test` 和 `expect`，由 `check` 命令检查类型。
+前端单元测试使用 Vitest，复用 `web/vite.config.ts`，在 Node 环境中递归发现 `src` 下的 `*.test.ts` 和 `*.spec.ts`。`test` 命令单次运行全部测试；开发时可在 `web` 目录执行 `mise exec -- aube run --no-install test:watch`，监听文件变化并重跑相关测试。测试文件显式从 `vitest` 导入 `it` 和 `expect`，由 `check` 命令检查类型。
+
+在仓库根目录运行 `mise run lint:web` 单独检查前端代码；`mise run check` 同时运行 Go 测试、前端类型检查和 lint。lint 检查以零警告为通过条件。
 
 真实 PostgreSQL 的同一业务套件，在仓库根目录执行：
 
@@ -89,6 +93,6 @@ mise exec -- go test -race -p 1 -count=1 ./...
 
 测试数据库必须专用；测试创建并清理独立 schema，部分测试会终止自身锁连接。数据库实例锁跨 schema，`-p 1` 防止不同包并行争抢同一数据库。安装匹配的 `pg_dump` 和 `pg_restore`，才能运行真实 PostgreSQL 备份恢复用例。
 
-[CI](../.github/workflows/verify.yml) 安装 mise 固定工具链和 aube 锁定依赖，对 SQLite 及真实 PostgreSQL 运行竞态检测，检查 sqlc/OpenAPI/HeyAPI 生成文件漂移，执行前端格式、类型、单元测试和构建，并打包 Linux amd64 二进制与 `web/dist`。工作流手动触发时可选择额外容量测试；完整负载命令与限制见 [容量记录](capacity.md)。
+[CI](../.github/workflows/verify.yml) 安装 mise 固定工具链和 aube 锁定依赖，对 SQLite 及真实 PostgreSQL 运行竞态检测，检查 sqlc/OpenAPI/HeyAPI 生成文件漂移，执行前端 lint、类型、单元测试和构建，并打包 Linux amd64 二进制与 `web/dist`。工作流手动触发时可选择额外容量测试；完整负载命令与限制见 [容量记录](capacity.md)。
 
 首版交付的本地验收记录覆盖 Darwin arm64 与原生 Linux arm64 容器；后续改动的验证记录和当前实现差距见 [验收映射](acceptance.md)。历史结果不代表当前提交已重新完成整体验收，远程 CI 和 Linux amd64 产物的验证状态以对应提交的工作流结果为准。
