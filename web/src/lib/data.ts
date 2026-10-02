@@ -1,4 +1,4 @@
-import { useQuery, useQueryCache, type UseQueryOptions } from '@pinia/colada'
+import { useQuery, type UseQueryOptions } from '@pinia/colada'
 import { currentUser } from './api'
 import type { ErrorModel } from '../client/types.gen'
 type QueryOptions = Pick<UseQueryOptions<unknown, ErrorModel>, 'query'>
@@ -15,14 +15,4 @@ export function useRecord<T>(name: () => string, options: () => QueryOptions) {
     query: async (context) => (await options().query(context)) as T,
     staleTime: 5000,
   })
-}
-export function useInvalidate() {
-  const cache = useQueryCache()
-  return async (name?: string) => {
-    if (name)
-      await cache.invalidateQueries({
-        key: ['collection', currentUser.value?.id || 'anonymous', name],
-      })
-    await cache.invalidateQueries({ key: ['record'] })
-  }
 }

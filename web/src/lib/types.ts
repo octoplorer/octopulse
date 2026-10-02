@@ -32,7 +32,7 @@ export type Monitor = Omit<
   heartbeat?: HeartbeatConfig
   certificate?: CertificateConfig
 }
-export type IncidentUpdate = Contract.IncidentUpdate
+type IncidentUpdate = Contract.IncidentUpdate
 export type Incident = Omit<Contract.Incident, 'monitorIds' | 'pageIds' | 'updates'> & {
   monitorIds: string[]
   pageIds: string[]
@@ -42,8 +42,7 @@ export type Maintenance = Omit<Contract.Maintenance, 'monitorIds' | 'pageIds'> &
   monitorIds: string[]
   pageIds: string[]
 }
-export type Availability = Contract.Availability
-export type LatencyPoint = Contract.LatencyPoint
+type LatencyPoint = Contract.LatencyPoint
 export type Audit = Contract.Audit
 export type Settings = Omit<Contract.Settings, 'allowedDomains'> & { allowedDomains: string[] }
 export type Attempt = Contract.Attempt
@@ -52,8 +51,8 @@ export type MonitorHistory = Omit<Contract.MonitorHistory, 'rounds' | 'latency'>
   rounds: Round[]
   latency: LatencyPoint[]
 }
-export type PageMonitor = Contract.PageMonitor
-export type PageGroup = Omit<Contract.PageGroup, 'monitors'> & { monitors: PageMonitor[] }
+type PageMonitor = Contract.PageMonitor
+type PageGroup = Omit<Contract.PageGroup, 'monitors'> & { monitors: PageMonitor[] }
 export type PageConfig = Omit<Contract.PageConfig, 'groups' | 'links'> & {
   groups: PageGroup[]
   links: Contract.Link[]
@@ -62,9 +61,9 @@ export type Page = Omit<Contract.Page, 'draft' | 'published'> & {
   draft: PageConfig
   published?: PageConfig
 }
-export type PublicMonitor = Omit<Contract.PublicMonitor, 'latency'> & { latency: LatencyPoint[] }
-export type PublicGroup = Omit<Contract.PublicGroup, 'monitors'> & { monitors: PublicMonitor[] }
-export type PublicIncident = Omit<Contract.PublicIncident, 'updates'> & {
+type PublicMonitor = Omit<Contract.PublicMonitor, 'latency'> & { latency: LatencyPoint[] }
+type PublicGroup = Omit<Contract.PublicGroup, 'monitors'> & { monitors: PublicMonitor[] }
+type PublicIncident = Omit<Contract.PublicIncident, 'updates'> & {
   updates: IncidentUpdate[]
 }
 export type PublicPage = Omit<

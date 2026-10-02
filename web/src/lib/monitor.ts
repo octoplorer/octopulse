@@ -16,14 +16,14 @@ export const monitorTypes = [
   { value: 'heartbeat', label: 'monitorTypes.heartbeat' },
   { value: 'certificate', label: 'monitorTypes.certificateExpiry' },
 ]
-export const emptyTLS = (): TLSConfig => ({
+const emptyTLS = (): TLSConfig => ({
   enabled: false,
   insecureSkipVerify: false,
   serverName: '',
   minVersion: '',
   maxVersion: '',
 })
-export const emptyConnection = (): ConnectionConfig => ({
+const emptyConnection = (): ConnectionConfig => ({
   proxyUrl: '',
   proxyUsername: '',
   dnsServer: '',
