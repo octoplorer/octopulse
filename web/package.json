@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "typecheck": "vue-tsc --noEmit",
-    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "node scripts/generate-page-routes.mjs && vue-tsc --noEmit",
+    "build": "node scripts/generate-page-routes.mjs && vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "generate": "openapi-ts && node scripts/generate-routes.mjs",
-    "check": "vue-tsc --noEmit",
+    "generate": "openapi-ts && node scripts/generate-routes.mjs && node scripts/generate-page-routes.mjs",
+    "generate:routes": "node scripts/generate-page-routes.mjs",
+    "check": "node scripts/generate-page-routes.mjs && vue-tsc --noEmit",
     "test": "node --experimental-strip-types --test src/lib/*.test.ts scripts/*.test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

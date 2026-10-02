@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { Server, Settings, RefreshCw, ExternalLink, ArrowUpRight, Save, Clock } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useRecord, useCollection } from '../lib/data'
+import { useRecord, useCollection } from '../../../lib/data'
 import type {
   BeszelConfig,
   BeszelSystem,
@@ -12,19 +12,22 @@ import type {
   BeszelContainer,
   BeszelContainers,
   Secret,
-} from '../lib/types'
-import { api, isAdmin } from '../lib/api'
-import { t, formatDate, duration } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
+} from '../../../lib/types'
+import { api, isAdmin } from '../../../lib/api'
+import { t, formatDate, duration } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
 import { useIntervalFn } from '@vueuse/core'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Toggle from '../components/Toggle.vue'
-import SecretSelect from '../components/SecretSelect.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
-import Sparkline from '../components/Sparkline.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Toggle from '../../../components/Toggle.vue'
+import SecretSelect from '../../../components/SecretSelect.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+import Sparkline from '../../../components/Sparkline.vue'
+
+definePage({ meta: { title: ['服务器', 'Servers'] } })
+
 const query = useRecord<BeszelSystems>(() => 'beszel/systems'),
   secrets = useCollection<Secret>('secrets'),
   configOpen = ref(false),

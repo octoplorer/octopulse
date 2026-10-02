@@ -19,18 +19,19 @@ import { publishedEntry } from '../lib/pages'
 import { t, formatDate } from '../lib/preferences'
 import { notify, errorText } from '../lib/notices'
 import { clone } from '../lib/form'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import StatusPage from '../components/StatusPage.vue'
-import AsyncState from '../components/AsyncState.vue'
-import Modal from '../components/Modal.vue'
-import Toggle from '../components/Toggle.vue'
+import PageHeader from './PageHeader.vue'
+import Field from './Field.vue'
+import StatusPage from './StatusPage.vue'
+import AsyncState from './AsyncState.vue'
+import Modal from './Modal.vue'
+import Toggle from './Toggle.vue'
 const origin = location.origin
 const newID = () =>
   crypto.randomUUID?.() || `group-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-const route = useRoute(),
+const route = useRoute<'/app/(admin)/pages/new' | '/app/(admin)/pages/[id]'>(),
   router = useRouter(),
-  editing = computed(() => !!route.params.id),
+  id = computed(() => ('id' in route.params ? route.params.id : undefined)),
+  editing = computed(() => !!id.value || !!form.id),
   loading = ref(true),
   saving = ref(false),
   error = ref(''),
@@ -77,8 +78,8 @@ async function load() {
     monitors.value = m.items
     allowedDomains.value = s.allowedDomains || []
     if (editing.value) {
-      replacePage(await api<Page>(`pages/${route.params.id}`))
-      savedPreview.value = await api<PublicPage>(`pages/${route.params.id}/preview`)
+      replacePage(await api<Page>(`pages/${id.value}`))
+      savedPreview.value = await api<PublicPage>(`pages/${id.value}/preview`)
     }
   } catch (e) {
     error.value = errorText(e)
@@ -216,13 +217,13 @@ async function save(publish = false) {
       body: clone(form),
     })
     replacePage(data)
-    if (!editing.value) await router.replace(`/app/pages/${form.id}`)
     if (publish) {
       await api<Page>(`pages/${form.id}/publish`, { method: 'POST' })
       replacePage(await api<Page>(`pages/${form.id}`))
       notify(t('状态页已发布', 'Status page published'))
     } else notify(t('草稿已保存', 'Draft saved'))
     savedPreview.value = await api<PublicPage>(`pages/${form.id}/preview`)
+    if (!id.value) await router.replace(`/app/pages/${form.id}`)
   } catch (e) {
     error.value = errorText(e)
   } finally {

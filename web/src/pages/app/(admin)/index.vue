@@ -11,17 +11,20 @@ import {
   RefreshCw,
   Server,
 } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Monitor, Incident, Page, Maintenance } from '../lib/types'
-import { targetOf } from '../lib/monitor'
-import { publishedEntry } from '../lib/pages'
-import { t, formatDate, statusLabel } from '../lib/preferences'
-import { canEdit } from '../lib/api'
+import { useCollection } from '../../../lib/data'
+import type { Monitor, Incident, Page, Maintenance } from '../../../lib/types'
+import { targetOf } from '../../../lib/monitor'
+import { publishedEntry } from '../../../lib/pages'
+import { t, formatDate, statusLabel } from '../../../lib/preferences'
+import { canEdit } from '../../../lib/api'
 import { useIntervalFn } from '@vueuse/core'
-import PageHeader from '../components/PageHeader.vue'
-import StateBadge from '../components/StateBadge.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import PageHeader from '../../../components/PageHeader.vue'
+import StateBadge from '../../../components/StateBadge.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['概览', 'Overview'] } })
+
 const monitors = useCollection<Monitor>('monitors'),
   incidents = useCollection<Incident>('incidents'),
   pages = useCollection<Page>('pages'),

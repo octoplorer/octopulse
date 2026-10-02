@@ -16,20 +16,23 @@ import {
   CheckCircle2,
 } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { useRecord } from '../lib/data'
-import { api, canEdit } from '../lib/api'
-import type { Monitor, MonitorHistory, Round } from '../lib/types'
-import { targetOf } from '../lib/monitor'
-import { t, formatDate, formatPercent, duration } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
+import { useRecord } from '../../../../../lib/data'
+import { api, canEdit } from '../../../../../lib/api'
+import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
+import { targetOf } from '../../../../../lib/monitor'
+import { t, formatDate, formatPercent, duration } from '../../../../../lib/preferences'
+import { notify, errorText } from '../../../../../lib/notices'
 import { useIntervalFn, useClipboard } from '@vueuse/core'
-import PageHeader from '../components/PageHeader.vue'
-import StateBadge from '../components/StateBadge.vue'
-import AsyncState from '../components/AsyncState.vue'
-import Sparkline from '../components/Sparkline.vue'
-import EmptyState from '../components/EmptyState.vue'
-import Modal from '../components/Modal.vue'
-const route = useRoute(),
+import PageHeader from '../../../../../components/PageHeader.vue'
+import StateBadge from '../../../../../components/StateBadge.vue'
+import AsyncState from '../../../../../components/AsyncState.vue'
+import Sparkline from '../../../../../components/Sparkline.vue'
+import EmptyState from '../../../../../components/EmptyState.vue'
+import Modal from '../../../../../components/Modal.vue'
+
+definePage({ meta: { title: ['监控详情', 'Monitor details'] } })
+
+const route = useRoute('/app/(admin)/monitors/[id]/'),
   router = useRouter(),
   query = useRecord<Monitor>(() => `monitors/${route.params.id}`),
   period = ref('24h'),

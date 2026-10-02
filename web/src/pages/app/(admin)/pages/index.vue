@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Plus, ArrowUpRight, Pencil, Globe } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { Page } from '../lib/types'
-import { t, formatDate } from '../lib/preferences'
-import { publishedEntry } from '../lib/pages'
-import { canEdit } from '../lib/api'
-import PageHeader from '../components/PageHeader.vue'
-import EmptyState from '../components/EmptyState.vue'
-import AsyncState from '../components/AsyncState.vue'
+import { useCollection } from '../../../../lib/data'
+import type { Page } from '../../../../lib/types'
+import { t, formatDate } from '../../../../lib/preferences'
+import { publishedEntry } from '../../../../lib/pages'
+import { canEdit } from '../../../../lib/api'
+import PageHeader from '../../../../components/PageHeader.vue'
+import EmptyState from '../../../../components/EmptyState.vue'
+import AsyncState from '../../../../components/AsyncState.vue'
+
+definePage({ meta: { title: ['状态页', 'Status pages'] } })
+
 const query = useCollection<Page>('pages')
 </script>
 <template>

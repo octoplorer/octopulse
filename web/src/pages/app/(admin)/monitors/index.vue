@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Plus, Search, RefreshCw, Globe, Server, ChevronRight } from '@lucide/vue'
-import { useCollection } from '../lib/data'
+import { useCollection } from '../../../../lib/data'
 import { useIntervalFn } from '@vueuse/core'
-import type { Monitor } from '../lib/types'
-import { targetOf, monitorTypes } from '../lib/monitor'
-import { t, formatDate } from '../lib/preferences'
-import { canEdit } from '../lib/api'
-import PageHeader from '../components/PageHeader.vue'
-import StateBadge from '../components/StateBadge.vue'
-import EmptyState from '../components/EmptyState.vue'
-import AsyncState from '../components/AsyncState.vue'
+import type { Monitor } from '../../../../lib/types'
+import { targetOf, monitorTypes } from '../../../../lib/monitor'
+import { t, formatDate } from '../../../../lib/preferences'
+import { canEdit } from '../../../../lib/api'
+import PageHeader from '../../../../components/PageHeader.vue'
+import StateBadge from '../../../../components/StateBadge.vue'
+import EmptyState from '../../../../components/EmptyState.vue'
+import AsyncState from '../../../../components/AsyncState.vue'
+
+definePage({ meta: { title: ['监控项', 'Monitors'] } })
+
 const query = useCollection<Monitor>('monitors'),
   search = ref(''),
   state = ref('all'),

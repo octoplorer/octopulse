@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Plus, Pencil, Users, Trash2 } from '@lucide/vue'
-import { useCollection } from '../lib/data'
-import type { User } from '../lib/types'
-import { api, isAdmin, currentUser } from '../lib/api'
-import { t, formatDate, timezone, statusLabel } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import { clone } from '../lib/form'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import Toggle from '../components/Toggle.vue'
-import Modal from '../components/Modal.vue'
-import AsyncState from '../components/AsyncState.vue'
-import EmptyState from '../components/EmptyState.vue'
+import { useCollection } from '../../../lib/data'
+import type { User } from '../../../lib/types'
+import { api, isAdmin, currentUser } from '../../../lib/api'
+import { t, formatDate, timezone, statusLabel } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import { clone } from '../../../lib/form'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import Toggle from '../../../components/Toggle.vue'
+import Modal from '../../../components/Modal.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+import EmptyState from '../../../components/EmptyState.vue'
+
+definePage({ meta: { title: ['成员与权限', 'Members'], roles: ['admin'] } })
+
 const query = useCollection<User>('users'),
   open = ref(false),
   saving = ref(false),

@@ -2,13 +2,16 @@
 import { reactive, ref, onMounted } from 'vue'
 import { Save, Settings, UserRound } from '@lucide/vue'
 import { Tabs } from '@ark-ui/vue/tabs'
-import { api, isAdmin, currentUser } from '../lib/api'
-import type { Settings as OrganizationSettings, User } from '../lib/types'
-import { t, locale, theme, timezone } from '../lib/preferences'
-import { notify, errorText } from '../lib/notices'
-import PageHeader from '../components/PageHeader.vue'
-import Field from '../components/Field.vue'
-import AsyncState from '../components/AsyncState.vue'
+import { api, isAdmin, currentUser } from '../../../lib/api'
+import type { Settings as OrganizationSettings, User } from '../../../lib/types'
+import { t, locale, theme, timezone } from '../../../lib/preferences'
+import { notify, errorText } from '../../../lib/notices'
+import PageHeader from '../../../components/PageHeader.vue'
+import Field from '../../../components/Field.vue'
+import AsyncState from '../../../components/AsyncState.vue'
+
+definePage({ meta: { title: ['设置', 'Settings'] } })
+
 const loading = ref(true),
   saving = ref(false),
   error = ref(''),
