@@ -1,5 +1,7 @@
 # 首版验收映射
 
+本地开发修复（2026-10-02）：Vite 代理显式保留 Host，解决字符串代理改写 Host 导致的 `Untrusted request origin`。真实 Vite 代理回归覆盖 localhost/127.0.0.1、会话/setup/图片路由、Cookie/CSRF 透传及外部 Origin 保留；前端测试共 16 项通过，后端 Origin/CSRF 竞态回归通过。运行中的 5173→8080 代理实测两种本地主机均通过同源校验，外部 Origin 仍返回 403；生产校验逻辑保持不变。
+
 更新：2026-10-02。实现分支为 `feat/uptime-platform`，用户已授权新分支与分步 Conventional Commits，尚未授权 push。本文以 [首版规格](v1-spec.md)、[监控配置清单](monitor-options.md)、[状态页规则](status-page-policy.md) 为验收依据。
 
 状态：首版整体验收完成。完整 SQLite 与真实 PostgreSQL18.6 竞态套件、两库容量、最新 arm64 镜像、两库容器持久化与完整备份恢复、浏览器流程、最终前端 8 项测试/类型/格式/生产构建和契约零漂移全部通过。远程未 push，CI 尚未执行；本地交付仅 arm64 实测。

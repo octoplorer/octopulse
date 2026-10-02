@@ -38,6 +38,8 @@ mise run dev:web
 
 打开 `http://127.0.0.1:5173/app`，首次访问创建管理员；之后由管理员添加其他成员。默认 API 地址为 `127.0.0.1:8080`，Vite 将 `/api` 和上传图片请求代理到该地址。密码要求为 12–72 字节，公开注册关闭。
 
+开发代理保留浏览器的 `Host` 和 `Origin`，以通过后台的同源校验。调整代理时保持 `changeOrigin: false`；修改 Vite 配置后，开发服务器会自动重启。
+
 前端使用 Vite、Vue Router、VueUse、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。Huma 的 Go 路由与类型生成 OpenAPI，HeyAPI 生成 TypeScript、SDK 和 Colada 查询选项。
 
 ## 构建和二进制运行

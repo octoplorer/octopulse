@@ -53,3 +53,9 @@
 
 - Verified the actual CI PGDG printf format is one literal backslash before n. Executing the extracted format produced five separate deb822 lines with a trailing newline and no literal backslash-n text. Workflow YAML and owned Markdown formatting checks passed. Remote workflow remains unexecuted.
 - Committed 7d088aa feat(delivery): package binary and Docker deployments with verification CI. The final documentation commit records completed implementation and acceptance evidence, bringing this implementation branch to 13 incremental Conventional Commits. No push or remote CI execution occurred.
+
+### Local development origin fix
+
+- Reproduced the reported Untrusted request origin using the running Vite 5173 → Go 8080 proxy. Vite string shorthand rewrote Host while retaining the browser Origin; direct matching-origin API requests passed validation.
+- Replaced proxy shorthand with explicit changeOrigin:false for API and uploaded assets. Production Origin, exact management Host and CSRF enforcement remain unchanged.
+- Added a real Vite proxy regression test, verified failing before the fix and passing after it, plus Go origin/security regressions. Frontend 16 tests/typecheck/format/production build, frozen-lock install and targeted Go race tests passed. Actual localhost and 127.0.0.1 development requests now pass origin validation while an external Origin remains rejected with 403.
