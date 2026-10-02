@@ -91,12 +91,12 @@ jobs:
       - name: Test SQLite capacity
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.capacity }}
         env:
-          OCTOPULSE_RUN_CAPACITY: "1"
+          OCTOPULSE_RUN_CAPACITY: '1'
         run: go test -race -p 1 ./internal/server -run '^TestServiceCapacity100Monitors$' -count=1 -v -timeout=180s
       - name: Test PostgreSQL capacity
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.capacity }}
         env:
-          OCTOPULSE_RUN_CAPACITY: "1"
+          OCTOPULSE_RUN_CAPACITY: '1'
           OCTOPULSE_TEST_DB_DRIVER: postgres
           OCTOPULSE_TEST_POSTGRES_DSN: postgres://octopulse_test:octopulse_ci@127.0.0.1:5432/octopulse_test?sslmode=disable
         run: go test -race -p 1 ./internal/server -run '^TestServiceCapacity100Monitors$' -count=1 -v -timeout=180s
@@ -105,7 +105,10 @@ jobs:
           mkdir -p .cache/release/octopulse-linux-amd64/bin .cache/release/octopulse-linux-amd64/web bin
           CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o .cache/release/octopulse-linux-amd64/bin/octopulse ./cmd/octopulse
           cp -R web/dist .cache/release/octopulse-linux-amd64/web/dist
-          cp README.md .env.example .cache/release/octopulse-linux-amd64/
+          cp README.md .env.example GLOSSARY.md .cache/release/octopulse-linux-amd64/
+          cp -R docs .cache/release/octopulse-linux-amd64/
+          mkdir -p .cache/release/octopulse-linux-amd64/internal/beszel
+          cp internal/beszel/README.md .cache/release/octopulse-linux-amd64/internal/beszel/
           tar -C .cache/release -czf bin/octopulse-linux-amd64.tar.gz octopulse-linux-amd64
       - uses: actions/upload-artifact@v7
         with:

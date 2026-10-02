@@ -1,6 +1,6 @@
 # Octopulse 设计访谈
 
-访谈日期：2026-10-01。实施更新：2026-10-02。Q1–Q26 已回答并记录，首版移除 GitHub 主题，原 Q27 主题运行问题失效。用户已授权按规格实现、新分支和分步提交；`feat/uptime-platform` 的实现与本地最终验收已完成，见 [验收映射](acceptance.md) 与 [任务清单](../task_plan.md)。远程未 push、CI 未执行，本地交付仅 arm64 实测。
+访谈日期：2026-10-01。文档整理：2026-10-02。Q1–Q26 已回答并记录，首版移除 GitHub 主题，原 Q27 主题运行问题失效。首版实现已通过 `e9c949b`（PR #6）合入，文件路由改造通过 `2b75a65`（PR #7）合入；本轮核对的 `main` 源码基线为 `1f06bf4`。历史验收、本轮验证与尚未实现的规格要求见 [验收映射](acceptance.md)。
 
 本文件保留访谈时的要求、决定、依赖和调查记录；表中“后续确定”描述当时状态，具体已实现接口及验证以当前规格、代码和验收文档为准。已确定的领域术语写入根目录 `GLOSSARY.md`，原 `CONTEXT.md` 保留链接入口；架构决定写入 `docs/adr/`。
 
@@ -25,13 +25,13 @@
 
 用户已在本轮作出如下决定。
 
-| 编号 | 问题                                        | 已确认决定                                                                                                 |
-| ---- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Q1   | 产品面向单组织自托管，还是多租户托管服务？  | 单组织自托管；Q6 已确认多人管理                                                                            |
-| Q2   | Go 与 Node.js 分别承担哪些运行职责？        | Go 承担常驻服务；Node.js 用于前端和契约构建，原主题构建职责随最新范围调整撤销                              |
-| Q3   | 首版目标监控数量和最小检查间隔是多少？      | 100 个监控项、最小 30 秒；这是设计与压测目标。访谈时尚未验证，当前实际结果及边界见 [容量记录](capacity.md) |
-| Q4   | 首版要一次覆盖哪些监控类型与功能？          | 首个可用版本覆盖 HTTP(S)、TCP、DNS、被动心跳、证书到期，以及通知、内置状态页自定义、Beszel 展示            |
-| Q5   | GitHub 主题的自由度是否包含任意浏览器脚本？ | 原已讨论完整界面替换；最新决定从首版撤销整个 GitHub 主题分支，采用内置可配置状态页，见 ADR 0011            |
+| 编号 | 问题                                        | 已确认决定                                                                                                     |
+| ---- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Q1   | 产品面向单组织自托管，还是多租户托管服务？  | 单组织自托管；Q6 已确认多人管理                                                                                |
+| Q2   | Go 与 Node.js 分别承担哪些运行职责？        | Go 承担常驻服务；Node.js 用于前端和契约构建，原主题构建职责随最新范围调整撤销                                  |
+| Q3   | 首版目标监控数量和最小检查间隔是多少？      | 100 个监控项、最小 30 秒；这是设计与压测目标。访谈时尚未验证，首版阶段实测结果及边界见 [容量记录](capacity.md) |
+| Q4   | 首版要一次覆盖哪些监控类型与功能？          | 首个可用版本覆盖 HTTP(S)、TCP、DNS、被动心跳、证书到期，以及通知、内置状态页自定义、Beszel 展示                |
+| Q5   | GitHub 主题的自由度是否包含任意浏览器脚本？ | 原已讨论完整界面替换；最新决定从首版撤销整个 GitHub 主题分支，采用内置可配置状态页，见 ADR 0011                |
 
 ## 第 2 轮：产品与监控语义
 
@@ -62,7 +62,7 @@
 | Q17  | OpenAPI 规范还是 Go API 定义作为契约来源？     | Go 类型/路由作为唯一源，通过 Huma 导出 OpenAPI，再由 HeyAPI 生成 TypeScript、SDK 和 Pinia Colada 集成；生成与验证流程后续确定                                         |
 | Q18  | Beszel 独立展示首版包含哪些能力、展示在哪里？  | 管理后台独立服务器页，服务器摘要、历史图表、容器列表；首版一个 Hub，公开状态页暂不发布服务器指标                                                                      |
 
-Q11–Q18 已回答，Q16 随最新范围调整撤销。当前可用率、调度、投递和页面配置的工程边界进一步明确如下。
+Q11–Q18 已回答，Q16 随范围调整撤销。访谈确定的可用率、调度、投递和页面配置工程边界如下。
 
 ### 由已确认决定推导的工程规则
 
@@ -99,7 +99,7 @@ Q11–Q18 已回答，Q16 随最新范围调整撤销。当前可用率、调度
 
 用户决定首版移除 GitHub 主题、集中做好内置状态页自定义；[ADR 0011](./adr/0011-built-in-configurable-status-pages.md) 已接受。原 Q27 的 iframe 运行问题失效，外部主题安装、任意脚本、产物兼容和消息桥不进入首版。
 
-没有剩余产品决策问卷。[首版规格与验收](./v1-spec.md) 已按最新决定修订，并已获得实施授权。后续事实核实、版本、限值和工程组织按规格自主完成；不会重新引入已撤销的 iframe 或主题分支。
+访谈中的产品决策问卷已完成，[首版规格与验收](./v1-spec.md) 按最终决定定稿。实施后发现的差距在规格与验收文档中明确记录；已撤销的 iframe 或主题分支不参与首版实现和验收。
 
 ## 已记录的术语与架构决策
 
@@ -147,14 +147,14 @@ Q11–Q18 已回答，Q16 随最新范围调整撤销。当前可用率、调度
   - 前端组件、属性样式、浏览器支持、无障碍与国际化
   - 开发工作流、发布、验收和运维文档
 
-资料调查中的事实是尚未完成的前置条件；依赖这些事实的问题留待后续轮次，不让用户猜测事实。
+以下资料调查记录当时的前置核实事项，不代表这些事项至今都未完成；开发流程见 [开发指南](development.md)，部署流程见 [运维手册](operations.md)，固定前端依赖见 [依赖清单](../web/package.json)。
 
 ## 访谈阶段的资料约束
 
-以下来源和版本记录保留调查历史，不能替代已固定依赖的实际接口验证。当前工具链见 `mise.toml`、`go.mod/go.sum`、`web/package.json`；HeyAPI 0.99.0 已生成 Pinia Colada 1.4.6 的查询选项，UnoCSS 已采用 `un-` 属性前缀。Beszel 当前验证范围为 0.20.x、实测基线为 0.20.0 的普通 readonly 账号，详见 [适配器说明](../internal/beszel/README.md)。
+以下来源和版本记录均为访谈时的调查历史，未在本轮重新查询，不能替代已固定依赖的实际接口验证。当前工程约定见 [开发指南](development.md#前端约定)，运行入口见 [运维手册](operations.md)，工具链与固定依赖见 `mise.toml`、`go.mod/go.sum` 和 [web/package.json](../web/package.json)。当前代码使用 HeyAPI 0.99.0 与 Pinia Colada 1.4.6，UnoCSS 已采用 `un-` 属性前缀；下文 Pinia Colada v0 与 oapi-codegen 的资料属于历史调查，不是当前依赖说明。Beszel 当前兼容范围为 0.20.x，首版实测基线为 0.20.0 普通 readonly 账号，本轮未重跑真实 Hub，详见 [适配器说明](../internal/beszel/README.md)。
 
 - aube 是用户所指的包管理器项目，后续按其自身能力设计工具链。[官方仓库](https://github.com/aubepkg/aube)
-- HeyAPI 已提供 Pinia Colada 集成，当前文档标明支持 Pinia Colada v0；生成流程仍需由契约来源和兼容版本决定。[官方文档](https://heyapi.dev/docs/openapi/typescript/plugins/pinia-colada)
+- 访谈时调查的 HeyAPI 文档标明支持 Pinia Colada v0；这是当时的兼容性线索，当前固定依赖与生成流程以代码为准。[官方文档](https://heyapi.dev/docs/openapi/typescript/plugins/pinia-colada)
 - HeyAPI 消费 OpenAPI 输入，不替后端决定契约来源；Q17 已选择由 Go/Huma 导出规范。[输入文档](https://heyapi.dev/docs/openapi/typescript/configuration/input)
 - mise 的工具版本锁文件与 aube 的依赖锁文件承担不同职责。aube 新项目默认采用 `aube-lock.yaml`，冻结安装与依赖安装脚本信任策略需要在工程初始化时验证。[mise lockfile](https://mise.jdx.dev/dev-tools/mise-lock.html)、[aube lockfiles](https://aube.sh/package-manager/lockfiles)
 - Beszel 官方提醒 REST API 的数据结构和内容可能在次版本中变化，集成需要明确兼容版本及升级策略。[REST API 文档](https://beszel.dev/guide/rest-api)
@@ -167,7 +167,7 @@ Q11–Q18 已回答，Q16 随最新范围调整撤销。当前可用率、调度
 - Shoutrrr 的 Router 内置队列是内存集合，Flush 发送后清空且不保留发送错误；它不提供持久投递任务或统一自动重试。渠道内部重试能力并不一致；平台持久任务及投递规则已由 Q15/Q22 确认。核验时固定源码为 `afb6e75af1260ca122d902e239390112bee7f195`，这不代表已经选择该版本作为依赖。[队列源码](https://github.com/nicholas-fedor/shoutrrr/blob/afb6e75af1260ca122d902e239390112bee7f195/pkg/router/router.go#L100-L146)、[发送源码](https://github.com/nicholas-fedor/shoutrrr/blob/afb6e75af1260ca122d902e239390112bee7f195/pkg/router/router.go#L212-L266)
 - Shoutrrr Context7/README 的部分 API 描述与所核验源码不一致，接入时应固定依赖版本并以对应源码及实际接口验证；不能假定全渠道去重、恰好一次投递或所有发送都能被超时取消。
 - Huma 可以从 Go 路由和输入/输出类型生成 OpenAPI，默认提供请求验证，已由 Q17 选择。oapi-codegen 作为调查过的替代路线，可以从规范生成 Go 类型和 server interfaces，但 strict-server 不等于完整请求验证，也不提供完整响应验证。[Huma 规范生成](https://huma.rocks/features/openapi-generation/)、[Huma 请求验证](https://huma.rocks/features/request-validation/)、[oapi-codegen 验证责任](https://github.com/oapi-codegen/oapi-codegen/blob/v2.8.0/README.md#requestresponse-validation-middleware)
-- oapi-codegen v2.8.0 发布说明已有初步 OpenAPI 3.1 支持；不能沿用“完全不支持 3.1”的旧资料。具体依赖和规范版本尚未选择。[发布说明](https://github.com/oapi-codegen/oapi-codegen/releases/tag/v2.8.0)
+- 访谈时调查的 oapi-codegen v2.8.0 发布说明已有初步 OpenAPI 3.1 支持；当时不能沿用“完全不支持 3.1”的旧资料。该路线未被选用，当前规范由 Go/Huma 生成。[发布说明](https://github.com/oapi-codegen/oapi-codegen/releases/tag/v2.8.0)
 - Beszel 可提供服务器摘要、历史图表和容器摘要，字段依赖对应 Hub 版本。所核验源码的默认历史数据按分辨率分层，最长保留 30 天；不代表 Octopulse 已接受这一留存或展示策略。[指标列表](https://github.com/henrygd/beszel#supported-metrics)、[保留策略源码](https://github.com/henrygd/beszel/blob/5b0952ffcf0b3cf0a8f975e2fa396db679a0dab7/internal/records/records_deletion.go#L60)
 - Beszel readonly 普通用户仍可创建自身告警，不能把该角色描述为绝对无写权限。PocketBase auth-refresh 基于尚有效的当前 token，没有独立 refresh token；过期后需重新认证。Hub 配置可能禁用密码登录或启用 MFA，具体支持版本与认证作为实现阶段兼容验证。[用户角色](https://beszel.dev/guide/user-accounts)、[PocketBase 认证](https://pocketbase.io/docs/authentication/)、[Beszel 环境配置](https://beszel.dev/guide/environment-variables)
 - 多 Hub 读取是 Octopulse 可选择实现的集成能力，Beszel 没有提供跨 Hub 联邦查询契约；该能力与 uptime 分布式探测无关。

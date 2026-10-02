@@ -9,238 +9,31 @@ Octopulse 是单组织自托管的 uptime 监控平台。一个 Go 进程负责�
 - 内置管理员、操作员和只读账号；凭据加密保存，公开接口使用独立字段白名单。
 - 独立 Beszel 服务器页，展示摘要、历史和容器；服务器指标不参与 uptime 判定。
 
-首版采用单实例运行，不提供分布式探测。GitHub 主题不在首版范围。完整产品规则见 [首版规格](docs/v1-spec.md)、[监控配置](docs/monitor-options.md) 和 [状态页规则](docs/status-page-policy.md)。实际验收证据见 [验收映射](docs/acceptance.md) 与 [容量记录](docs/capacity.md)。
+首版采用单实例运行，不提供分布式探测。GitHub 主题不在首版范围。
 
-## 本地开发
+## 快速启动
 
-先安装 [mise](https://mise.jdx.dev/)，在仓库根目录执行：
-
-```sh
-mise trust
-mise install
-mise exec -- go mod download
-cd web
-mise exec -- aube install --frozen-lockfile
-cd ..
-```
-
-工具版本固定在 [mise.toml](mise.toml)：Go 1.27.1、Node.js 24.19.0、aube 2.6.1、sqlc 1.30.0。前端依赖由 `web/aube-lock.yaml` 锁定；Node.js 只用于开发与构建，生产运行不需要 Node.js。
-
-两个终端分别启动：
-
-```sh
-mise run dev:api
-```
-
-```sh
-mise run dev:web
-```
-
-打开 `http://127.0.0.1:5173/app`，首次访问创建管理员；之后由管理员添加其他成员。默认 API 地址为 `127.0.0.1:8080`，Vite 将 `/api` 和上传图片请求代理到该地址。密码要求为 12–72 字节，公开注册关闭。
-
-开发代理保留浏览器的 `Host` 和 `Origin`，以通过后台的同源校验。调整代理时保持 `changeOrigin: false`；修改 Vite 配置后，开发服务器会自动重启。
-
-前端使用 Vite、Vue Router、Vue I18n、VueUse、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。Huma 的 Go 路由与类型生成 OpenAPI，HeyAPI 生成 TypeScript、SDK 和 Colada 查询选项。
-
-页面路由由 Vue Router 5 官方的 `vue-router/vite` 插件从 `web/src/pages` 自动生成。`app/login.vue` 是独立登录页，`app/(admin).vue` 提供后台布局，`app/(admin)/` 内的页面通过 `definePage()` 声明标题的翻译 key 和角色权限；`[id]` 目录用于动态参数。公开状态页使用 `[[slug]]/[[...rest]]+.vue`，兼容路径入口和独立域名。新增页面只需创建对应 `.vue` 文件；开发服务器会更新路由，插件会在开发和构建时生成 `web/typed-router.d.ts`，页面变更应连同更新后的路由类型声明一起提交。
-
-前端共享响应式状态放在 `web/src/composables/`（会话、国际化、偏好和通知）；`web/src/lib/` 保留无状态工具和类型。依赖当前语言或时区的格式化函数随偏好模块放在 `composables/preferences.ts`。
-
-文档 head 使用 Unhead 管理，`App.vue` 通过 `useHead` 声明默认标题、HTML 语言和 metadata；公开路由直接根据已发布配置覆盖标题、描述、品牌色和配色方案，数据清空或组件卸载时自动清理。后台内嵌草稿预览不修改文档 head，字符集与 viewport 保留在 `web/index.html`。
-
-前端国际化使用 Vue I18n Composition API，入口为 `web/src/composables/i18n.ts`，中英文文案分别维护在 `web/src/locales/zh-CN.json` 和 `web/src/locales/en.json`。组件使用 `useI18n({ useScope: 'global' })` 获取 `t`、`n`、`d` 和响应式 `locale`；普通 TypeScript 模块使用共享 composer。新增文案应为两个语言包添加相同的语义 key，变量使用命名插值（如 `t('errors.invalidJSON', { label })`），数量使用完整复数消息（如 `t('counts.monitors', { count }, count)`），避免拼接文案。消息中的字面量 `@`、花括号和 `|` 使用 Vue I18n 的字面量插值语法转义。
-
-语言沿用 API 的 `zh-CN` / `en`，登录后使用个人设置，访客使用 VueUse `useStorage` 保存的 `octopulse.locale` 偏好，默认简体中文；缺失翻译回退到简体中文。日期与数字通过 composer 格式化，日期沿用所选显示时区；表单中的机器日期格式保持固定。增加语言时同时更新语言包、`i18n.ts` 的语言及格式配置和后端允许的语言值。`mise exec -- aube run test`（在 `web` 目录）验证语言包一致性、消息编译、复数和日期/数字格式。用户填写的状态页和事件内容、服务端返回的诊断文案按原内容显示。
-
-## 构建和二进制运行
-
-```sh
-mise run build
-./bin/octopulse serve
-```
-
-打开 `http://127.0.0.1:8080/app`。二进制和 `web/dist` 需要一起交付；以仓库根目录或包含 `web/dist` 的发行包目录作为工作目录，也可指定 `OCTOPULSE_STATIC_DIR` 的绝对路径。数据库迁移嵌入二进制，启动时取得实例锁后自动升级；数据库版本超过该二进制支持的版本时拒绝启动。
-
-进程收到 SIGINT/SIGTERM 后停止接受新请求，等待已有 HTTP 请求和后台任务结束，再释放数据库；HTTP 排空上限为 10 秒，超时强制关闭连接。`GET /healthz` 检查数据库连接与实例锁，无法就绪时返回 503。手动检查通过 API 接受任务后由调度器执行，可在客户端等待结束后继续完成；轮次结果通过监控详情和历史查询。
-
-## 配置
-
-程序读取进程环境变量，不会自行加载 `.env`。二进制运行可复制 [.env.example](.env.example) 后在 shell 或服务管理器中加载：
-
-mise 只固定开发工具和任务，不覆盖已导出的数据库运行环境变量；未设置时使用下表中的 Go 默认配置。
-
-```sh
-cp .env.example .env
-# 按实际部署编辑 .env，随后加载：
-set -a
-. ./.env
-set +a
-./bin/octopulse serve
-```
-
-Docker Compose 自动读取仓库根目录的 `.env`，用于 Compose 文件声明的变量。当前文件转发管理主机、Secure Cookie、加密密钥、数据库连接数、统计周期和 PostgreSQL 密码；其他应用环境变量应在服务的 `environment` 中配置。
-
-| 变量                                    | 默认值 / 含义                                                                |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| `OCTOPULSE_ADDR`                        | `127.0.0.1:8080`；容器内为 `0.0.0.0:8080`                                    |
-| `OCTOPULSE_DB_DRIVER`                   | `sqlite`；另一选项是 `postgres`                                              |
-| `OCTOPULSE_DB_DSN`                      | `file:.data/octopulse.db`；PostgreSQL 使用连接 URI                           |
-| `OCTOPULSE_DATA_DIR`                    | `.data`；保存加密密钥及 `uploads/`                                           |
-| `OCTOPULSE_STATIC_DIR`                  | `web/dist`；前端构建目录                                                     |
-| `OCTOPULSE_ENCRYPTION_KEY`              | 32 字节随机值的 Base64 编码；留空时生成 `DATA_DIR/encryption.key`，权限 0600 |
-| `OCTOPULSE_ADMIN_HOSTS`                 | `localhost,127.0.0.1`；允许后台/API 的精确主机名列表，以逗号分隔             |
-| `OCTOPULSE_COOKIE_SECURE`               | `false`；HTTPS 部署设为 `true`                                               |
-| `OCTOPULSE_DB_MAX_CONNECTIONS`          | `10`，范围 2–100；PostgreSQL 池含实例锁专用连接                              |
-| `OCTOPULSE_STATISTICS_INTERVAL_SECONDS` | `60`，范围 5–3600；聚合及留存清理周期                                        |
-
-组织名称、语言、时区、历史保留和可绑定的公开域名在后台设置中管理。个人语言和显示时区可在个人设置中覆盖。
-
-## SQLite 与 PostgreSQL
-
-SQLite 默认使用本地持久文件。程序统一配置 WAL、FULL 同步、外键和 busy timeout；一个写连接及只读池处理写入和查询。不要把数据库文件放在网络文件系统，也不要让多个服务进程共同打开同一数据库。运行时文件锁阻止重复实例。
-
-PostgreSQL 启动示例：
-
-```sh
-OCTOPULSE_DB_DRIVER=postgres \
-OCTOPULSE_DB_DSN='postgres://octopulse:YOUR_PASSWORD@127.0.0.1:5432/octopulse?sslmode=disable' \
-./bin/octopulse serve
-```
-
-上例适用于本机连接；远程连接按数据库部署配置 TLS。连接用户需要应用表的读写和迁移权限。PostgreSQL advisory lock 保证同一数据库只有一个采集实例；丢失锁连接会停止服务。两种数据库使用分别维护的 goose 迁移和 sqlc 查询，共用业务、事务与统计语义，详见 [双数据库设计](docs/database-design.md)。改变驱动不会自动迁移已有数据，首版不提供 SQLite/PostgreSQL 数据互转命令。
-
-## Docker Compose
-
-SQLite：
+使用 Docker Compose，在仓库根目录执行：
 
 ```sh
 docker compose up --build -d
 docker compose logs -f octopulse
 ```
 
-访问 `http://127.0.0.1:8080/app`。默认仅向宿主机回环地址发布 8080 端口；`octopulse-data` 卷保存数据库、加密密钥和上传图片。镜像以 UID/GID 10001 运行。
+打开 `http://127.0.0.1:8080/app`，首次访问创建管理员，之后由管理员添加其他成员。密码要求为 12–72 字节，公开注册关闭。
 
-PostgreSQL：在 `.env` 中设置 `POSTGRES_PASSWORD`，然后执行：
+默认使用 SQLite，数据库、加密密钥和上传图片保存在 `octopulse-data` 卷；应用端口仅发布到宿主机回环地址。PostgreSQL、二进制部署、域名与备份流程见 [运维手册](docs/operations.md)。本地开发的工具安装和启动步骤见 [开发指南](docs/development.md#本地开发)。
 
-```sh
-docker compose -f compose.yaml -f compose.postgres.yaml up --build -d
-docker compose -f compose.yaml -f compose.postgres.yaml logs -f octopulse
-```
+## 文档导航
 
-覆盖文件使用 PostgreSQL 18.6，数据库数据保存在 `postgres-data` 卷，应用密钥和图片仍保存在 `octopulse-data`。此 Compose 的密码直接放入连接 URI，建议使用足够长的随机十六进制值，避免 URI 保留字符需要转义。容器仅暴露应用端口，数据库在 Compose 网络内访问。
-
-## 状态页域名和反向代理
-
-例如管理入口 `example.com/app`，状态页 slug `status1`：
-
-1. 设置 `OCTOPULSE_ADMIN_HOSTS=example.com`、`OCTOPULSE_COOKIE_SECURE=true`。
-2. 在后台系统设置允许 `status1.example.com`，在状态页草稿绑定该域名并发布。
-3. 将 `status1.example.com` 的 A/AAAA 或 CNAME 指向部署入口。
-4. 反向代理为 `example.com` 和 `status1.example.com` 提供 HTTPS，将请求转发到同一 Go 地址，保留原始 HTTP `Host`。
-
-发布后 `https://example.com/status1` 和 `https://status1.example.com/` 共用页面配置与公共数据。事件子路由、资源和公共 API 均由同一服务处理，不需要另行部署前端。
-
-服务用实际 `Host` 做精确匹配，不使用 `X-Forwarded-Host` 或 `Forwarded` 选择管理/页面入口。公开域名不能与管理主机重合；本地可用 `status.localhost` 测试域名入口。平台不修改 DNS，也不自动申请证书。草稿修改 slug、域名或自定义配置不改变已发布页面；显式发布时才原子切换入口与公共配置。
-
-Logo 可上传 PNG/JPEG/GIF，或使用外部 HTTPS 图片；上传按实际图片内容校验。品牌、深浅色、服务公开别名及布局只作用于对应状态页。
-
-## 备份与恢复
-
-一次可恢复的备份包含数据库、原加密密钥和 `DATA_DIR/uploads`。数据库中的秘密使用 AES-256-GCM 加密；只恢复数据库或换用新密钥不能解密原凭据。若通过 `OCTOPULSE_ENCRYPTION_KEY` 提供密钥，应由部署的秘密管理方式单独备份该值，不会生成密钥文件。备份文件应保存到限制访问的目录。
-
-SQLite 二进制部署先停止服务，再使用同一数据库与数据目录配置运行 CLI：
-
-```sh
-umask 077
-backup_dir="backups/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$backup_dir"
-./bin/octopulse backup "$backup_dir/octopulse.db"
-if [ -f .data/encryption.key ]; then
-  cp .data/encryption.key "$backup_dir/encryption.key"
-fi
-if [ -d .data/uploads ]; then
-  tar -C .data -czf "$backup_dir/uploads.tar.gz" uploads
-fi
-```
-
-`backup` 使用 SQLite `VACUUM INTO` 输出一致数据库，并设置权限 0600。CLI 也会取得实例锁，因此不能在已运行的服务旁另起进程执行。恢复时保持服务停止，把数据库恢复到配置的 DSN 文件，把原密钥和图片恢复到数据目录；新目录恢复最简单。保留原目录副本后再切换，并确认数据库及密钥由服务用户所有。
-
-SQLite Compose 部署可在停止服务后备份完整数据卷：
-
-```sh
-umask 077
-mkdir -p backups
-docker compose stop octopulse
-docker compose run --rm --no-deps -T --entrypoint tar octopulse \
-  -C /data -czf - . > backups/octopulse-data.tar.gz
-docker compose up -d octopulse
-```
-
-恢复到新的空 `octopulse-data` 卷，保持服务停止，然后执行：
-
-```sh
-docker compose run --rm --no-deps -T --entrypoint tar octopulse \
-  -C /data -xzf - < backups/octopulse-data.tar.gz
-docker compose up -d octopulse
-```
-
-PostgreSQL 使用同 major 或更新的 PostgreSQL 客户端执行 `pg_dump --format=custom --no-owner`，恢复到新建空库时使用 `pg_restore --no-owner --exit-on-error --dbname=目标库`。连接信息可通过 `PGHOST`、`PGPORT`、`PGUSER`、`PGDATABASE` 和受保护的密码文件提供，避免将密码写入命令参数。恢复前停止 Octopulse，恢复后使用原密钥和图片目录启动。数据库角色及数据库本身需单独创建；应用不会替代 PostgreSQL 的角色管理。
-
-Compose PostgreSQL 备份示例：
-
-```sh
-umask 077
-mkdir -p backups
-docker compose -f compose.yaml -f compose.postgres.yaml stop octopulse
-docker compose -f compose.yaml -f compose.postgres.yaml exec -T postgres \
-  pg_dump -U octopulse -d octopulse --format=custom --no-owner > backups/octopulse.dump
-docker compose -f compose.yaml -f compose.postgres.yaml run --rm --no-deps -T \
-  --entrypoint tar octopulse -C /data -czf - . > backups/octopulse-data.tar.gz
-docker compose -f compose.yaml -f compose.postgres.yaml up -d octopulse
-```
-
-在已创建的空 PostgreSQL 数据库恢复：
-
-```sh
-docker compose -f compose.yaml -f compose.postgres.yaml exec -T postgres \
-  pg_restore -U octopulse --no-owner --exit-on-error --dbname=octopulse < backups/octopulse.dump
-docker compose -f compose.yaml -f compose.postgres.yaml run --rm --no-deps -T \
-  --entrypoint tar octopulse -C /data -xzf - < backups/octopulse-data.tar.gz
-docker compose -f compose.yaml -f compose.postgres.yaml up -d octopulse
-```
-
-数据库备份恢复后先验证登录、秘密引用、监控检查和已发布页面，再保留或删除旧部署。默认历史留存为轮次 14 天、尝试 3 天、5 分钟聚合 90 天、小时聚合及状态区间 13 个月，可在系统设置修改。
-
-## Beszel 接入
-
-管理员在秘密凭据页保存专用 Hub 账号密码，然后在服务器页配置 Hub URL、普通账号和密码秘密引用。专用账号应只获得需要展示的系统读取权限；正常 `readonly` 账号已验证。凭据由后端解密使用，不传给 SPA。
-
-当前兼容范围为 Beszel `0.20.x`，实测基线 `v0.20.0`。其他版本显示不兼容状态；MFA 或禁用密码认证的账号不在当前认证路径内。摘要、历史和容器标记来源、同步时间、失联与过期；只持久化最新摘要，历史按 Hub 数据按需查询并有缓存上限。具体协议、单位与真实 Hub 测试说明见 [Beszel 适配器说明](internal/beszel/README.md)。
-
-## 验证与再生成
-
-```sh
-mise exec -- go test -race -p 1 ./...
-mise exec -- go vet ./...
-mise run generate:db
-mise run generate:web
-cd web
-mise exec -- aube run --no-install format:check
-mise exec -- aube run --no-install check
-mise exec -- aube run --no-install test
-mise exec -- aube run --no-install build
-```
-
-真实 PostgreSQL 的同一业务套件：
-
-```sh
-OCTOPULSE_TEST_DB_DRIVER=postgres \
-OCTOPULSE_TEST_POSTGRES_DSN='postgres://USER@HOST:PORT/octopulse_test?sslmode=disable' \
-mise exec -- go test -race -p 1 -count=1 ./...
-```
-
-测试数据库必须专用；测试创建并清理独立 schema，部分测试会终止自身锁连接。数据库实例锁跨 schema，`-p 1` 防止不同包并行争抢同一数据库。安装匹配的 `pg_dump` 和 `pg_restore`，才能运行真实 PostgreSQL 备份恢复用例。
-
-[CI](.github/workflows/verify.yml) 安装 mise 固定工具链和 aube 锁定依赖，对 SQLite 及真实 PostgreSQL 运行竞态检测，检查 sqlc/OpenAPI/HeyAPI 生成文件漂移，执行前端格式、类型、单元测试和构建，并打包 Linux amd64 二进制与 `web/dist`。工作流手动触发时可选择额外容量测试；完整负载命令与限制见 [容量记录](docs/capacity.md)。
-
-目前本地完整验证环境为 Darwin arm64 与原生 Linux arm64 容器。远程未 push，CI 尚未执行，其 Linux amd64 产物不能视为已经实测；详细通过记录见 [验收映射](docs/acceptance.md)。
+| 内容                                   | 文档                                                                                     |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 开发环境、前端约定、契约生成与测试     | [开发指南](docs/development.md)                                                          |
+| 构建交付、配置、数据库部署、域名与备份 | [运维手册](docs/operations.md)                                                           |
+| 产品边界、权限及业务要求               | [首版规格](docs/v1-spec.md)                                                              |
+| 各类监控设置与限值                     | [监控配置](docs/monitor-options.md)                                                      |
+| 状态页发布、汇总及公开字段             | [状态页规则](docs/status-page-policy.md)                                                 |
+| 数据持久化、事务、统计与迁移           | [数据库设计](docs/database-design.md)                                                    |
+| 实现差距、验证记录与容量边界           | [验收映射](docs/acceptance.md)、[容量记录](docs/capacity.md)                             |
+| 领域术语与架构决策背景                 | [术语表](GLOSSARY.md)、[设计访谈与 ADR 索引](docs/design-tree.md#已记录的术语与架构决策) |
+| Beszel 协议、兼容版本与缓存策略        | [适配器说明](internal/beszel/README.md)                                                  |

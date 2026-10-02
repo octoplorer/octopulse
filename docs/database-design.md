@@ -1,6 +1,6 @@
 # SQLite 与 PostgreSQL 持久层方案
 
-状态：2026-10-02，双数据库持久层已在 `feat/uptime-platform` 实现并分步提交。完整 SQLite/真实 PostgreSQL18.6 竞态套件和两库容量已通过，包含共享业务、API、迁移、锁、备份工具、状态、投递及统计；两库 arm64 容器启动、持久化与完整备份恢复也通过，见 [验收映射](acceptance.md)。本文保留原工程方案依据，并按实际代码更新版本、目录与运行细节，不将实测本地负载推导为任意生产负载的性能保证。
+状态：2026-10-02 文档核对时，双数据库持久层已纳入 `main`。首版实施阶段记录了完整 SQLite/真实 PostgreSQL18.6 竞态套件、两库容量及 arm64 容器启动、持久化与完整备份恢复通过，见 [验收映射](acceptance.md)。本文按当前代码描述版本、目录与运行细节；历史验收不代表当前提交已重跑这些检查，也不将本地负载结果推导为任意生产负载的性能保证。
 
 ## 共享业务模型与方言边界
 
@@ -94,6 +94,8 @@ HTTP/DNS/TCP 探测、Shoutrrr 发送及 Beszel 网络请求都在数据库事�
 
 投递 worker 通过条件 UPDATE 认领到期任务，保存 lease_token/lease_until。发送在事务外，完成或退避更新必须匹配同一 token；崩溃后的过期租约可重新认领。发送前检查事件版本、故障周期和维护规则，取消失效任务。外部发送成功但成功记录尚未提交时崩溃，仍可能重复发送，因此不承诺恰好一次或所有渠道一定送达。
 
+投递 worker 默认并发为 4，单次发送超时为 30 秒；每项任务最多尝试 8 次（含首次），失败后从 5 秒开始指数退避，最长间隔为 15 分钟，达到尝试上限后记录为 `failed`。具体参数见 [投递 worker](../internal/notify/worker.go)。
+
 成功确认事务同时保存该渠道的故障周期投递标记；恢复任务及维护退出后的补发按此标记判断。标记、任务完成和已补发记录原子保存，避免重启后丢失通知顺序依据或重复创建恢复任务。
 
 数据库写入失败属于平台采集异常，不能直接把目标服务改为 Down。观察持久化失败、池等待、锁等待和队列积压；重试数据库事务不重新执行外部探测。遇到提交结果不确定时，先按稳定 ID 核对已落库结果。
@@ -108,7 +110,7 @@ HTTP/DNS/TCP 探测、Shoutrrr 发送及 Beszel 网络请求都在数据库事�
 
 本实现使用覆盖迁移和运行期的 PostgreSQL advisory lock / SQLite 文件锁，不依赖 goose 默认锁。迁移原子边界是单个文件，不是整个升级批次；当前迁移未使用 `NO TRANSACTION`。已发布文件不修改，以新增迁移修正；数据库版本高于程序支持版本时拒绝启动。[迁移事务](https://pressly.github.io/goose/documentation/annotations/#no-transaction)
 
-SQLite CLI `octopulse backup DESTINATION` 使用 `VACUUM INTO` 创建一致备份，输出权限 0600。该 CLI 同样取得运行锁，须先停止服务；不能在运行时只复制 `.db`。PostgreSQL 使用 pg_dump/pg_restore 或部署方已有备份体系，同类型恢复。AES-256-GCM 密钥与上传图片也需要备份，数据库恢复后必须沿用原密钥；具体二进制/Compose 命令见 [README](../README.md#备份与恢复)。[PostgreSQL Dump](https://www.postgresql.org/docs/current/backup-dump.html)
+SQLite CLI `octopulse backup DESTINATION` 使用 `VACUUM INTO` 创建一致备份，输出权限 0600。该 CLI 同样取得运行锁，须先停止服务；不能在运行时只复制 `.db`。PostgreSQL 使用 pg_dump/pg_restore 或部署方已有备份体系，同类型恢复。AES-256-GCM 密钥与上传图片也需要备份，数据库恢复后必须沿用原密钥；具体二进制/Compose 命令见 [运维手册](operations.md#备份与恢复)。[PostgreSQL Dump](https://www.postgresql.org/docs/current/backup-dump.html)
 
 首版双数据库支持包括分别建库、升级及恢复，不自动包含 SQLite→PostgreSQL 的在线切换。以后若增加搬迁工具，应通过停机导出/导入统一模型、保留 ID/关联并校验统计与未完成任务，而不是直接导入 SQLite SQL dump。
 
