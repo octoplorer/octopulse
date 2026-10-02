@@ -33,6 +33,18 @@ func (s *Store) WithTx(ctx context.Context, fn func(*Tx) error) error {
 
 func (s *Store) Driver() string { return s.driver }
 
+func (s *Store) Ping(ctx context.Context) error {
+	select {
+	case <-s.LockLost():
+		return ErrLocked
+	default:
+	}
+	if err := s.read.PingContext(ctx); err != nil {
+		return err
+	}
+	return s.write.PingContext(ctx)
+}
+
 func (s *Store) Stats() PoolStats { return PoolStats{Write: s.write.Stats(), Read: s.read.Stats()} }
 
 func (s *Store) Get(ctx context.Context, kind, id string, out any) error {

@@ -48,10 +48,13 @@ func (s *Store) RoundExists(ctx context.Context, id string) (bool, error) {
 }
 
 func (s *Store) ListRounds(ctx context.Context, monitorID string, since int64, limit int) ([]Round, error) {
+	return s.ListRoundsBetween(ctx, monitorID, since, 1<<63-1, limit)
+}
+func (s *Store) ListRoundsBetween(ctx context.Context, monitorID string, since, until int64, limit int) ([]Round, error) {
 	if limit <= 0 || limit > 10000 {
 		limit = 1000
 	}
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT id,monitor_id,config_version,generation,started_at,finished_at,success,latency_ms FROM rounds WHERE monitor_id=? AND started_at>=? ORDER BY started_at DESC,id DESC LIMIT ?`), monitorID, since, limit)
+	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT id,monitor_id,config_version,generation,started_at,finished_at,success,latency_ms FROM rounds WHERE monitor_id=? AND finished_at>=? AND finished_at<=? ORDER BY started_at DESC,id DESC LIMIT ?`), monitorID, since, until, limit)
 	if err != nil {
 		return nil, mapError(err)
 	}

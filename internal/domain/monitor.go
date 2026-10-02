@@ -32,20 +32,20 @@ const (
 type Monitor struct {
 	ID                     string             `json:"id" readOnly:"true"`
 	Name                   string             `json:"name"`
-	Description            string             `json:"description,omitempty"`
+	Description            string             `json:"description" required:"false"`
 	Type                   string             `json:"type"`
-	Tags                   []string           `json:"tags,omitempty"`
-	Group                  string             `json:"group,omitempty"`
-	Enabled                bool               `json:"enabled,omitempty"`
-	IntervalSeconds        int                `json:"intervalSeconds,omitempty"`
-	TimeoutSeconds         int                `json:"timeoutSeconds,omitempty"`
-	Retries                int                `json:"retries,omitempty"`
-	RetryDelaySeconds      int                `json:"retryDelaySeconds,omitempty"`
-	FailureThreshold       int                `json:"failureThreshold,omitempty"`
-	RecoveryThreshold      int                `json:"recoveryThreshold,omitempty"`
-	NotificationChannelIDs []string           `json:"notificationChannelIds,omitempty"`
-	NotifyRecovery         bool               `json:"notifyRecovery,omitempty"`
-	ReminderSeconds        int                `json:"reminderSeconds,omitempty"`
+	Tags                   []string           `json:"tags" required:"false"`
+	Group                  string             `json:"group" required:"false"`
+	Enabled                bool               `json:"enabled" required:"false"`
+	IntervalSeconds        int                `json:"intervalSeconds" required:"false"`
+	TimeoutSeconds         int                `json:"timeoutSeconds" required:"false"`
+	Retries                int                `json:"retries" required:"false"`
+	RetryDelaySeconds      int                `json:"retryDelaySeconds" required:"false"`
+	FailureThreshold       int                `json:"failureThreshold" required:"false"`
+	RecoveryThreshold      int                `json:"recoveryThreshold" required:"false"`
+	NotificationChannelIDs []string           `json:"notificationChannelIds" required:"false"`
+	NotifyRecovery         bool               `json:"notifyRecovery" required:"false"`
+	ReminderSeconds        int                `json:"reminderSeconds" required:"false"`
 	ConfigVersion          int64              `json:"configVersion" readOnly:"true"`
 	State                  string             `json:"state" readOnly:"true"`
 	FailureCount           int                `json:"failureCount" readOnly:"true"`
@@ -65,149 +65,149 @@ type Monitor struct {
 // its entire value during probing and is not returned by diagnostics.
 type NameValue struct {
 	Name      string `json:"name"`
-	Value     string `json:"value,omitempty"`
-	SecretRef string `json:"secretRef,omitempty"`
+	Value     string `json:"value" required:"false"`
+	SecretRef string `json:"secretRef" required:"false"`
 }
 
 type HTTPConfig struct {
 	URL              string           `json:"url"`
-	Method           string           `json:"method,omitempty"`
-	Query            []NameValue      `json:"query,omitempty"`
-	Headers          []NameValue      `json:"headers,omitempty"`
-	Host             string           `json:"host"`
-	Body             HTTPBody         `json:"body,omitempty"`
-	Auth             HTTPAuth         `json:"auth,omitempty"`
-	TLS              TLSConfig        `json:"tls,omitempty"`
-	Connection       ConnectionConfig `json:"connection,omitempty"`
-	Redirects        RedirectConfig   `json:"redirects,omitempty"`
-	AcceptEncoding   string           `json:"acceptEncoding,omitempty"`
-	RequestGzip      bool             `json:"requestGzip,omitempty"`
-	ResponseCharset  string           `json:"responseCharset,omitempty"`
-	MaxResponseBytes int64            `json:"maxResponseBytes,omitempty"`
-	Assertions       HTTPAssertions   `json:"assertions,omitempty"`
+	Method           string           `json:"method" required:"false"`
+	Query            []NameValue      `json:"query" required:"false"`
+	Headers          []NameValue      `json:"headers" required:"false"`
+	Host             string           `json:"host" required:"false"`
+	Body             HTTPBody         `json:"body" required:"false"`
+	Auth             HTTPAuth         `json:"auth" required:"false"`
+	TLS              TLSConfig        `json:"tls" required:"false"`
+	Connection       ConnectionConfig `json:"connection" required:"false"`
+	Redirects        RedirectConfig   `json:"redirects" required:"false"`
+	AcceptEncoding   string           `json:"acceptEncoding" required:"false"`
+	RequestGzip      bool             `json:"requestGzip" required:"false"`
+	ResponseCharset  string           `json:"responseCharset" required:"false"`
+	MaxResponseBytes int64            `json:"maxResponseBytes" required:"false"`
+	Assertions       HTTPAssertions   `json:"assertions" required:"false"`
 }
 
 type HTTPBody struct {
-	Format      string          `json:"format,omitempty"` // none, json, form, multipart, text, raw
-	Text        string          `json:"text,omitempty"`
-	SecretRef   string          `json:"secretRef,omitempty"`
-	Base64      string          `json:"base64,omitempty"`
-	Charset     string          `json:"charset,omitempty"`
-	ContentType string          `json:"contentType,omitempty"`
-	Fields      []NameValue     `json:"fields,omitempty"`
-	Files       []MultipartFile `json:"files,omitempty"`
+	Format      string          `json:"format"` // none, json, form, multipart, text, raw
+	Text        string          `json:"text" required:"false"`
+	SecretRef   string          `json:"secretRef" required:"false"`
+	Base64      string          `json:"base64" required:"false"`
+	Charset     string          `json:"charset" required:"false"`
+	ContentType string          `json:"contentType" required:"false"`
+	Fields      []NameValue     `json:"fields" required:"false"`
+	Files       []MultipartFile `json:"files" required:"false"`
 }
 
 type MultipartFile struct {
 	Field       string `json:"field"`
 	Filename    string `json:"filename"`
-	ContentType string `json:"contentType,omitempty"`
-	Base64      string `json:"base64,omitempty"`
-	SecretRef   string `json:"secretRef,omitempty"`
+	ContentType string `json:"contentType" required:"false"`
+	Base64      string `json:"base64" required:"false"`
+	SecretRef   string `json:"secretRef" required:"false"`
 }
 
 type HTTPAuth struct {
 	Type              string `json:"type"` // none, basic, bearer, header
-	Username          string `json:"username,omitempty"`
-	UsernameSecretRef string `json:"usernameSecretRef,omitempty"`
-	SecretRef         string `json:"secretRef,omitempty"`
-	Header            string `json:"header,omitempty"`
-	Prefix            string `json:"prefix,omitempty"`
+	Username          string `json:"username" required:"false"`
+	UsernameSecretRef string `json:"usernameSecretRef" required:"false"`
+	SecretRef         string `json:"secretRef" required:"false"`
+	Header            string `json:"header" required:"false"`
+	Prefix            string `json:"prefix" required:"false"`
 }
 
 type TLSConfig struct {
-	Enabled                    bool   `json:"enabled,omitempty"`
-	InsecureSkipVerify         bool   `json:"insecureSkipVerify,omitempty"`
-	CASecretRef                string `json:"caSecretRef,omitempty"`
-	ClientCertificateSecretRef string `json:"clientCertificateSecretRef,omitempty"`
-	ClientKeySecretRef         string `json:"clientKeySecretRef,omitempty"`
-	ServerName                 string `json:"serverName,omitempty"`
-	MinVersion                 string `json:"minVersion,omitempty"` // 1.2, 1.3
-	MaxVersion                 string `json:"maxVersion,omitempty"`
+	Enabled                    bool   `json:"enabled" required:"false"`
+	InsecureSkipVerify         bool   `json:"insecureSkipVerify" required:"false"`
+	CASecretRef                string `json:"caSecretRef" required:"false"`
+	ClientCertificateSecretRef string `json:"clientCertificateSecretRef" required:"false"`
+	ClientKeySecretRef         string `json:"clientKeySecretRef" required:"false"`
+	ServerName                 string `json:"serverName" required:"false"`
+	MinVersion                 string `json:"minVersion"` // 1.2, 1.3
+	MaxVersion                 string `json:"maxVersion" required:"false"`
 }
 
 type ConnectionConfig struct {
-	ProxyURL               string `json:"proxyUrl,omitempty"` // http, https, socks5, socks5h
-	ProxyUsername          string `json:"proxyUsername,omitempty"`
-	ProxyPasswordSecretRef string `json:"proxyPasswordSecretRef,omitempty"`
-	DNSServer              string `json:"dnsServer,omitempty"` // host:port; local target resolution except proxy protocols
-	FixedIP                string `json:"fixedIp,omitempty"`   // only direct target dialing; rejected with a proxy
+	ProxyURL               string `json:"proxyUrl"` // http, https, socks5, socks5h
+	ProxyUsername          string `json:"proxyUsername" required:"false"`
+	ProxyPasswordSecretRef string `json:"proxyPasswordSecretRef" required:"false"`
+	DNSServer              string `json:"dnsServer"` // host:port; local target resolution except proxy protocol
+	FixedIP                string `json:"fixedIp"`   // only direct target dialing; rejected with a proxy
 }
 
 type RedirectConfig struct {
-	Enabled bool   `json:"enabled,omitempty"`
-	MaxHops int    `json:"maxHops,omitempty"`
-	Scope   string `json:"scope,omitempty"` // same-origin (default), same-host, any
+	Enabled bool   `json:"enabled" required:"false"`
+	MaxHops int    `json:"maxHops" required:"false"`
+	Scope   string `json:"scope"` // same-origin (default), same-host, any
 }
 
 type StatusRange struct {
-	Min int `json:"min,omitempty"`
-	Max int `json:"max,omitempty"`
+	Min int `json:"min" required:"false"`
+	Max int `json:"max" required:"false"`
 }
 
 type ValueAssertion struct {
 	Name     string `json:"name"`
-	Operator string `json:"operator,omitempty"` // exists, equals, contains, not_contains, regex
-	Value    string `json:"value,omitempty"`
+	Operator string `json:"operator"` // exists, equals, contains, not_contains, regex
+	Value    string `json:"value" required:"false"`
 }
 
 type JSONAssertion struct {
-	Pointer  string          `json:"pointer,omitempty"`  // RFC 6901 JSON Pointer; empty means the document
-	Operator string          `json:"operator,omitempty"` // exists, equals, not_equals, contains, regex
-	Value    json.RawMessage `json:"value,omitempty"`
+	Pointer  string          `json:"pointer"`  // RFC 6901 JSON Pointer; empty means the document
+	Operator string          `json:"operator"` // exists, equals, not_equals, contains, regex
+	Value    json.RawMessage `json:"value" required:"false"`
 }
 
 type HTTPAssertions struct {
-	StatusCodes     []int            `json:"statusCodes,omitempty"`
-	StatusRanges    []StatusRange    `json:"statusRanges,omitempty"`
-	Headers         []ValueAssertion `json:"headers,omitempty"`
-	TextContains    []string         `json:"textContains,omitempty"`
-	TextNotContains []string         `json:"textNotContains,omitempty"`
-	Regex           []string         `json:"regex,omitempty"`
-	JSON            []JSONAssertion  `json:"json,omitempty"`
-	MaxLatencyMs    int64            `json:"maxLatencyMs,omitempty"`
+	StatusCodes     []int            `json:"statusCodes" required:"false"`
+	StatusRanges    []StatusRange    `json:"statusRanges" required:"false"`
+	Headers         []ValueAssertion `json:"headers" required:"false"`
+	TextContains    []string         `json:"textContains" required:"false"`
+	TextNotContains []string         `json:"textNotContains" required:"false"`
+	Regex           []string         `json:"regex" required:"false"`
+	JSON            []JSONAssertion  `json:"json" required:"false"`
+	MaxLatencyMs    int64            `json:"maxLatencyMs" required:"false"`
 }
 
 type TCPConfig struct {
 	Host            string           `json:"host"`
 	Port            int              `json:"port"`
-	TLS             TLSConfig        `json:"tls,omitempty"`
-	Connection      ConnectionConfig `json:"connection,omitempty"`
-	SendText        string           `json:"sendText,omitempty"`
-	SendBase64      string           `json:"sendBase64,omitempty"`
-	SendSecretRef   string           `json:"sendSecretRef,omitempty"`
-	Charset         string           `json:"charset,omitempty"`
-	ReceiveContains string           `json:"receiveContains,omitempty"`
-	ReceiveRegex    string           `json:"receiveRegex,omitempty"`
-	MaxReceiveBytes int64            `json:"maxReceiveBytes,omitempty"`
+	TLS             TLSConfig        `json:"tls" required:"false"`
+	Connection      ConnectionConfig `json:"connection" required:"false"`
+	SendText        string           `json:"sendText" required:"false"`
+	SendBase64      string           `json:"sendBase64" required:"false"`
+	SendSecretRef   string           `json:"sendSecretRef" required:"false"`
+	Charset         string           `json:"charset" required:"false"`
+	ReceiveContains string           `json:"receiveContains" required:"false"`
+	ReceiveRegex    string           `json:"receiveRegex" required:"false"`
+	MaxReceiveBytes int64            `json:"maxReceiveBytes" required:"false"`
 }
 
 type DNSConfig struct {
 	Name           string   `json:"name"`
 	RecordType     string   `json:"recordType"`
-	Server         string   `json:"server,omitempty"`
-	Protocol       string   `json:"protocol,omitempty"`
-	ExpectedRCode  string   `json:"expectedRCode,omitempty"`
-	ExpectedValues []string `json:"expectedValues,omitempty"`
-	MatchMode      string   `json:"matchMode,omitempty"` // contains (default), exact
+	Server         string   `json:"server" required:"false"`
+	Protocol       string   `json:"protocol" required:"false"`
+	ExpectedRCode  string   `json:"expectedRCode" required:"false"`
+	ExpectedValues []string `json:"expectedValues" required:"false"`
+	MatchMode      string   `json:"matchMode"` // contains (default), exact
 }
 
 type HeartbeatConfig struct {
 	SecretHash     string `json:"-"`
-	PeriodSeconds  int    `json:"periodSeconds,omitempty"`
-	GraceSeconds   int    `json:"graceSeconds,omitempty"`
+	PeriodSeconds  int    `json:"periodSeconds" required:"false"`
+	GraceSeconds   int    `json:"graceSeconds" required:"false"`
 	LastReceivedAt int64  `json:"lastReceivedAt" readOnly:"true"`
 	LastSuccess    bool   `json:"lastSuccess" readOnly:"true"`
-	Description    string `json:"description,omitempty"`
+	Description    string `json:"description" readOnly:"true"`
 }
 
 type CertificateConfig struct {
 	Host          string           `json:"host"`
 	Port          int              `json:"port"`
-	TLS           TLSConfig        `json:"tls,omitempty"`
-	Connection    ConnectionConfig `json:"connection,omitempty"`
-	WarningDays   []int            `json:"warningDays,omitempty"`
-	NotifyRenewal bool             `json:"notifyRenewal,omitempty"`
+	TLS           TLSConfig        `json:"tls" required:"false"`
+	Connection    ConnectionConfig `json:"connection" required:"false"`
+	WarningDays   []int            `json:"warningDays" required:"false"`
+	NotifyRenewal bool             `json:"notifyRenewal" required:"false"`
 	State         string           `json:"state" readOnly:"true"`
 	ExpiresAt     int64            `json:"expiresAt" readOnly:"true"`
 	Fingerprint   string           `json:"fingerprint" readOnly:"true"`

@@ -24,44 +24,44 @@ const (
 )
 
 type User struct {
-	ID        string `json:"id"`
+	ID        string `json:"id" readOnly:"true"`
 	Username  string `json:"username"`
 	Name      string `json:"name"`
 	Role      Role   `json:"role" enum:"admin,operator,viewer"`
 	Locale    string `json:"locale" enum:"zh-CN,en"`
 	Timezone  string `json:"timezone"`
 	Enabled   bool   `json:"enabled"`
-	CreatedAt int64  `json:"createdAt"`
-	UpdatedAt int64  `json:"updatedAt"`
+	CreatedAt int64  `json:"createdAt" readOnly:"true"`
+	UpdatedAt int64  `json:"updatedAt" readOnly:"true"`
 }
 type UserRecord struct {
 	User
 	PasswordHash string `json:"passwordHash"`
 }
 type Session struct {
-	ID        string `json:"id"`
+	ID        string `json:"id" readOnly:"true"`
 	UserID    string `json:"userId"`
 	CSRFToken string `json:"csrfToken"`
 	ExpiresAt int64  `json:"expiresAt"`
-	CreatedAt int64  `json:"createdAt"`
+	CreatedAt int64  `json:"createdAt" readOnly:"true"`
 }
 type Secret struct {
-	ID        string `json:"id"`
+	ID        string `json:"id" readOnly:"true"`
 	Name      string `json:"name"`
-	CreatedAt int64  `json:"createdAt"`
-	UpdatedAt int64  `json:"updatedAt"`
+	CreatedAt int64  `json:"createdAt" readOnly:"true"`
+	UpdatedAt int64  `json:"updatedAt" readOnly:"true"`
 }
 type SecretRecord struct {
 	Secret
 	Ciphertext string `json:"ciphertext"`
 }
 type Channel struct {
-	ID                 string `json:"id"`
+	ID                 string `json:"id" readOnly:"true"`
 	Name               string `json:"name"`
 	ServiceURLSecretID string `json:"serviceUrlSecretId"`
 	Enabled            bool   `json:"enabled"`
-	CreatedAt          int64  `json:"createdAt"`
-	UpdatedAt          int64  `json:"updatedAt"`
+	CreatedAt          int64  `json:"createdAt" readOnly:"true"`
+	UpdatedAt          int64  `json:"updatedAt" readOnly:"true"`
 }
 type Link struct {
 	Label string `json:"label"`
@@ -88,19 +88,21 @@ type PageConfig struct {
 	Groups      []PageGroup `json:"groups"`
 }
 type Page struct {
-	ID          string      `json:"id"`
-	Name        string      `json:"name"`
-	Slug        string      `json:"slug"`
-	Domain      string      `json:"domain"`
-	Draft       PageConfig  `json:"draft"`
-	Published   *PageConfig `json:"published,omitempty"`
-	PublishedAt int64       `json:"publishedAt"`
-	Version     int64       `json:"version"`
-	CreatedAt   int64       `json:"createdAt"`
-	UpdatedAt   int64       `json:"updatedAt"`
+	ID              string      `json:"id" readOnly:"true"`
+	Name            string      `json:"name"`
+	Slug            string      `json:"slug"`
+	Domain          string      `json:"domain"`
+	Draft           PageConfig  `json:"draft"`
+	Published       *PageConfig `json:"published,omitempty" readOnly:"true"`
+	PublishedSlug   string      `json:"publishedSlug,omitempty" readOnly:"true"`
+	PublishedDomain string      `json:"publishedDomain,omitempty" readOnly:"true"`
+	PublishedAt     int64       `json:"publishedAt" readOnly:"true"`
+	Version         int64       `json:"version" readOnly:"true"`
+	CreatedAt       int64       `json:"createdAt" readOnly:"true"`
+	UpdatedAt       int64       `json:"updatedAt" readOnly:"true"`
 }
 type Maintenance struct {
-	ID          string   `json:"id"`
+	ID          string   `json:"id" readOnly:"true"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	MonitorIDs  []string `json:"monitorIds"`
@@ -108,27 +110,27 @@ type Maintenance struct {
 	StartsAt    int64    `json:"startsAt"`
 	EndsAt      int64    `json:"endsAt"`
 	Timezone    string   `json:"timezone"`
-	CreatedAt   int64    `json:"createdAt"`
-	UpdatedAt   int64    `json:"updatedAt"`
+	CreatedAt   int64    `json:"createdAt" readOnly:"true"`
+	UpdatedAt   int64    `json:"updatedAt" readOnly:"true"`
 }
 type IncidentUpdate struct {
-	ID        string `json:"id"`
+	ID        string `json:"id" readOnly:"true"`
 	Body      string `json:"body"`
 	Status    string `json:"status" enum:"investigating,identified,monitoring,resolved"`
-	CreatedAt int64  `json:"createdAt"`
+	CreatedAt int64  `json:"createdAt" readOnly:"true"`
 }
 type Incident struct {
-	ID         string           `json:"id"`
+	ID         string           `json:"id" readOnly:"true"`
 	Title      string           `json:"title"`
 	Body       string           `json:"body"`
 	Status     string           `json:"status" enum:"investigating,identified,monitoring,resolved"`
 	Impact     string           `json:"impact" enum:"none,partial,outage"`
 	PageIDs    []string         `json:"pageIds"`
 	MonitorIDs []string         `json:"monitorIds"`
-	Updates    []IncidentUpdate `json:"updates"`
-	CreatedAt  int64            `json:"createdAt"`
-	UpdatedAt  int64            `json:"updatedAt"`
-	ResolvedAt int64            `json:"resolvedAt"`
+	Updates    []IncidentUpdate `json:"updates" readOnly:"true"`
+	CreatedAt  int64            `json:"createdAt" readOnly:"true"`
+	UpdatedAt  int64            `json:"updatedAt" readOnly:"true"`
+	ResolvedAt int64            `json:"resolvedAt" readOnly:"true"`
 }
 type Retention struct {
 	RoundDays      int `json:"roundDays" minimum:"1"`
@@ -149,13 +151,13 @@ func DefaultSettings() Settings {
 }
 
 type Audit struct {
-	ID           string `json:"id"`
+	ID           string `json:"id" readOnly:"true"`
 	UserID       string `json:"userId"`
 	Username     string `json:"username"`
 	Action       string `json:"action"`
 	ResourceType string `json:"resourceType"`
 	ResourceID   string `json:"resourceId"`
-	CreatedAt    int64  `json:"createdAt"`
+	CreatedAt    int64  `json:"createdAt" readOnly:"true"`
 }
 type BeszelConfig struct {
 	URL              string `json:"url"`
@@ -172,8 +174,8 @@ type Availability struct {
 	UnknownMs   int64    `json:"unknownMs"`
 	ExcludedMs  int64    `json:"excludedMs"`
 	EffectiveMs int64    `json:"effectiveMs"`
-	Uptime      *float64 `json:"uptime"`
-	Coverage    *float64 `json:"coverage"`
+	Uptime      *float64 `json:"uptime" nullable:"true"`
+	Coverage    *float64 `json:"coverage" nullable:"true"`
 }
 type LatencyPoint struct {
 	At        int64   `json:"at"`
@@ -181,7 +183,7 @@ type LatencyPoint struct {
 	Success   bool    `json:"success"`
 }
 type PublicMonitor struct {
-	ID           string             `json:"id"`
+	ID           string             `json:"id" readOnly:"true"`
 	Name         string             `json:"name"`
 	Type         string             `json:"type"`
 	State        string             `json:"state"`
@@ -197,34 +199,34 @@ type PublicCertificate struct {
 	DaysRemaining float64 `json:"daysRemaining"`
 }
 type PublicGroup struct {
-	ID       string          `json:"id"`
+	ID       string          `json:"id" readOnly:"true"`
 	Name     string          `json:"name"`
 	Monitors []PublicMonitor `json:"monitors"`
 }
 type PublicIncident struct {
-	ID         string           `json:"id"`
+	ID         string           `json:"id" readOnly:"true"`
 	Title      string           `json:"title"`
 	Body       string           `json:"body"`
 	Status     string           `json:"status"`
 	Impact     string           `json:"impact"`
 	Updates    []IncidentUpdate `json:"updates"`
-	CreatedAt  int64            `json:"createdAt"`
+	CreatedAt  int64            `json:"createdAt" readOnly:"true"`
 	ResolvedAt int64            `json:"resolvedAt"`
 }
 type PublicMaintenance struct {
-	ID          string `json:"id"`
+	ID          string `json:"id" readOnly:"true"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	StartsAt    int64  `json:"startsAt"`
 	EndsAt      int64  `json:"endsAt"`
 }
 type PublicPage struct {
-	ID          string              `json:"id"`
+	ID          string              `json:"id" readOnly:"true"`
 	Slug        string              `json:"slug"`
 	Config      PageConfig          `json:"config"`
 	State       string              `json:"state"`
 	Groups      []PublicGroup       `json:"groups"`
 	Incidents   []PublicIncident    `json:"incidents"`
 	Maintenance []PublicMaintenance `json:"maintenance"`
-	UpdatedAt   int64               `json:"updatedAt"`
+	UpdatedAt   int64               `json:"updatedAt" readOnly:"true"`
 }
