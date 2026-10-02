@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
+import { useHead } from '@unhead/vue'
 import { useRoute } from 'vue-router'
 import { useQuery, type DefineQueryOptions } from '@pinia/colada'
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
@@ -34,9 +35,21 @@ const incidentId = computed(() =>
       : undefined,
 )
 useIntervalFn(() => query.refetch(), 30000)
-watchEffect(() => {
-  const page = query.data.value
-  if (page) document.title = `${page.config.title} · ${t('publicPage.serviceStatus')}`
+useHead(() => {
+  const config = query.data.value?.config
+  return {
+    title: `${config?.title || 'Octopulse'} · ${t('publicPage.serviceStatus')}`,
+    meta: config
+      ? [
+          { name: 'description', content: config.description || undefined },
+          { name: 'theme-color', content: config.brandColor || '#0f766e' },
+          {
+            name: 'color-scheme',
+            content: config.colorScheme === 'system' ? 'light dark' : config.colorScheme,
+          },
+        ]
+      : [],
+  }
 })
 </script>
 <template>

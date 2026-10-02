@@ -1,28 +1,14 @@
-import { watch } from 'vue'
-import { i18n, locale, t } from './composables/i18n'
+import { i18n } from './composables/i18n'
 import { createApp } from 'vue'
+import { createHead } from '@unhead/vue/client'
 import { createPinia } from 'pinia'
 import { PiniaColada, useQueryCache } from '@pinia/colada'
 import App from './App.vue'
 import { router } from './router'
 import 'virtual:uno.css'
 import './style.css'
-watch(
-  locale,
-  (value) => {
-    document.documentElement.lang = value
-  },
-  { immediate: true },
-)
-watch(
-  [() => router.currentRoute.value.path, locale],
-  () => {
-    if (router.currentRoute.value.path.startsWith('/app'))
-      document.title = `Octopulse · ${t('app.serviceMonitoring')}`
-  },
-  { immediate: true },
-)
 const app = createApp(App)
+  .use(createHead())
   .use(i18n)
   .use(createPinia())
   .use(PiniaColada, {

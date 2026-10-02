@@ -10,11 +10,20 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { watch } from 'vue'
+import { useHead } from '@unhead/vue'
 
 import { useQueryCache } from '@pinia/colada'
 import { notices, dismissNotice } from './composables/notices'
 import { currentUser } from './composables/api'
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
+useHead({
+  title: () => `Octopulse · ${t('app.serviceMonitoring')}`,
+  htmlAttrs: { lang: locale },
+  meta: [
+    { name: 'color-scheme', content: 'light dark' },
+    { name: 'theme-color', content: '#0f766e' },
+  ],
+})
 
 const cache = useQueryCache()
 watch(
