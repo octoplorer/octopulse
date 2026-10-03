@@ -415,7 +415,12 @@
     "signOut": "Sign out",
     "closeNavigation": "Close navigation",
     "openNavigation": "Open navigation",
-    "toggleColorScheme": "Toggle color scheme"
+    "toggleColorScheme": "Toggle color scheme",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "resizeSidebar": "Resize sidebar",
+    "sidebarWidth": "{width} pixels",
+    "resizeSidebarHint": "Use the left and right arrow keys to resize. Home collapses the sidebar; End expands it to full width."
   },
   "notifications": {
     "channelSaved": "Channel saved",

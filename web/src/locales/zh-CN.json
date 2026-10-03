@@ -415,7 +415,12 @@
     "signOut": "退出登录",
     "closeNavigation": "关闭导航",
     "openNavigation": "打开导航",
-    "toggleColorScheme": "切换深浅色"
+    "toggleColorScheme": "切换深浅色",
+    "collapseSidebar": "收起侧栏",
+    "expandSidebar": "展开侧栏",
+    "resizeSidebar": "调整侧栏宽度",
+    "sidebarWidth": "{width} 像素",
+    "resizeSidebarHint": "使用左右方向键调整宽度。Home 收起侧栏，End 展开到最大宽度。"
   },
   "notifications": {
     "channelSaved": "通知渠道已保存",
