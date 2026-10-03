@@ -185,7 +185,7 @@ function refresh() {
                       channel.enabled ? t('common.enabled') : t('common.disabled')
                     }}</span>
                   </td>
-                  <td class="muted" un-text="10px">
+                  <td class="muted" un-text="xs">
                     {{ formatDate(channel.updatedAt) }}
                   </td>
                   <td>
@@ -261,10 +261,10 @@ function refresh() {
                   <td>
                     <span class="pill">{{ statusLabel(delivery.status) }}</span><span class="muted" un-ml="2">{{ delivery.attempts }}</span>
                   </td>
-                  <td class="muted" un-text="10px">
+                  <td class="muted" un-text="xs">
                     {{ formatDate(delivery.createdAt) }}
                   </td>
-                  <td class="muted" un-text="10px">
+                  <td class="muted" un-text="xs">
                     {{ delivery.lastError || '—' }}
                   </td>
                 </tr>

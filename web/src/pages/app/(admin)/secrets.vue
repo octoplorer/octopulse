@@ -119,7 +119,7 @@ function cancel() {
               <td>
                 <code class="muted">{{ secret.id }}</code>
               </td>
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(secret.updatedAt) }}
               </td>
               <td>

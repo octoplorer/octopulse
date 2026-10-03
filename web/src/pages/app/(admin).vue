@@ -65,7 +65,7 @@ async function signout() {
       <div class="nav-label">
         {{ t('common.workspace') }}
       </div>
-      <nav>
+      <nav :aria-label="t('common.workspace')">
         <RouterLink
           v-for="item in nav"
           :key="item.path"
@@ -82,7 +82,7 @@ async function signout() {
       <div class="nav-label">
         {{ t('navigation.administration') }}
       </div>
-      <nav>
+      <nav :aria-label="t('navigation.administration')">
         <template v-if="isAdmin()">
           <RouterLink
             v-for="item in adminNav"
@@ -104,7 +104,7 @@ async function signout() {
           }}</span>
           <div un-flex="1">
             <strong un-text="xs">{{ currentUser?.name || currentUser?.username }}</strong>
-            <div class="muted" un-text="10px">
+            <div class="muted" un-text="xs">
               {{ statusLabel(currentUser?.role || '') }}
             </div>
           </div>

@@ -199,7 +199,7 @@ function percentage(value: number | undefined) {
             <span class="monitor-type-icon"><span class="i-lucide-server" un-w="17px" un-h="17px" aria-hidden="true" /></span>
             <div>
               <h2>{{ server.name }}</h2>
-              <p class="muted" un-text="10px">
+              <p class="muted" un-text="xs">
                 {{ server.host || server.id }}
               </p>
             </div>
@@ -227,7 +227,7 @@ function percentage(value: number | undefined) {
           </div>
           <div>
             <span class="mini-label">{{ t('servers.updated') }}</span>
-            <p class="muted" un-text="10px" un-mt="2">
+            <p class="muted" un-text="xs" un-mt="2">
               {{ formatDate(server.updatedAt) }}
             </p>
             <span v-if="server.stale" class="certificate-risk">{{ t('servers.staleData') }}</span>
@@ -380,7 +380,7 @@ function percentage(value: number | undefined) {
                 />
               </section>
             </div>
-            <p class="muted" un-text="10px" un-mt="5">
+            <p class="muted" un-text="xs" un-mt="5">
               {{ formatDate(history[0]?.at) }} — {{ formatDate(history.at(-1)?.at) }}
             </p>
           </div>

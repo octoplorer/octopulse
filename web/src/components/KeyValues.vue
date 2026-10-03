@@ -30,7 +30,7 @@ const values = defineModel<NameValueForm[]>({ required: true })
         v-model="item.value"
         :placeholder="t('common.value')"
         :aria-label="t('common.value')"
-      ><span v-else class="note" un-text="10px">{{ t('keyValues.valueFromSecret') }}</span><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
+      ><span v-else class="note" un-text="xs">{{ t('keyValues.valueFromSecret') }}</span><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
         type="button"
         class="icon-button"
         :aria-label="t('keyValues.removeField')"

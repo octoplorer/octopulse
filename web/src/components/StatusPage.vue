@@ -68,7 +68,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
     class="public-page"
     :class="{ preview }"
     :data-theme="dark ? 'dark' : 'light'"
-    :style="{ '--accent': page.config.brandColor || '#0c8b76' }"
+    :style="{ '--accent': page.config.brandColor || '#2563eb' }"
   >
     <div class="public-inner">
       <header class="public-header">
@@ -76,7 +76,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
           <img v-if="page.config.logoUrl" :src="page.config.logoUrl" alt=""><span
             v-else
             class="brand-icon"
-            :style="{ background: page.config.brandColor || '#0c8b76' }"
+            :style="{ background: page.config.brandColor || '#2563eb' }"
           ><span class="i-lucide-activity" un-w="20px" un-h="20px" aria-hidden="true" /></span>{{ page.config.title || 'Octopulse' }}
         </div>
         <nav class="public-nav">
@@ -92,7 +92,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
             :aria-label="t('common.switchLanguage')"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
-            <span class="i-lucide-languages" un-w="16px" un-h="16px" aria-hidden="true" /><span un-text="10px" un-ml="1">{{
+            <span class="i-lucide-languages" un-w="16px" un-h="16px" aria-hidden="true" /><span un-text="xs" un-ml="1">{{
               locale === 'zh-CN' ? 'EN' : '中'
             }}</span>
           </button>
@@ -107,7 +107,10 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
       <div v-if="!incidentId" class="public-overall">
         <span
           class="public-overall-icon"
-          :style="!good ? { background: '#e8b65719', color: '#c18a34' } : {}"
+          :style="!good ? {
+            background: page.state === 'maintenance' ? 'var(--info-soft)' : 'var(--warning-soft)',
+            color: page.state === 'maintenance' ? 'var(--info)' : 'var(--warning)',
+          } : {}"
         ><span v-if="good" class="i-lucide-check" un-w="24px" un-h="24px" aria-hidden="true" /><span
           v-else-if="page.state === 'maintenance'" class="i-lucide-clock" un-w="23px" un-h="23px" aria-hidden="true"
         /><span v-else class="i-lucide-triangle-alert" un-w="23px" un-h="23px" aria-hidden="true" /></span>
@@ -124,7 +127,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
           v-for="window in activeMaintenance"
           :key="window.id"
           class="card public-incident"
-          :style="{ 'border-left-color': '#6b92df' }"
+          :style="{ 'border-left-color': 'var(--info)' }"
         >
           <div un-flex="~ items-center justify-between gap-4">
             <h3>{{ window.name }}</h3>
@@ -194,7 +197,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
           v-for="incident in incidents"
           :key="incident.id"
           class="card public-incident"
-          :style="incident.status === 'resolved' ? { 'border-left-color': 'var(--accent)' } : {}"
+          :style="incident.status === 'resolved' ? { 'border-left-color': 'var(--success)' } : {}"
         >
           <div un-flex="~ items-center justify-between gap-4">
             <h3>

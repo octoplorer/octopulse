@@ -353,7 +353,7 @@ function viewRound(round: Round) {
                     </thead>
                     <tbody>
                       <tr v-for="round in history.data.value.rounds" :key="round.id">
-                        <td class="muted" un-text="10px">
+                        <td class="muted" un-text="xs">
                           {{ formatDate(round.startedAt) }}
                         </td>
                         <td><StateBadge :state="round.success ? 'up' : 'down'" /></td>

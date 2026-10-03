@@ -6,6 +6,7 @@ import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { currentUser } from './composables/api'
 import { dismissNotice, notices } from './composables/notices'
+import { dark } from './composables/preferences'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 useHead({
@@ -13,7 +14,7 @@ useHead({
   htmlAttrs: { lang: locale },
   meta: [
     { name: 'color-scheme', content: 'light dark' },
-    { name: 'theme-color', content: '#0f766e' },
+    { name: 'theme-color', content: () => dark.value ? '#0a0a0a' : '#fafafa' },
   ],
 })
 
@@ -32,7 +33,7 @@ watch(
 
 <template>
   <RouterView />
-  <div class="toast-stack" aria-live="polite">
+  <div class="toast-stack" :data-theme="dark ? 'dark' : 'light'" aria-live="polite">
     <div v-for="item in notices" :key="item.id" class="toast" :class="item.kind">
       <span>{{ item.message }}</span><button :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
         ×

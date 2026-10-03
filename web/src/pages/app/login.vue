@@ -91,9 +91,8 @@ async function submit() {
   <div class="auth-page" :data-theme="dark ? 'dark' : 'light'">
     <section class="auth-art">
       <Brand />
-      <div class="auth-visual" />
       <div class="auth-copy">
-        <p class="eyebrow" un-text="teal-300">
+        <p class="eyebrow">
           {{ t('login.slogan') }}
         </p>
         <h1>{{ t('login.everyHeartbeat') }}<br>{{ t('login.alwaysInSight') }}</h1>
@@ -161,7 +160,7 @@ async function submit() {
             }}<span class="i-lucide-arrow-right" un-w="16px" un-h="16px" aria-hidden="true" />
           </button>
         </form>
-        <p class="muted" un-text="10px" un-mt="7">
+        <p class="muted" un-text="xs" un-mt="7">
           {{ t('login.registrationIsClosedContactYourAdministratorForAccess') }}
         </p>
       </div>

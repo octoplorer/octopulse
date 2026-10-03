@@ -47,7 +47,7 @@ const items = computed(
           :aria-label="t('audit.searchAuditLog')"
         >
       </div>
-      <span class="muted" un-text="10px">{{
+      <span class="muted" un-text="xs">{{
         t('counts.records', { count: items.length }, items.length)
       }}</span>
     </div>
@@ -66,7 +66,7 @@ const items = computed(
           </thead>
           <tbody>
             <tr v-for="entry in items" :key="entry.id">
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(entry.createdAt) }}
               </td>
               <td>{{ entry.username }}</td>

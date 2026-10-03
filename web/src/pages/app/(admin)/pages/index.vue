@@ -52,13 +52,13 @@ const query = useQuery({
             page.publishedAt ? t('common.published') : t('common.draft')
           }}</span>
         </div>
-        <p class="muted" un-text="11px">
+        <p class="muted" un-text="xs">
           /{{ page.publishedAt ? publishedEntry(page).slug : page.slug }}
         </p>
         <p
           v-if="page.publishedAt ? publishedEntry(page).domain : page.domain"
           class="muted"
-          un-text="11px"
+          un-text="xs"
           un-flex="~ items-center gap-1.5"
         >
           <span class="i-lucide-globe" un-w="11px" un-h="11px" aria-hidden="true" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
@@ -74,7 +74,7 @@ const query = useQuery({
             target="_blank"
             rel="noopener"
             class="button small ghost"
-          >{{ t('pages.visit') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" /></a><span v-else class="muted" un-text="10px">{{ formatDate(page.updatedAt) }}</span>
+          >{{ t('pages.visit') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" /></a><span v-else class="muted" un-text="xs">{{ formatDate(page.updatedAt) }}</span>
         </div>
       </article>
     </div>

@@ -148,7 +148,7 @@ function confirmDelete(value: Maintenance) {
               <td>
                 <span class="monitor-name" un-flex="~ items-center gap-2"><span class="i-lucide-calendar-clock" un-w="15px" un-h="15px" aria-hidden="true" />{{ window.name }}</span><span class="monitor-sub">{{ window.description }}</span>
               </td>
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(window.startsAt) }}<br>{{ formatDate(window.endsAt) }}
               </td>
               <td>

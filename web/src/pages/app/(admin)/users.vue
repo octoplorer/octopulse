@@ -149,7 +149,7 @@ function cancel() {
                 <span class="pill">{{ statusLabel(user.role) }}</span>
               </td>
               <td>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</td>
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(user.createdAt) }}
               </td>
               <td>

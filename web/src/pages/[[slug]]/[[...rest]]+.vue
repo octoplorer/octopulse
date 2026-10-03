@@ -42,7 +42,7 @@ useHead(() => {
     meta: config
       ? [
           { name: 'description', content: config.description || undefined },
-          { name: 'theme-color', content: config.brandColor || '#0f766e' },
+          { name: 'theme-color', content: config.brandColor || '#2563eb' },
           {
             name: 'color-scheme',
             content: config.colorScheme === 'system' ? 'light dark' : config.colorScheme,

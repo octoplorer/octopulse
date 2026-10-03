@@ -100,7 +100,7 @@ const nextMaintenance = computed(
       <div class="stat-label">
         {{ t('overview.operational') }}<span class="stat-icon"><span class="i-lucide-circle-check" un-w="15px" un-h="15px" aria-hidden="true" /></span>
       </div>
-      <div class="stat-value" un-text="[var(--accent)]">
+      <div class="stat-value" un-text="[var(--success)]">
         {{ up.length }}
       </div>
       <div class="stat-meta">
@@ -194,7 +194,7 @@ const nextMaintenance = computed(
                     }}
                     s
                   </td>
-                  <td class="muted" un-text="10px">
+                  <td class="muted" un-text="xs">
                     {{ formatDate(monitor.lastCheckedAt) }}
                   </td>
                 </tr>
@@ -233,7 +233,7 @@ const nextMaintenance = computed(
                 <h3 un-text="xs">
                   {{ page.name }}
                 </h3>
-                <p class="muted" un-text="10px">
+                <p class="muted" un-text="xs">
                   /{{ page.publishedAt ? publishedEntry(page).slug : page.slug
                   }}{{
                     (page.publishedAt ? publishedEntry(page).domain : page.domain)
@@ -268,7 +268,7 @@ const nextMaintenance = computed(
           >
             <i
               class="activity-dot"
-              :style="{ background: incident.status === 'resolved' ? 'var(--accent)' : '#dfa151' }"
+              :style="{ background: incident.status === 'resolved' ? 'var(--success)' : 'var(--warning)' }"
             />
             <div>
               <h3>{{ incident.title }}</h3>

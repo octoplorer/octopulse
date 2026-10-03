@@ -154,7 +154,7 @@ const filtered = computed(() =>
                 s
                 <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted">/ {{ monitor.retries }}</span>
               </td>
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(monitor.lastCheckedAt) }}
               </td>
               <td>

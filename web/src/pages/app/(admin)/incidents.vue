@@ -181,7 +181,7 @@ async function update() {
                 <span class="pill">{{ statusLabel(incident.status) }}</span>
               </td>
               <td>{{ statusLabel(incident.impact) }}</td>
-              <td class="muted" un-text="10px">
+              <td class="muted" un-text="xs">
                 {{ formatDate(incident.updatedAt) }}
               </td>
               <td>

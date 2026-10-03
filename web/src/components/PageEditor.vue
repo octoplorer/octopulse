@@ -59,7 +59,7 @@ const form = reactive<Page>({
     title: '',
     description: '',
     logoUrl: '',
-    brandColor: '#0c8b76',
+    brandColor: '#2563eb',
     colorScheme: 'system',
     links: [],
     groups: [],
