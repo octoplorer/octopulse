@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../../../client/types.gen'
-import type { Monitor, MonitorHistory, Round } from '../../../../../lib/types'
+import type { Round } from '../../../../../client/types.gen'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery } from '@pinia/colada'
 import { useClipboard } from '@vueuse/core'
@@ -49,7 +47,7 @@ const query = useQuery(
       staleTime: 5000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    }) as DefineQueryOptions<Monitor, ErrorModel>,
+    }),
 )
 const period = ref('24h')
 const history = useQuery(
@@ -69,7 +67,7 @@ const history = useQuery(
       staleTime: 5000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    } as DefineQueryOptions<MonitorHistory, ErrorModel>
+    }
   },
 )
 const busy = ref(false)

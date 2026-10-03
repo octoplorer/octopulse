@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Channel, Monitor, Secret } from '../lib/types'
+import type { Channel, Secret } from '../client/types.gen'
+import type { MonitorForm } from '../lib/monitor-form'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -16,7 +17,7 @@ import { canEdit } from '../composables/api'
 import { notify } from '../composables/notices'
 import { errorText } from '../lib/errors'
 
-import { clone, defaults, parseJSON, splitValues } from '../lib/form'
+import { clone, parseJSON, splitValues } from '../lib/form'
 import {
   emptyCertificate,
   emptyDNS,
@@ -25,6 +26,7 @@ import {
   emptyTCP,
   monitorTypes,
   newMonitor,
+  toMonitorForm,
 } from '../lib/monitor'
 import AsyncState from './AsyncState.vue'
 import ConnectionFields from './ConnectionFields.vue'
@@ -49,7 +51,7 @@ const saving = ref(false)
 const error = ref('')
 const channels = ref<Channel[]>([])
 const secrets = ref<Secret[]>([])
-const form = reactive<Monitor>(newMonitor())
+const form = reactive<MonitorForm>(newMonitor())
 const tags = ref('')
 const dnsValues = ref('')
 const warningDays = ref('30, 14, 7, 1')
@@ -100,27 +102,15 @@ async function load() {
       throw c.error || new Error(t('errors.requestFailed'))
     if (s.status !== 'success')
       throw s.error || new Error(t('errors.requestFailed'))
-    channels.value = clone(c.data.items) as Channel[]
-    secrets.value = clone(s.data.items) as Secret[]
+    channels.value = clone(c.data.items)
+    secrets.value = clone(s.data.items)
     if (editing.value) {
       const monitor = await queryCache.refresh(
         queryCache.ensure({ ...getMonitorQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
       if (monitor.status !== 'success')
         throw monitor.error || new Error(t('errors.requestFailed'))
-      Object.assign(form, clone(monitor.data) as Monitor)
-      if (form.http)
-        form.http = defaults(emptyHTTP(), form.http)
-      if (form.tcp)
-        form.tcp = defaults(emptyTCP(), form.tcp)
-      if (form.dns)
-        form.dns = defaults(emptyDNS(), form.dns)
-      if (form.heartbeat)
-        form.heartbeat = defaults(emptyHeartbeat(), form.heartbeat)
-      if (form.certificate)
-        form.certificate = defaults(emptyCertificate(), form.certificate)
-      if (form.http && !form.http.auth.type)
-        form.http.auth.type = 'none'
+      Object.assign(form, toMonitorForm(monitor.data))
       tags.value = form.tags?.join(', ') || ''
       dnsValues.value = form.dns?.expectedValues?.join('\n') || ''
       warningDays.value = form.certificate?.warningDays?.join(', ') || warningDays.value
@@ -177,9 +167,9 @@ async function save() {
     }
     if (new Blob([JSON.stringify(payload)]).size > 8 * 1024 * 1024)
       throw new Error(t('monitorEditor.theMonitorConfigurationRequestMayNotExceed8'))
-    const result = (await (editing.value
+    const result = await (editing.value
       ? updateMonitor.mutateAsync({ path: { id: form.id }, body: payload })
-      : createMonitor.mutateAsync({ body: payload }))) as Monitor
+      : createMonitor.mutateAsync({ body: payload }))
     notify(t('monitorEditor.monitorSaved'))
     router.push(`/app/monitors/${result.id}`)
   }

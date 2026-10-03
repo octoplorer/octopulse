@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { NameValue, Secret } from '../lib/types'
+import type { Secret } from '../client/types.gen'
+import type { NameValueForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
 import SecretSelect from './SecretSelect.vue'
@@ -8,7 +9,7 @@ defineProps<{ secrets: Secret[], nameLabel?: string }>()
 
 const { t } = useI18n({ useScope: 'global' })
 
-const values = defineModel<NameValue[]>({ required: true })
+const values = defineModel<NameValueForm[]>({ required: true })
 </script>
 
 <template>

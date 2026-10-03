@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Maintenance, Monitor, Page } from '../../../lib/types'
+import type { Maintenance } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -37,18 +35,9 @@ const createMaintenance = useMutation(createMaintenanceMutation())
 const updateMaintenance = useMutation(updateMaintenanceMutation())
 const deleteMaintenance = useMutation(deleteMaintenanceMutation())
 
-const query = useQuery({ ...listMaintenanceQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Maintenance[] },
-  ErrorModel
->)
-const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Monitor[] },
-  ErrorModel
->)
-const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Page[] },
-  ErrorModel
->)
+const query = useQuery({ ...listMaintenanceQuery(), staleTime: 10000 })
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 })
+const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 })
 const open = ref(false)
 const saving = ref(false)
 const error = ref('')

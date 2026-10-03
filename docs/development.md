@@ -45,6 +45,8 @@ mise run dev:web
 
 前端共享响应式状态放在 `web/src/composables/`（会话、国际化、偏好和通知）；`web/src/lib/` 保留无状态工具和类型。依赖当前语言或时区的格式化函数随偏好模块放在 `composables/preferences.ts`。
 
+页面和展示组件直接引用 `web/src/client/types.gen.ts` 中生成的 API 类型。监控编辑器使用 `web/src/lib/monitor-form.ts` 中的表单类型，描述补齐默认值后的配置；API 数据通过 `toMonitorForm()` 转为表单状态。
+
 ### 文档 head
 
 文档 head 使用 Unhead 管理，`App.vue` 通过 `useHead` 声明默认标题、HTML 语言和 metadata；公开路由直接根据已发布配置覆盖标题、描述、品牌色和配色方案，数据清空或组件卸载时自动清理。后台内嵌草稿预览不修改文档 head，字符集与 viewport 保留在 `web/index.html`。

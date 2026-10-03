@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Audit } from '../../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -18,7 +15,7 @@ definePage({ meta: { title: 'navigation.auditLog', roles: ['admin'] } })
 const query = useQuery({
   ...listAuditQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Audit[] }, ErrorModel>)
+})
 const search = ref('')
 const items = computed(
   () =>

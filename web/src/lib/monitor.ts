@@ -1,14 +1,16 @@
+import type { Monitor } from '../client/types.gen'
 import type {
-  CertificateConfig,
-  ConnectionConfig,
-  DNSConfig,
-  HeartbeatConfig,
-  HTTPConfig,
-  Monitor,
-  TCPConfig,
-  TLSConfig,
-} from './types'
+  CertificateConfigForm,
+  ConnectionConfigForm,
+  DNSConfigForm,
+  HeartbeatConfigForm,
+  HTTPConfigForm,
+  MonitorForm,
+  TCPConfigForm,
+  TLSConfigForm,
+} from './monitor-form'
 import { t } from '../composables/i18n'
+import { clone, defaults } from './form'
 
 export const monitorTypes = [
   { value: 'http', label: 'monitorTypes.httpHttps' },
@@ -17,7 +19,7 @@ export const monitorTypes = [
   { value: 'heartbeat', label: 'monitorTypes.heartbeat' },
   { value: 'certificate', label: 'monitorTypes.certificateExpiry' },
 ]
-function emptyTLS(): TLSConfig {
+function emptyTLS(): TLSConfigForm {
   return {
     enabled: false,
     insecureSkipVerify: false,
@@ -26,7 +28,7 @@ function emptyTLS(): TLSConfig {
     maxVersion: '',
   }
 }
-function emptyConnection(): ConnectionConfig {
+function emptyConnection(): ConnectionConfigForm {
   return {
     proxyUrl: '',
     proxyUsername: '',
@@ -34,7 +36,7 @@ function emptyConnection(): ConnectionConfig {
     fixedIp: '',
   }
 }
-export function emptyHTTP(): HTTPConfig {
+export function emptyHTTP(): HTTPConfigForm {
   return {
     url: '',
     method: 'GET',
@@ -70,7 +72,7 @@ export function emptyHTTP(): HTTPConfig {
     },
   }
 }
-export function emptyTCP(): TCPConfig {
+export function emptyTCP(): TCPConfigForm {
   return {
     host: '',
     port: 443,
@@ -84,7 +86,7 @@ export function emptyTCP(): TCPConfig {
     maxReceiveBytes: 65536,
   }
 }
-export function emptyDNS(): DNSConfig {
+export function emptyDNS(): DNSConfigForm {
   return {
     name: '',
     recordType: 'A',
@@ -95,7 +97,7 @@ export function emptyDNS(): DNSConfig {
     matchMode: 'contains',
   }
 }
-export function emptyHeartbeat(): HeartbeatConfig {
+export function emptyHeartbeat(): HeartbeatConfigForm {
   return {
     periodSeconds: 60,
     graceSeconds: 30,
@@ -104,7 +106,7 @@ export function emptyHeartbeat(): HeartbeatConfig {
     description: '',
   }
 }
-export function emptyCertificate(): CertificateConfig {
+export function emptyCertificate(): CertificateConfigForm {
   return {
     host: '',
     port: 443,
@@ -118,7 +120,7 @@ export function emptyCertificate(): CertificateConfig {
     daysRemaining: 0,
   }
 }
-export function newMonitor(): Monitor {
+export function newMonitor(): MonitorForm {
   return {
     id: '',
     name: '',
@@ -146,6 +148,22 @@ export function newMonitor(): Monitor {
     updatedAt: 0,
     http: emptyHTTP(),
   }
+}
+export function toMonitorForm(monitor: Monitor): MonitorForm {
+  const value = clone(monitor)
+  const form: MonitorForm = {
+    ...value,
+    tags: value.tags ?? [],
+    notificationChannelIds: value.notificationChannelIds ?? [],
+    http: value.http ? defaults(emptyHTTP(), value.http) : undefined,
+    tcp: value.tcp ? defaults(emptyTCP(), value.tcp) : undefined,
+    dns: value.dns ? defaults(emptyDNS(), value.dns) : undefined,
+    heartbeat: value.heartbeat ? defaults(emptyHeartbeat(), value.heartbeat) : undefined,
+    certificate: value.certificate ? defaults(emptyCertificate(), value.certificate) : undefined,
+  }
+  if (form.http && !form.http.auth.type)
+    form.http.auth.type = 'none'
+  return form
 }
 export function targetOf(m: Monitor) {
   return (

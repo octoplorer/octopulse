@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { User } from '../../../lib/types'
+import type { User } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -32,10 +30,7 @@ const createUser = useMutation(createUserMutation())
 const updateUser = useMutation(updateUserMutation())
 const deleteUser = useMutation(deleteUserMutation())
 
-const query = useQuery({ ...listUsersQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: User[] },
-  ErrorModel
->)
+const query = useQuery({ ...listUsersQuery(), staleTime: 10000 })
 const open = ref(false)
 const saving = ref(false)
 const error = ref('')

@@ -84,7 +84,7 @@ export type CertificateConfig = {
     port: number;
     readonly state: string;
     tls?: TlsConfig;
-    warningDays?: Array<number> | null;
+    warningDays?: Array<number>;
 };
 
 export type Channel = {
@@ -124,7 +124,7 @@ export type ContainersResponse = {
      */
     readonly $schema?: string;
     error?: string;
-    items: Array<Container> | null;
+    items: Array<Container>;
     source: string;
     stale: boolean;
     syncedAt: number;
@@ -141,7 +141,7 @@ export type Credentials = {
 
 export type DnsConfig = {
     expectedRCode?: string;
-    expectedValues?: Array<string> | null;
+    expectedValues?: Array<string>;
     matchMode: string;
     name: string;
     protocol?: string;
@@ -189,7 +189,7 @@ export type ErrorModel = {
     /**
      * Optional list of individual error details
      */
-    errors?: Array<ErrorDetail> | null;
+    errors?: Array<ErrorDetail>;
     /**
      * A URI reference that identifies the specific occurrence of the problem.
      */
@@ -209,14 +209,14 @@ export type ErrorModel = {
 };
 
 export type HttpAssertions = {
-    headers?: Array<ValueAssertion> | null;
-    json?: Array<JsonAssertion> | null;
+    headers?: Array<ValueAssertion>;
+    json?: Array<JsonAssertion>;
     maxLatencyMs?: number;
-    regex?: Array<string> | null;
-    statusCodes?: Array<number> | null;
-    statusRanges?: Array<StatusRange> | null;
-    textContains?: Array<string> | null;
-    textNotContains?: Array<string> | null;
+    regex?: Array<string>;
+    statusCodes?: Array<number>;
+    statusRanges?: Array<StatusRange>;
+    textContains?: Array<string>;
+    textNotContains?: Array<string>;
 };
 
 export type HttpAuth = {
@@ -232,8 +232,8 @@ export type HttpBody = {
     base64?: string;
     charset?: string;
     contentType?: string;
-    fields?: Array<NameValue> | null;
-    files?: Array<MultipartFile> | null;
+    fields?: Array<NameValue>;
+    files?: Array<MultipartFile>;
     format: string;
     secretRef?: string;
     text?: string;
@@ -245,11 +245,11 @@ export type HttpConfig = {
     auth?: HttpAuth;
     body?: HttpBody;
     connection?: ConnectionConfig;
-    headers?: Array<NameValue> | null;
+    headers?: Array<NameValue>;
     host?: string;
     maxResponseBytes?: number;
     method?: string;
-    query?: Array<NameValue> | null;
+    query?: Array<NameValue>;
     redirects?: RedirectConfig;
     requestGzip?: boolean;
     responseCharset?: string;
@@ -299,7 +299,7 @@ export type HistoryResponse = {
     readonly $schema?: string;
     error?: string;
     intervalMs: number;
-    items: Array<HistoryPoint> | null;
+    items: Array<HistoryPoint>;
     range: string;
     source: string;
     stale: boolean;
@@ -315,13 +315,13 @@ export type Incident = {
     readonly createdAt: number;
     readonly id: string;
     impact: 'none' | 'partial' | 'outage';
-    monitorIds: Array<string> | null;
-    pageIds: Array<string> | null;
+    monitorIds: Array<string>;
+    pageIds: Array<string>;
     readonly resolvedAt: number;
     status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
     title: string;
     readonly updatedAt: number;
-    readonly updates: Array<IncidentUpdate> | null;
+    readonly updates: Array<IncidentUpdate>;
 };
 
 export type IncidentProgress = {
@@ -345,7 +345,7 @@ export type ItemsAudit = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Audit> | null;
+    items: Array<Audit>;
 };
 
 export type ItemsChannel = {
@@ -353,7 +353,7 @@ export type ItemsChannel = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Channel> | null;
+    items: Array<Channel>;
 };
 
 export type ItemsDeliveryView = {
@@ -361,7 +361,7 @@ export type ItemsDeliveryView = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<DeliveryView> | null;
+    items: Array<DeliveryView>;
 };
 
 export type ItemsIncident = {
@@ -369,7 +369,7 @@ export type ItemsIncident = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Incident> | null;
+    items: Array<Incident>;
 };
 
 export type ItemsMaintenance = {
@@ -377,7 +377,7 @@ export type ItemsMaintenance = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Maintenance> | null;
+    items: Array<Maintenance>;
 };
 
 export type ItemsMonitor = {
@@ -385,7 +385,7 @@ export type ItemsMonitor = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Monitor> | null;
+    items: Array<Monitor>;
 };
 
 export type ItemsPage = {
@@ -393,7 +393,7 @@ export type ItemsPage = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Page> | null;
+    items: Array<Page>;
 };
 
 export type ItemsSecret = {
@@ -401,7 +401,7 @@ export type ItemsSecret = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<Secret> | null;
+    items: Array<Secret>;
 };
 
 export type ItemsUser = {
@@ -409,7 +409,7 @@ export type ItemsUser = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    items: Array<User> | null;
+    items: Array<User>;
 };
 
 export type JsonAssertion = {
@@ -438,9 +438,9 @@ export type Maintenance = {
     description: string;
     endsAt: number;
     readonly id: string;
-    monitorIds: Array<string> | null;
+    monitorIds: Array<string>;
     name: string;
-    pageIds: Array<string> | null;
+    pageIds: Array<string>;
     startsAt: number;
     timezone: string;
     readonly updatedAt: number;
@@ -467,7 +467,7 @@ export type Monitor = {
     readonly lastCheckedAt: number;
     name: string;
     readonly nextCheckAt: number;
-    notificationChannelIds?: Array<string> | null;
+    notificationChannelIds?: Array<string>;
     notifyRecovery?: boolean;
     recoveryThreshold?: number;
     reminderSeconds?: number;
@@ -475,7 +475,7 @@ export type Monitor = {
     retryDelaySeconds?: number;
     readonly state: string;
     readonly successCount: number;
-    tags?: Array<string> | null;
+    tags?: Array<string>;
     tcp?: TcpConfig;
     timeoutSeconds?: number;
     type: string;
@@ -488,8 +488,8 @@ export type MonitorHistory = {
      */
     readonly $schema?: string;
     availability: Availability;
-    latency: Array<LatencyPoint> | null;
-    rounds: Array<Round> | null;
+    latency: Array<LatencyPoint>;
+    rounds: Array<Round>;
 };
 
 export type MonitorWrite = {
@@ -513,7 +513,7 @@ export type MonitorWrite = {
     readonly lastCheckedAt: number;
     name: string;
     readonly nextCheckAt: number;
-    notificationChannelIds?: Array<string> | null;
+    notificationChannelIds?: Array<string>;
     notifyRecovery?: boolean;
     recoveryThreshold?: number;
     reminderSeconds?: number;
@@ -521,7 +521,7 @@ export type MonitorWrite = {
     retryDelaySeconds?: number;
     readonly state: string;
     readonly successCount: number;
-    tags?: Array<string> | null;
+    tags?: Array<string>;
     tcp?: TcpConfig;
     timeoutSeconds?: number;
     type: string;
@@ -565,15 +565,15 @@ export type PageConfig = {
     brandColor: string;
     colorScheme: 'system' | 'light' | 'dark';
     description: string;
-    groups: Array<PageGroup> | null;
-    links: Array<Link> | null;
+    groups: Array<PageGroup>;
+    links: Array<Link>;
     logoUrl: string;
     title: string;
 };
 
 export type PageGroup = {
     id: string;
-    monitors: Array<PageMonitor> | null;
+    monitors: Array<PageMonitor>;
     name: string;
 };
 
@@ -604,7 +604,7 @@ export type PublicCertificate = {
 
 export type PublicGroup = {
     readonly id: string;
-    monitors: Array<PublicMonitor> | null;
+    monitors: Array<PublicMonitor>;
     name: string;
 };
 
@@ -616,7 +616,7 @@ export type PublicIncident = {
     resolvedAt: number;
     status: string;
     title: string;
-    updates: Array<IncidentUpdate> | null;
+    updates: Array<IncidentUpdate>;
 };
 
 export type PublicMaintenance = {
@@ -631,7 +631,7 @@ export type PublicMonitor = {
     availability: Availability;
     certificate?: PublicCertificate;
     readonly id: string;
-    latency: Array<LatencyPoint> | null;
+    latency: Array<LatencyPoint>;
     maintenance: boolean;
     name: string;
     paused: boolean;
@@ -645,10 +645,10 @@ export type PublicPage = {
      */
     readonly $schema?: string;
     config: PageConfig;
-    groups: Array<PublicGroup> | null;
+    groups: Array<PublicGroup>;
     readonly id: string;
-    incidents: Array<PublicIncident> | null;
-    maintenance: Array<PublicMaintenance> | null;
+    incidents: Array<PublicIncident>;
+    maintenance: Array<PublicMaintenance>;
     slug: string;
     state: string;
     readonly updatedAt: number;
@@ -668,7 +668,7 @@ export type Retention = {
 };
 
 export type Round = {
-    attempts: Array<Attempt> | null;
+    attempts: Array<Attempt>;
     configVersion: number;
     finishedAt: number;
     generation: number;
@@ -704,7 +704,7 @@ export type Settings = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    allowedDomains: Array<string> | null;
+    allowedDomains: Array<string>;
     locale: 'zh-CN' | 'en';
     organizationName: string;
     retention: Retention;
@@ -766,7 +766,7 @@ export type SystemsResponse = {
      */
     readonly $schema?: string;
     error?: string;
-    items: Array<System> | null;
+    items: Array<System>;
     source: string;
     stale: boolean;
     syncedAt: number;
@@ -870,7 +870,7 @@ export type CertificateConfigWritable = {
     notifyRenewal?: boolean;
     port: number;
     tls?: TlsConfig;
-    warningDays?: Array<number> | null;
+    warningDays?: Array<number>;
 };
 
 export type ChannelWritable = {
@@ -881,7 +881,7 @@ export type ChannelWritable = {
 
 export type ContainersResponseWritable = {
     error?: string;
-    items: Array<Container> | null;
+    items: Array<Container>;
     source: string;
     stale: boolean;
     syncedAt: number;
@@ -900,7 +900,7 @@ export type ErrorModelWritable = {
     /**
      * Optional list of individual error details
      */
-    errors?: Array<ErrorDetail> | null;
+    errors?: Array<ErrorDetail>;
     /**
      * A URI reference that identifies the specific occurrence of the problem.
      */
@@ -937,7 +937,7 @@ export type HeartbeatTokenWritable = {
 export type HistoryResponseWritable = {
     error?: string;
     intervalMs: number;
-    items: Array<HistoryPoint> | null;
+    items: Array<HistoryPoint>;
     range: string;
     source: string;
     stale: boolean;
@@ -947,8 +947,8 @@ export type HistoryResponseWritable = {
 export type IncidentWritable = {
     body: string;
     impact: 'none' | 'partial' | 'outage';
-    monitorIds: Array<string> | null;
-    pageIds: Array<string> | null;
+    monitorIds: Array<string>;
+    pageIds: Array<string>;
     status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
     title: string;
 };
@@ -964,47 +964,47 @@ export type IncidentUpdateWritable = {
 };
 
 export type ItemsAuditWritable = {
-    items: Array<AuditWritable> | null;
+    items: Array<AuditWritable>;
 };
 
 export type ItemsChannelWritable = {
-    items: Array<ChannelWritable> | null;
+    items: Array<ChannelWritable>;
 };
 
 export type ItemsDeliveryViewWritable = {
-    items: Array<DeliveryView> | null;
+    items: Array<DeliveryView>;
 };
 
 export type ItemsIncidentWritable = {
-    items: Array<IncidentWritable> | null;
+    items: Array<IncidentWritable>;
 };
 
 export type ItemsMaintenanceWritable = {
-    items: Array<MaintenanceWritable> | null;
+    items: Array<MaintenanceWritable>;
 };
 
 export type ItemsMonitorWritable = {
-    items: Array<MonitorWritable> | null;
+    items: Array<MonitorWritable>;
 };
 
 export type ItemsPageWritable = {
-    items: Array<PageWritable> | null;
+    items: Array<PageWritable>;
 };
 
 export type ItemsSecretWritable = {
-    items: Array<SecretWritable> | null;
+    items: Array<SecretWritable>;
 };
 
 export type ItemsUserWritable = {
-    items: Array<UserWritable> | null;
+    items: Array<UserWritable>;
 };
 
 export type MaintenanceWritable = {
     description: string;
     endsAt: number;
-    monitorIds: Array<string> | null;
+    monitorIds: Array<string>;
     name: string;
-    pageIds: Array<string> | null;
+    pageIds: Array<string>;
     startsAt: number;
     timezone: string;
 };
@@ -1020,13 +1020,13 @@ export type MonitorWritable = {
     http?: HttpConfig;
     intervalSeconds?: number;
     name: string;
-    notificationChannelIds?: Array<string> | null;
+    notificationChannelIds?: Array<string>;
     notifyRecovery?: boolean;
     recoveryThreshold?: number;
     reminderSeconds?: number;
     retries?: number;
     retryDelaySeconds?: number;
-    tags?: Array<string> | null;
+    tags?: Array<string>;
     tcp?: TcpConfig;
     timeoutSeconds?: number;
     type: string;
@@ -1034,8 +1034,8 @@ export type MonitorWritable = {
 
 export type MonitorHistoryWritable = {
     availability: Availability;
-    latency: Array<LatencyPoint> | null;
-    rounds: Array<Round> | null;
+    latency: Array<LatencyPoint>;
+    rounds: Array<Round>;
 };
 
 export type MonitorWriteWritable = {
@@ -1049,13 +1049,13 @@ export type MonitorWriteWritable = {
     http?: HttpConfig;
     intervalSeconds?: number;
     name: string;
-    notificationChannelIds?: Array<string> | null;
+    notificationChannelIds?: Array<string>;
     notifyRecovery?: boolean;
     recoveryThreshold?: number;
     reminderSeconds?: number;
     retries?: number;
     retryDelaySeconds?: number;
-    tags?: Array<string> | null;
+    tags?: Array<string>;
     tcp?: TcpConfig;
     timeoutSeconds?: number;
     type: string;
@@ -1077,7 +1077,7 @@ export type ProfileWriteWritable = {
 };
 
 export type PublicGroupWritable = {
-    monitors: Array<PublicMonitorWritable> | null;
+    monitors: Array<PublicMonitorWritable>;
     name: string;
 };
 
@@ -1087,7 +1087,7 @@ export type PublicIncidentWritable = {
     resolvedAt: number;
     status: string;
     title: string;
-    updates: Array<IncidentUpdateWritable> | null;
+    updates: Array<IncidentUpdateWritable>;
 };
 
 export type PublicMaintenanceWritable = {
@@ -1100,7 +1100,7 @@ export type PublicMaintenanceWritable = {
 export type PublicMonitorWritable = {
     availability: Availability;
     certificate?: PublicCertificate;
-    latency: Array<LatencyPoint> | null;
+    latency: Array<LatencyPoint>;
     maintenance: boolean;
     name: string;
     paused: boolean;
@@ -1110,9 +1110,9 @@ export type PublicMonitorWritable = {
 
 export type PublicPageWritable = {
     config: PageConfig;
-    groups: Array<PublicGroupWritable> | null;
-    incidents: Array<PublicIncidentWritable> | null;
-    maintenance: Array<PublicMaintenanceWritable> | null;
+    groups: Array<PublicGroupWritable>;
+    incidents: Array<PublicIncidentWritable>;
+    maintenance: Array<PublicMaintenanceWritable>;
     slug: string;
     state: string;
 };
@@ -1127,7 +1127,7 @@ export type SecretWriteWritable = {
 };
 
 export type SettingsWritable = {
-    allowedDomains: Array<string> | null;
+    allowedDomains: Array<string>;
     locale: 'zh-CN' | 'en';
     organizationName: string;
     retention: Retention;
@@ -1147,7 +1147,7 @@ export type SetupStatusWritable = {
 
 export type SystemsResponseWritable = {
     error?: string;
-    items: Array<System> | null;
+    items: Array<System>;
     source: string;
     stale: boolean;
     syncedAt: number;

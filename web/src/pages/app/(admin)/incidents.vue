@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Incident, Monitor, Page } from '../../../lib/types'
+import type { Incident } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -32,18 +30,9 @@ const createIncident = useMutation(createIncidentsMutation())
 const updateIncident = useMutation(updateIncidentsMutation())
 const publishIncidentUpdate = useMutation(createIncidentUpdateMutation())
 
-const query = useQuery({ ...listIncidentsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Incident[] },
-  ErrorModel
->)
-const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Page[] },
-  ErrorModel
->)
-const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Monitor[] },
-  ErrorModel
->)
+const query = useQuery({ ...listIncidentsQuery(), staleTime: 10000 })
+const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 })
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 })
 const open = ref(false)
 const detailOpen = ref(false)
 const selected = ref<Incident | null>(null)
@@ -122,7 +111,7 @@ async function update() {
       path: { id: selected.value.id },
       body: { body: updateBody.value, status: updateStatus.value },
     })
-    selected.value = result as Incident
+    selected.value = result
     updateBody.value = ''
     notify(t('incidents.updatePublished'))
     await query.refresh()

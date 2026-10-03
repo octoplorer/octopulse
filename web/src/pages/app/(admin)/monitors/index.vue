@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../../client/types.gen'
-import type { Monitor } from '../../../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -27,7 +24,7 @@ const query = useQuery(
       staleTime: 10000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    }) as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>,
+    }),
 )
 const search = ref('')
 const state = ref('all')

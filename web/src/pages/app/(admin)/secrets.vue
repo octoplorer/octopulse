@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Secret } from '../../../lib/types'
+import type { Secret } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -29,10 +27,7 @@ const createSecret = useMutation(createSecretMutation())
 const updateSecret = useMutation(updateSecretMutation())
 const deleteSecret = useMutation(deleteSecretMutation())
 
-const query = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Secret[] },
-  ErrorModel
->)
+const query = useQuery({ ...listSecretsQuery(), staleTime: 10000 })
 const open = ref(false)
 const saving = ref(false)
 const error = ref('')

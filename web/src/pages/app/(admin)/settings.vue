@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Settings as OrganizationSettings } from '../../../lib/types'
+import type { Settings as OrganizationSettings } from '../../../client/types.gen'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { onMounted, reactive, ref } from 'vue'

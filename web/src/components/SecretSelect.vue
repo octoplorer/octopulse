@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Secret } from '../lib/types'
+import type { Secret } from '../client/types.gen'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{ secrets: Secret[], optional?: boolean }>()

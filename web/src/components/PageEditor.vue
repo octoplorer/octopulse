@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Monitor, Page, PublicPage, Settings } from '../lib/types'
+import type { Monitor, Page, PublicPage } from '../client/types.gen'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -90,21 +90,21 @@ async function load() {
       throw m.error || new Error(t('errors.requestFailed'))
     if (s.status !== 'success')
       throw s.error || new Error(t('errors.requestFailed'))
-    monitors.value = clone(m.data.items) as Monitor[]
-    allowedDomains.value = clone((s.data as Settings).allowedDomains || [])
+    monitors.value = clone(m.data.items)
+    allowedDomains.value = clone(s.data.allowedDomains)
     if (editing.value) {
       const page = await queryCache.refresh(
         queryCache.ensure({ ...getPagesQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
       if (page.status !== 'success')
         throw page.error || new Error(t('errors.requestFailed'))
-      replacePage(page.data as Page)
+      replacePage(page.data)
       const preview = await queryCache.refresh(
         queryCache.ensure({ ...previewPageQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
       if (preview.status !== 'success')
         throw preview.error || new Error(t('errors.requestFailed'))
-      savedPreview.value = clone(preview.data) as PublicPage
+      savedPreview.value = clone(preview.data)
     }
   }
   catch (e) {
@@ -239,7 +239,7 @@ async function save(publish = false) {
     const body = clone(form)
     const data = (await (editing.value
       ? updatePage.mutateAsync({ path: { id: form.id }, body })
-      : createPage.mutateAsync({ body }))) as Page
+      : createPage.mutateAsync({ body })))
     replacePage(data)
     if (publish) {
       await publishPage.mutateAsync({ path: { id: form.id } })
@@ -248,7 +248,7 @@ async function save(publish = false) {
       )
       if (page.status !== 'success')
         throw page.error || new Error(t('errors.requestFailed'))
-      replacePage(page.data as Page)
+      replacePage(page.data)
       notify(t('pageEditor.statusPagePublished'))
     }
     else {
@@ -259,7 +259,7 @@ async function save(publish = false) {
     )
     if (preview.status !== 'success')
       throw preview.error || new Error(t('errors.requestFailed'))
-    savedPreview.value = clone(preview.data) as PublicPage
+    savedPreview.value = clone(preview.data)
     if (!id.value)
       await router.replace(`/app/pages/${form.id}`)
   }

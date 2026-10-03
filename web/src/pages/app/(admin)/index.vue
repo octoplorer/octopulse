@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Incident, Maintenance, Monitor, Page } from '../../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -33,20 +30,20 @@ const monitors = useQuery(
       staleTime: 10000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    }) as DefineQueryOptions<{ items: Monitor[] }, ErrorModel>,
+    }),
 )
 const incidents = useQuery({
   ...listIncidentsQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Incident[] }, ErrorModel>)
+})
 const pages = useQuery({
   ...listPagesQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Page[] }, ErrorModel>)
+})
 const maintenance = useQuery({
   ...listMaintenanceQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Maintenance[] }, ErrorModel>)
+})
 const items = computed(() => monitors.data.value?.items || [])
 const active = computed(() => items.value.filter(m => m.enabled))
 const up = computed(() => active.value.filter(m => m.type !== 'certificate' && m.state === 'up'))

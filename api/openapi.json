@@ -288,10 +288,7 @@
               "format": "int64",
               "type": "integer"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -434,10 +431,7 @@
             "items": {
               "$ref": "#/components/schemas/Container"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "source": {
             "type": "string"
@@ -497,10 +491,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "matchMode": {
             "type": "string"
@@ -617,10 +608,7 @@
             "items": {
               "$ref": "#/components/schemas/ErrorDetail"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "instance": {
             "description": "A URI reference that identifies the specific occurrence of the problem.",
@@ -664,19 +652,13 @@
             "items": {
               "$ref": "#/components/schemas/ValueAssertion"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "json": {
             "items": {
               "$ref": "#/components/schemas/JSONAssertion"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "maxLatencyMs": {
             "format": "int64",
@@ -686,47 +668,32 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "statusCodes": {
             "items": {
               "format": "int64",
               "type": "integer"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "statusRanges": {
             "items": {
               "$ref": "#/components/schemas/StatusRange"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "textContains": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "textNotContains": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "type": "object"
@@ -774,19 +741,13 @@
             "items": {
               "$ref": "#/components/schemas/NameValue"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "files": {
             "items": {
               "$ref": "#/components/schemas/MultipartFile"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "format": {
             "type": "string"
@@ -825,10 +786,7 @@
             "items": {
               "$ref": "#/components/schemas/NameValue"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "host": {
             "type": "string"
@@ -844,10 +802,7 @@
             "items": {
               "$ref": "#/components/schemas/NameValue"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "redirects": {
             "$ref": "#/components/schemas/RedirectConfig"
@@ -1014,10 +969,7 @@
             "items": {
               "$ref": "#/components/schemas/HistoryPoint"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "range": {
             "type": "string"
@@ -1079,19 +1031,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "pageIds": {
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "resolvedAt": {
             "format": "int64",
@@ -1120,10 +1066,7 @@
               "$ref": "#/components/schemas/IncidentUpdate"
             },
             "readOnly": true,
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1223,10 +1166,7 @@
             "items": {
               "$ref": "#/components/schemas/Audit"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1250,10 +1190,7 @@
             "items": {
               "$ref": "#/components/schemas/Channel"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1277,10 +1214,7 @@
             "items": {
               "$ref": "#/components/schemas/DeliveryView"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1304,10 +1238,7 @@
             "items": {
               "$ref": "#/components/schemas/Incident"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1331,10 +1262,7 @@
             "items": {
               "$ref": "#/components/schemas/Maintenance"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1358,10 +1286,7 @@
             "items": {
               "$ref": "#/components/schemas/Monitor"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1385,10 +1310,7 @@
             "items": {
               "$ref": "#/components/schemas/Page"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1412,10 +1334,7 @@
             "items": {
               "$ref": "#/components/schemas/Secret"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1439,10 +1358,7 @@
             "items": {
               "$ref": "#/components/schemas/User"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1537,10 +1453,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -1549,10 +1462,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "startsAt": {
             "format": "int64",
@@ -1658,10 +1568,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notifyRecovery": {
             "type": "boolean"
@@ -1695,10 +1602,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "tcp": {
             "$ref": "#/components/schemas/TCPConfig"
@@ -1750,19 +1654,13 @@
             "items": {
               "$ref": "#/components/schemas/LatencyPoint"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "rounds": {
             "items": {
               "$ref": "#/components/schemas/Round"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1849,10 +1747,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "notifyRecovery": {
             "type": "boolean"
@@ -1886,10 +1781,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "tcp": {
             "$ref": "#/components/schemas/TCPConfig"
@@ -2060,19 +1952,13 @@
             "items": {
               "$ref": "#/components/schemas/PageGroup"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "links": {
             "items": {
               "$ref": "#/components/schemas/Link"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "logoUrl": {
             "type": "string"
@@ -2102,10 +1988,7 @@
             "items": {
               "$ref": "#/components/schemas/PageMonitor"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -2214,10 +2097,7 @@
             "items": {
               "$ref": "#/components/schemas/PublicMonitor"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -2262,10 +2142,7 @@
             "items": {
               "$ref": "#/components/schemas/IncidentUpdate"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2328,10 +2205,7 @@
             "items": {
               "$ref": "#/components/schemas/LatencyPoint"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "maintenance": {
             "type": "boolean"
@@ -2380,10 +2254,7 @@
             "items": {
               "$ref": "#/components/schemas/PublicGroup"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "id": {
             "readOnly": true,
@@ -2393,19 +2264,13 @@
             "items": {
               "$ref": "#/components/schemas/PublicIncident"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "maintenance": {
             "items": {
               "$ref": "#/components/schemas/PublicMaintenance"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "slug": {
             "type": "string"
@@ -2489,10 +2354,7 @@
             "items": {
               "$ref": "#/components/schemas/Attempt"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "configVersion": {
             "format": "int64",
@@ -2618,10 +2480,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "locale": {
             "enum": [
@@ -2839,10 +2698,7 @@
             "items": {
               "$ref": "#/components/schemas/System"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "source": {
             "type": "string"

@@ -1,4 +1,4 @@
-import type { Page } from './types'
+import type { Page } from '../client/types.gen'
 
 // Published routing is a snapshot. An omitted publishedDomain on a new-format
 // page means path-only publication, even when its draft now has a domain.

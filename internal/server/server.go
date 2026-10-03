@@ -73,6 +73,7 @@ func New(st *store.Store, v *security.Vault, c config.Config) *Server {
 	hc.OpenAPIPath = "/api/openapi"
 	hc.DocsPath = "/api/docs"
 	hc.SchemasPath = "/api/schemas"
+	hc.Formats = apiJSONFormats(hc.Formats)
 	s.API = humago.New(s.Mux, hc)
 	s.registerIdentity()
 	s.registerConfiguration()

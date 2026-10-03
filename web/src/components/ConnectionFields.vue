@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { ConnectionConfig, Secret } from '../lib/types'
+import type { Secret } from '../client/types.gen'
+import type { ConnectionConfigForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
 import Field from './Field.vue'
@@ -9,7 +10,7 @@ defineProps<{ secrets: Secret[] }>()
 
 const { t } = useI18n({ useScope: 'global' })
 
-const model = defineModel<ConnectionConfig>({ required: true })
+const model = defineModel<ConnectionConfigForm>({ required: true })
 </script>
 
 <template>

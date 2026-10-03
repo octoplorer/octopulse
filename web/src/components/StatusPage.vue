@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PublicPage } from '../lib/types'
+import type { PublicPage } from '../client/types.gen'
 import { usePreferredDark } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

@@ -1,4 +1,4 @@
-import type { User } from './lib/types'
+import type { User } from './client/types.gen'
 import 'vue-router'
 
 declare module 'vue-router' {

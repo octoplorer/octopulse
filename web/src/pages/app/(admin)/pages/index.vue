@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../../client/types.gen'
-import type { Page } from '../../../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { useI18n } from 'vue-i18n'
 import { listPagesQuery } from '../../../../client/@pinia/colada.gen'
@@ -19,7 +16,7 @@ definePage({ meta: { title: 'navigation.statusPages' } })
 const query = useQuery({
   ...listPagesQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Page[] }, ErrorModel>)
+})
 </script>
 
 <template>

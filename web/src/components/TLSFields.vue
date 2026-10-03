@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Secret, TLSConfig } from '../lib/types'
+import type { Secret } from '../client/types.gen'
+import type { TLSConfigForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
 import Field from './Field.vue'
@@ -10,7 +11,7 @@ defineProps<{ secrets: Secret[], allowToggle?: boolean }>()
 
 const { t } = useI18n({ useScope: 'global' })
 
-const model = defineModel<TLSConfig>({ required: true })
+const model = defineModel<TLSConfigForm>({ required: true })
 </script>
 
 <template>

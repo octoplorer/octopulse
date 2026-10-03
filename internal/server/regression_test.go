@@ -99,7 +99,7 @@ func TestMaintenanceEditsPreserveRetainedLatency(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	v := domain.Maintenance{Name: "Old maintenance", MonitorIDs: []string{m.ID}, StartsAt: at, EndsAt: at + 3600000, Timezone: "UTC"}
+	v := domain.Maintenance{Name: "Old maintenance", MonitorIDs: []string{m.ID}, PageIDs: []string{}, StartsAt: at, EndsAt: at + 3600000, Timezone: "UTC"}
 	status, b := request(t, c, "POST", ts.URL+"/api/v1/maintenance", csrf, v)
 	if status != 200 {
 		t.Fatalf("maintenance create: %d %s", status, b)
@@ -121,7 +121,7 @@ func TestMaintenanceEditsPreserveRetainedLatency(t *testing.T) {
 func TestActiveIncidentsSurviveHistoryLimitAndConcurrentProgress(t *testing.T) {
 	s, ts, c := testServer(t)
 	csrf := bootstrap(t, c, ts.URL)
-	p := domain.Page{Name: "Status", Slug: "status", Draft: domain.PageConfig{Title: "Status", BrandColor: "#008877", ColorScheme: "system"}}
+	p := domain.Page{Name: "Status", Slug: "status", Draft: domain.PageConfig{Title: "Status", BrandColor: "#008877", ColorScheme: "system", Links: []domain.Link{}, Groups: []domain.PageGroup{}}}
 	status, b := request(t, c, "POST", ts.URL+"/api/v1/pages", csrf, p)
 	if status != 200 {
 		t.Fatalf("page create: %d %s", status, b)
@@ -232,7 +232,7 @@ func TestPageRoutingChangesOnlyOnPublication(t *testing.T) {
 	if status, b := request(t, c, "PATCH", ts.URL+"/api/v1/settings", csrf, settings); status != 200 {
 		t.Fatalf("domains: %d %s", status, b)
 	}
-	p := domain.Page{Name: "Status", Slug: "status1", Domain: "status.test", Draft: domain.PageConfig{Title: "Published", BrandColor: "#008877", ColorScheme: "system"}}
+	p := domain.Page{Name: "Status", Slug: "status1", Domain: "status.test", Draft: domain.PageConfig{Title: "Published", BrandColor: "#008877", ColorScheme: "system", Links: []domain.Link{}, Groups: []domain.PageGroup{}}}
 	status, b := request(t, c, "POST", ts.URL+"/api/v1/pages", csrf, p)
 	if status != 200 {
 		t.Fatalf("create: %d %s", status, b)

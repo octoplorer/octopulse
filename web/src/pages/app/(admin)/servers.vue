@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel, GetBeszelHistoryData } from '../../../client/types.gen'
 import type {
   BeszelConfig,
-  BeszelContainer,
-  BeszelContainers,
-  BeszelHistory,
-  BeszelHistoryPoint,
-  BeszelSystem,
-  BeszelSystems,
-  Secret,
-} from '../../../lib/types'
+  Container as BeszelContainer,
+  ContainersResponse as BeszelContainers,
+  HistoryResponse as BeszelHistory,
+  HistoryPoint as BeszelHistoryPoint,
+  System as BeszelSystem,
+  GetBeszelHistoryData,
+} from '../../../client/types.gen'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { reactive, ref } from 'vue'
@@ -51,12 +48,12 @@ const query = useQuery(
       staleTime: 5000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    }) as DefineQueryOptions<BeszelSystems, ErrorModel>,
+    }),
 )
 const secrets = useQuery({
   ...listSecretsQuery(),
   staleTime: 10000,
-} as DefineQueryOptions<{ items: Secret[] }, ErrorModel>)
+})
 const configOpen = ref(false)
 const detailOpen = ref(false)
 const selected = ref<BeszelSystem | null>(null)
@@ -141,8 +138,8 @@ async function detail(server: BeszelSystem) {
       throw h.error || new Error(t('errors.requestFailed'))
     if (c.status !== 'success')
       throw c.error || new Error(t('errors.requestFailed'))
-    historyMeta.value = h.data as BeszelHistory
-    containersMeta.value = c.data as BeszelContainers
+    historyMeta.value = h.data
+    containersMeta.value = c.data
     history.value = h.data.items || []
     containers.value = c.data.items || []
   }

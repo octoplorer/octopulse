@@ -1,8 +1,6 @@
-import type { GetSessionResponse } from '../client/types.gen'
-import type { User } from '../lib/types'
+import type { GetSessionResponse, User } from '../client/types.gen'
 import { ref } from 'vue'
 import { client } from '../client/client.gen'
-import { normalizeCollections } from '../lib/normalize'
 import { locale, t } from './i18n'
 import { timezone } from './preferences'
 
@@ -12,7 +10,6 @@ client.setConfig({
   baseUrl: location.origin,
   credentials: 'same-origin',
   throwOnError: true,
-  responseTransformer: async data => normalizeCollections(data),
 })
 client.interceptors.request.use((request) => {
   if (csrfToken)

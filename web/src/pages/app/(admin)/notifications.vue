@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../../client/types.gen'
-import type { Channel, Delivery, Monitor, Secret } from '../../../lib/types'
+import type { Channel } from '../../../client/types.gen'
 import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery } from '@pinia/colada'
 import { reactive, ref } from 'vue'
@@ -38,22 +36,10 @@ const updateChannel = useMutation(updateChannelsMutation())
 const deleteChannel = useMutation(deleteChannelsMutation())
 const testChannel = useMutation(testChannelMutation())
 
-const query = useQuery({ ...listChannelsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Channel[] },
-  ErrorModel
->)
-const secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Secret[] },
-  ErrorModel
->)
-const deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Delivery[] },
-  ErrorModel
->)
-const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 } as DefineQueryOptions<
-  { items: Monitor[] },
-  ErrorModel
->)
+const query = useQuery({ ...listChannelsQuery(), staleTime: 10000 })
+const secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 })
+const deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 })
+const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 })
 const open = ref(false)
 const saving = ref(false)
 const error = ref('')

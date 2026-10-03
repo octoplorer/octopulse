@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DefineQueryOptions } from '@pinia/colada'
-import type { ErrorModel } from '../../client/types.gen'
-import type { PublicPage } from '../../lib/types'
 import { useQuery } from '@pinia/colada'
 import { useHead } from '@unhead/vue'
 import { computed } from 'vue'
@@ -26,7 +23,7 @@ const query = useQuery(
       staleTime: 5000,
       enabled: pollingEnabled.value,
       autoRefetch: 30000,
-    }) as DefineQueryOptions<PublicPage, ErrorModel>,
+    }),
 )
 const rest = computed(() =>
   Array.isArray(route.params.rest) ? route.params.rest.join('/') : String(route.params.rest || ''),
