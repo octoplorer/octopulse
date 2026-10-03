@@ -66,7 +66,7 @@ func (s *Server) registerIdentity() {
 	huma.Register(s.API, huma.Operation{OperationID: "getSetup", Method: "GET", Path: "/api/v1/setup"}, func(ctx context.Context, _ *struct{}) (*Output[SetupStatus], error) {
 		users, e := s.Store.List(ctx, "users")
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return &Output[SetupStatus]{Body: SetupStatus{Required: len(users) == 0}}, nil
 	})
@@ -112,7 +112,7 @@ func (s *Server) registerIdentity() {
 			if se, ok := e.(huma.StatusError); ok {
 				return nil, se
 			}
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return result, nil
 	})
@@ -128,7 +128,7 @@ func (s *Server) registerIdentity() {
 	huma.Register(s.API, huma.Operation{OperationID: "createSession", Method: "POST", Path: "/api/v1/session"}, func(ctx context.Context, in *CreateInput[Credentials]) (*SessionOutput, error) {
 		users, e := list[domain.UserRecord](ctx, s.Store, "users")
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		var found domain.UserRecord
 		for _, u := range users {
@@ -146,12 +146,12 @@ func (s *Server) registerIdentity() {
 		}
 		var out *SessionOutput
 		e = s.Store.WithTx(ctx, func(t *store.Tx) error { var err error; out, err = s.createSession(ctx, t, found.User); return err })
-		return out, apiError(e)
+		return out, apiError(ctx, e)
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "deleteSession", Method: "DELETE", Path: "/api/v1/session"}, func(ctx context.Context, _ *struct{}) (*SessionOutput, error) {
 		id := currentIdentity(ctx)
 		if e := s.Store.Delete(ctx, "sessions", id.Session.ID); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return &SessionOutput{SetCookie: (&http.Cookie{Name: "octopulse_session", Path: "/api/v1", MaxAge: -1, HttpOnly: true, Secure: s.Config.CookieSecure, SameSite: http.SameSiteStrictMode}).String()}, nil
 	})
@@ -161,7 +161,7 @@ func (s *Server) registerIdentity() {
 		}
 		records, e := list[domain.UserRecord](ctx, s.Store, "users")
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		users := []domain.User{}
 		for _, u := range records {
@@ -208,7 +208,7 @@ func (s *Server) registerIdentity() {
 			return audit(ctx, t, "delete", "users", in.ID)
 		})
 		if e != nil {
-			return nil, statusOrAPIError(e)
+			return nil, statusOrAPIError(ctx, e)
 		}
 		return &Output[Ack]{Body: Ack{true}}, nil
 	})
@@ -253,7 +253,7 @@ func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output
 	var old domain.UserRecord
 	if id != "" {
 		if e = s.Store.Get(ctx, "users", id, &old); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		u.ID = id
 		u.CreatedAt = old.CreatedAt
@@ -309,15 +309,15 @@ func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output
 		return audit(ctx, t, "save", "users", u.ID)
 	})
 	if e != nil {
-		return nil, statusOrAPIError(e)
+		return nil, statusOrAPIError(ctx, e)
 	}
 	return &Output[domain.User]{Body: u}, nil
 }
-func statusOrAPIError(e error) error {
+func statusOrAPIError(ctx context.Context, e error) error {
 	if v, ok := e.(huma.StatusError); ok {
 		return v
 	}
-	return apiError(e)
+	return apiError(ctx, e)
 }
 func jsonUser(b []byte, u *domain.UserRecord) error { return json.Unmarshal(b, u) }
 func decode(b []byte, out any) error                { return json.Unmarshal(b, out) }

@@ -144,3 +144,30 @@ func TestReadOnlyAndLastAdmin(t *testing.T) {
 		t.Fatalf("last admin delete %d %s", status, b)
 	}
 }
+
+func TestProfilePasswordChangeKeepsCurrentSessionAndRevokesOthers(t *testing.T) {
+	_, ts, primary := testServer(t)
+	csrf := bootstrap(t, primary, ts.URL)
+	jar, _ := cookiejar.New(nil)
+	other := &http.Client{Jar: jar}
+	if status, _ := request(t, other, "POST", ts.URL+"/api/v1/session", "", Credentials{Username: "admin", Password: "test passphrase 1234"}); status != 200 {
+		t.Fatal("second login failed")
+	}
+	input := ProfileWrite{Name: "Administrator", Locale: "en", Timezone: "UTC", OldPassword: "wrong", Password: "replacement password 1234"}
+	if status, _ := request(t, primary, "PATCH", ts.URL+"/api/v1/profile", csrf, input); status != 403 {
+		t.Fatal("incorrect current password accepted")
+	}
+	input.OldPassword = "test passphrase 1234"
+	if status, b := request(t, primary, "PATCH", ts.URL+"/api/v1/profile", csrf, input); status != 200 {
+		t.Fatalf("password change: %d %s", status, b)
+	}
+	if status, _ := request(t, primary, "GET", ts.URL+"/api/v1/monitors", "", nil); status != 200 {
+		t.Fatal("current session was revoked")
+	}
+	if status, _ := request(t, other, "GET", ts.URL+"/api/v1/monitors", "", nil); status != 401 {
+		t.Fatal("other session remained active")
+	}
+	if status, _ := request(t, other, "POST", ts.URL+"/api/v1/session", "", Credentials{Username: "admin", Password: input.Password}); status != 200 {
+		t.Fatal("new password cannot log in")
+	}
+}

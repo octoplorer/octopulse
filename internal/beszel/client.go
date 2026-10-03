@@ -11,6 +11,7 @@ import (
 
 	"github.com/octoplorer/octopulse/internal/domain"
 	"github.com/octoplorer/octopulse/internal/store"
+	"golang.org/x/sync/singleflight"
 )
 
 type SecretResolver interface {
@@ -21,12 +22,14 @@ type Client struct {
 	Secrets    SecretResolver
 	HTTP       *http.Client
 	Now        func() time.Time
-	op         sync.Mutex
 	mu         sync.RWMutex
-	config     domain.BeszelConfig
-	token      string
-	tokenUntil int64
-	version    string
+	commit     chan struct{}
+	remote     chan struct{}
+	flights    singleflight.Group
+	work       sync.WaitGroup
+	closed     bool
+	generation uint64
+	session    *clientSession
 	systems    SystemsResponse
 	history    map[string]HistoryResponse
 	containers map[string]ContainersResponse
@@ -34,7 +37,7 @@ type Client struct {
 }
 
 func New(s *store.Store, secrets SecretResolver) *Client {
-	c := &Client{Store: s, Secrets: secrets, HTTP: &http.Client{Timeout: 12 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, Now: time.Now, history: map[string]HistoryResponse{}, containers: map[string]ContainersResponse{}, wake: make(chan struct{}, 1)}
+	c := &Client{Store: s, Secrets: secrets, HTTP: &http.Client{Timeout: 12 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, Now: time.Now, history: map[string]HistoryResponse{}, containers: map[string]ContainersResponse{}, wake: make(chan struct{}, 1), commit: make(chan struct{}, 1), remote: make(chan struct{}, 4)}
 	if s != nil {
 		_ = s.Get(context.Background(), "beszelSnapshots", "systems", &c.systems)
 		if c.systems.SyncedAt > 0 {
@@ -44,23 +47,6 @@ func New(s *store.Store, secrets SecretResolver) *Client {
 	}
 	return c
 }
-func (c *Client) Invalidate() {
-	c.op.Lock()
-	c.config = domain.BeszelConfig{}
-	c.token = ""
-	c.version = ""
-	c.mu.Lock()
-	c.systems = SystemsResponse{}
-	c.history = map[string]HistoryResponse{}
-	c.containers = map[string]ContainersResponse{}
-	c.mu.Unlock()
-	c.op.Unlock()
-	select {
-	case c.wake <- struct{}{}:
-	default:
-	}
-}
-
 func (c *Client) loadConfig(ctx context.Context) (domain.BeszelConfig, error) {
 	var cfg domain.BeszelConfig
 	if err := c.Store.Get(ctx, "beszel", "config", &cfg); err != nil {
@@ -77,35 +63,35 @@ func (c *Client) loadConfig(ctx context.Context) (domain.BeszelConfig, error) {
 	}
 	return cfg, nil
 }
-func (c *Client) prepare(ctx context.Context, cfg domain.BeszelConfig) error {
-	if c.config != cfg {
-		c.token = ""
-		c.version = ""
-		c.config = cfg
-	}
-	if err := c.authenticate(ctx, cfg); err != nil {
-		return err
-	}
-	{
+func (c *Client) prepare(ctx context.Context, session *clientSession) (string, error) {
+	value, err := c.sharedWork(ctx, session, &session.prepare, "", func(ctx context.Context) (any, error) {
+		token, err := c.authenticate(ctx, session)
+		if err != nil {
+			return nil, err
+		}
 		var info struct {
 			Version string `json:"v"`
 		}
-		if err := c.request(ctx, cfg, "GET", "/api/beszel/info", nil, nil, &info, true); err != nil {
-			return err
+		if err := c.request(ctx, session.config, "GET", "/api/beszel/info", nil, nil, &info, token); err != nil {
+			return nil, err
 		}
 		version := info.Version
 		if len(version) > 0 && version[0] == 'v' {
 			version = version[1:]
 		}
 		if len(version) < 5 || version[:5] != "0.20." {
-			return ErrVersion
+			return nil, ErrVersion
 		}
-		c.version = version
+		return version, nil
+	})
+	if err != nil {
+		return "", err
 	}
-	return c.authenticate(ctx, cfg)
+	return value.(string), nil
 }
 
 func (c *Client) Start(ctx context.Context) {
+	defer c.Close()
 	for {
 		cfg, err := c.loadConfig(ctx)
 		interval := 30 * time.Second
@@ -146,70 +132,97 @@ type rawSystem struct {
 }
 
 func (c *Client) Poll(ctx context.Context) error {
-	c.op.Lock()
-	defer c.op.Unlock()
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
-	cfg, err := c.loadConfig(ctx)
+	session, err := c.loadSession(ctx)
 	if err != nil {
-		c.fail(err)
 		return err
 	}
-	if err = c.prepare(ctx, cfg); err != nil {
-		c.fail(err)
+	_, err = c.fetch(ctx, session, "systems", func(ctx context.Context) (any, error) {
+		err := c.poll(ctx, session)
+		if err != nil {
+			c.fail(session, err)
+		}
+		return nil, err
+	})
+	return err
+}
+
+func (c *Client) poll(ctx context.Context, session *clientSession) error {
+	cfg := session.config
+	version, err := c.prepare(ctx, session)
+	if err != nil {
 		return err
 	}
 	query := url.Values{"sort": {"name,id"}, "fields": {"id,name,host,status,updated,info"}}
-	records, err := listRecords[rawSystem](ctx, c, cfg, "systems", query)
+	records, err := listRecords[rawSystem](ctx, c, session, "systems", query)
 	if err != nil {
-		c.fail(err)
 		return err
 	}
 	now := c.Now().UnixMilli()
-	result := SystemsResponse{Items: []System{}, Source: cfg.URL, Version: c.version, SyncedAt: now}
+	result := SystemsResponse{Items: []System{}, Source: cfg.URL, Version: version, SyncedAt: now}
 	for _, r := range records {
 		updated, err := timestamp(r.Updated)
 		if err != nil || r.ID == "" {
-			c.fail(ErrSchema)
 			return ErrSchema
 		}
 		result.Items = append(result.Items, System{ID: r.ID, Name: r.Name, Host: r.Host, Status: r.Status, CPU: r.Info.CPU, Memory: r.Info.Memory, Disk: r.Info.Disk, UpdatedAt: updated, Stale: r.Status != "up" || now-updated > int64(max(cfg.PollSeconds*2, 120))*1000, Info: SystemInfo{Hostname: r.Info.Hostname, Kernel: r.Info.Kernel, CPUModel: r.Info.CPUModel, Cores: r.Info.Cores, Threads: r.Info.Threads, UptimeSeconds: r.Info.Uptime, AgentVersion: r.Info.Version}})
 	}
+	select {
+	case c.commit <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	defer func() { <-c.commit }()
+	if err := session.ctx.Err(); err != nil {
+		return err
+	}
 	if err = c.Store.Put(ctx, "beszelSnapshots", "systems", result); err != nil {
-		c.fail(err)
 		return err
 	}
 	c.mu.Lock()
-	c.systems = result
+	if c.session == session {
+		c.systems = result
+	}
 	c.mu.Unlock()
 	return nil
 }
-func (c *Client) fail(err error) {
+
+func (c *Client) fail(session *clientSession, err error) {
 	c.mu.Lock()
-	c.systems.Stale = true
-	c.systems.Error = err.Error()
+	if c.session == session {
+		c.systems.Stale = true
+		c.systems.Error = err.Error()
+	}
 	c.mu.Unlock()
 }
 
 func (c *Client) Systems(ctx context.Context) (SystemsResponse, error) {
-	cfg, err := c.loadConfig(ctx)
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	session, err := c.loadSession(ctx)
 	if err != nil {
 		return SystemsResponse{Items: []System{}, Stale: true, Error: err.Error()}, nil
 	}
+	cfg := session.config
 	c.mu.RLock()
 	result := c.systems
-	result.Items = append([]System{}, result.Items...)
 	c.mu.RUnlock()
 	if result.Source != cfg.URL || result.SyncedAt == 0 {
-		_ = c.Poll(ctx)
+		if err := c.Poll(ctx); err != nil && ctx.Err() != nil {
+			return SystemsResponse{}, ctx.Err()
+		}
 		c.mu.RLock()
 		result = c.systems
-		result.Items = append([]System{}, result.Items...)
 		c.mu.RUnlock()
+	}
+	if err := session.ctx.Err(); err != nil {
+		return SystemsResponse{}, err
 	}
 	if result.Source != "" && result.Source != cfg.URL {
 		result = SystemsResponse{Items: []System{}, Stale: true, Error: result.Error}
 	}
+	result.Items = append([]System{}, result.Items...)
 	result.Source = cfg.URL
 	if result.SyncedAt == 0 || c.Now().UnixMilli()-result.SyncedAt > int64(cfg.PollSeconds*2)*1000 {
 		result.Stale = true
@@ -241,29 +254,56 @@ var ranges = map[string]struct {
 }{"1h": {time.Hour, "1m", 60000}, "12h": {12 * time.Hour, "10m", 600000}, "24h": {24 * time.Hour, "20m", 1200000}, "1w": {7 * 24 * time.Hour, "120m", 7200000}, "30d": {30 * 24 * time.Hour, "480m", 28800000}}
 
 func (c *Client) History(ctx context.Context, id, rangeName string) (HistoryResponse, error) {
-	window, ok := ranges[rangeName]
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	_, ok := ranges[rangeName]
 	if !ok || !systemID.MatchString(id) {
 		return HistoryResponse{}, ErrSchema
 	}
-	c.op.Lock()
-	defer c.op.Unlock()
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	cfg, err := c.loadConfig(ctx)
+	session, err := c.loadSession(ctx)
 	if err != nil {
 		return HistoryResponse{}, err
 	}
+	cfg := session.config
 	key := id + ":" + rangeName
 	c.mu.RLock()
 	cached := c.history[key]
 	c.mu.RUnlock()
+	if err := session.ctx.Err(); err != nil {
+		return HistoryResponse{}, err
+	}
+	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+		cached.Items = append([]HistoryPoint{}, cached.Items...)
+		return cached, nil
+	}
+	value, err := c.fetch(ctx, session, "history:"+key, func(ctx context.Context) (any, error) {
+		return c.historyResult(ctx, session, id, rangeName, key)
+	})
+	if err != nil {
+		return HistoryResponse{}, err
+	}
+	result := value.(HistoryResponse)
+	result.Items = append([]HistoryPoint{}, result.Items...)
+	return result, nil
+}
+
+func (c *Client) historyResult(ctx context.Context, session *clientSession, id, rangeName, key string) (HistoryResponse, error) {
+	cfg := session.config
+	window := ranges[rangeName]
+	c.mu.RLock()
+	cached := c.history[key]
+	c.mu.RUnlock()
+	if err := session.ctx.Err(); err != nil {
+		return HistoryResponse{}, err
+	}
 	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		return cached, nil
 	}
+	var err error
 	result := HistoryResponse{Items: []HistoryPoint{}, Source: cfg.URL, Range: rangeName, IntervalMS: window.width}
-	if err = c.prepare(ctx, cfg); err == nil {
+	if _, err = c.prepare(ctx, session); err == nil {
 		filter := `system="` + id + `" && created > "` + c.Now().UTC().Add(-window.duration).Format("2006-01-02 15:04:05.000Z") + `" && type="` + window.kind + `"`
-		records, fetchErr := listRecords[rawHistory](ctx, c, cfg, "system_stats", url.Values{"filter": {filter}, "sort": {"created,id"}, "fields": {"created,stats"}})
+		records, fetchErr := listRecords[rawHistory](ctx, c, session, "system_stats", url.Values{"filter": {filter}, "sort": {"created,id"}, "fields": {"created,stats"}})
 		err = fetchErr
 		if err == nil {
 			for _, r := range records {
@@ -292,6 +332,10 @@ func (c *Client) History(ctx context.Context, id, rangeName string) (HistoryResp
 	}
 	result.SyncedAt = c.Now().UnixMilli()
 	c.mu.Lock()
+	if c.session != session {
+		c.mu.Unlock()
+		return HistoryResponse{}, context.Canceled
+	}
 	if len(c.history) >= 128 {
 		var oldest string
 		var at int64
@@ -319,26 +363,52 @@ type rawContainer struct {
 }
 
 func (c *Client) Containers(ctx context.Context, id string) (ContainersResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
 	if !systemID.MatchString(id) {
 		return ContainersResponse{}, ErrSchema
 	}
-	c.op.Lock()
-	defer c.op.Unlock()
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	cfg, err := c.loadConfig(ctx)
+	session, err := c.loadSession(ctx)
 	if err != nil {
 		return ContainersResponse{}, err
 	}
+	cfg := session.config
 	c.mu.RLock()
 	cached := c.containers[id]
 	c.mu.RUnlock()
+	if err := session.ctx.Err(); err != nil {
+		return ContainersResponse{}, err
+	}
+	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+		cached.Items = append([]Container{}, cached.Items...)
+		return cached, nil
+	}
+	value, err := c.fetch(ctx, session, "containers:"+id, func(ctx context.Context) (any, error) {
+		return c.containersResult(ctx, session, id)
+	})
+	if err != nil {
+		return ContainersResponse{}, err
+	}
+	result := value.(ContainersResponse)
+	result.Items = append([]Container{}, result.Items...)
+	return result, nil
+}
+
+func (c *Client) containersResult(ctx context.Context, session *clientSession, id string) (ContainersResponse, error) {
+	cfg := session.config
+	c.mu.RLock()
+	cached := c.containers[id]
+	c.mu.RUnlock()
+	if err := session.ctx.Err(); err != nil {
+		return ContainersResponse{}, err
+	}
 	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		return cached, nil
 	}
+	var err error
 	result := ContainersResponse{Items: []Container{}, Source: cfg.URL}
-	if err = c.prepare(ctx, cfg); err == nil {
-		records, fetchErr := listRecords[rawContainer](ctx, c, cfg, "containers", url.Values{"filter": {`system="` + id + `"`}, "sort": {"name,id"}, "fields": {"id,name,image,status,cpu,memory,updated"}})
+	if _, err = c.prepare(ctx, session); err == nil {
+		records, fetchErr := listRecords[rawContainer](ctx, c, session, "containers", url.Values{"filter": {`system="` + id + `"`}, "sort": {"name,id"}, "fields": {"id,name,image,status,cpu,memory,updated"}})
 		err = fetchErr
 		if err == nil {
 			for _, r := range records {
@@ -363,6 +433,10 @@ func (c *Client) Containers(ctx context.Context, id string) (ContainersResponse,
 	}
 	result.SyncedAt = c.Now().UnixMilli()
 	c.mu.Lock()
+	if c.session != session {
+		c.mu.Unlock()
+		return ContainersResponse{}, context.Canceled
+	}
 	if len(c.containers) >= 128 {
 		var oldest string
 		var at int64

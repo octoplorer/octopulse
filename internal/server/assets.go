@@ -38,13 +38,13 @@ func (s *Server) registerAssets() {
 		}
 		dir := filepath.Join(s.Config.DataDir, "uploads")
 		if e = os.MkdirAll(dir, 0700); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		id := domain.ID()
 		name := id + extensions[format]
 		path := filepath.Join(dir, name)
 		if e = os.WriteFile(path, data, 0600); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		result := AssetURL{URL: "/assets/uploads/" + name}
 		e = s.Store.WithTx(ctx, func(t *store.Tx) error {
@@ -55,7 +55,7 @@ func (s *Server) registerAssets() {
 		})
 		if e != nil {
 			os.Remove(path)
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return &Output[AssetURL]{Body: result}, nil
 	})

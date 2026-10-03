@@ -50,7 +50,7 @@ func ValidateConfig(cfg *domain.BeszelConfig) error {
 	return nil
 }
 
-func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, path string, query url.Values, body any, out any, authorized bool) error {
+func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, path string, query url.Values, body any, out any, token string) error {
 	var data []byte
 	var err error
 	if body != nil {
@@ -71,11 +71,20 @@ func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, p
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if authorized {
-		req.Header.Set("Authorization", c.token)
+	if token != "" {
+		req.Header.Set("Authorization", token)
 	}
+	select {
+	case c.remote <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	defer func() { <-c.remote }()
 	response, err := c.HTTP.Do(req)
 	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		return ErrUnavailable
 	}
 	defer response.Body.Close()
@@ -104,57 +113,82 @@ func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, p
 	return nil
 }
 
-func (c *Client) authenticate(ctx context.Context, cfg domain.BeszelConfig) error {
-	if c.token != "" && c.tokenUntil > c.Now().Add(5*time.Minute).Unix() {
-		return nil
+func (c *Client) authenticate(ctx context.Context, session *clientSession) (string, error) {
+	session.mu.Lock()
+	token, until := session.token, session.tokenUntil
+	session.mu.Unlock()
+	if token != "" && until > c.Now().Add(5*time.Minute).Unix() {
+		return token, nil
 	}
-	var result struct {
-		Token  string `json:"token"`
-		Record struct {
-			CollectionName string `json:"collectionName"`
-		} `json:"record"`
-	}
-	if c.token != "" {
-		if err := c.request(ctx, cfg, "POST", "/api/collections/users/auth-refresh", nil, nil, &result, true); err == nil && result.Token != "" {
-			c.installToken(result.Token)
-			return nil
+	value, err := c.sharedWork(ctx, session, &session.auth, "", func(ctx context.Context) (any, error) {
+		session.mu.Lock()
+		token, until := session.token, session.tokenUntil
+		session.mu.Unlock()
+		if token != "" && until > c.Now().Add(5*time.Minute).Unix() {
+			return token, nil
 		}
-		c.token = ""
-	}
-	password, err := c.Secrets.ResolveSecret(ctx, cfg.PasswordSecretID)
+		cfg := session.config
+		var result struct {
+			Token  string `json:"token"`
+			Record struct {
+				CollectionName string `json:"collectionName"`
+			} `json:"record"`
+		}
+		if token != "" {
+			if err := c.request(ctx, cfg, "POST", "/api/collections/users/auth-refresh", nil, nil, &result, token); err == nil && result.Token != "" {
+				c.installToken(session, result.Token)
+				return result.Token, nil
+			}
+			c.clearToken(session, token)
+		}
+		password, err := c.Secrets.ResolveSecret(ctx, cfg.PasswordSecretID)
+		if err != nil {
+			return nil, ErrAuth
+		}
+		if err = c.request(ctx, cfg, "POST", "/api/collections/users/auth-with-password", nil, map[string]string{"identity": cfg.Email, "password": password}, &result, ""); err != nil {
+			return nil, err
+		}
+		if result.Token == "" || result.Record.CollectionName != "users" {
+			return nil, ErrAuth
+		}
+		c.installToken(session, result.Token)
+		return result.Token, nil
+	})
 	if err != nil {
-		return ErrAuth
+		return "", err
 	}
-	if err = c.request(ctx, cfg, "POST", "/api/collections/users/auth-with-password", nil, map[string]string{"identity": cfg.Email, "password": password}, &result, false); err != nil {
-		return err
-	}
-	if result.Token == "" || result.Record.CollectionName != "users" {
-		return ErrAuth
-	}
-	c.installToken(result.Token)
-	return nil
-}
-func (c *Client) installToken(token string) {
-	c.token = token
-	c.tokenUntil = c.Now().Add(15 * time.Minute).Unix()
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return
-	}
-	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return
-	}
-	var claims struct {
-		Exp int64 `json:"exp"`
-	}
-	if json.Unmarshal(raw, &claims) == nil && claims.Exp > 0 {
-		c.tokenUntil = claims.Exp
-	}
+	return value.(string), nil
 }
 
-func listRecords[T any](ctx context.Context, c *Client, cfg domain.BeszelConfig, collection string, query url.Values) ([]T, error) {
-	if err := c.authenticate(ctx, cfg); err != nil {
+func (c *Client) clearToken(session *clientSession, rejected string) {
+	session.mu.Lock()
+	if session.token == rejected {
+		session.token = ""
+		session.tokenUntil = 0
+	}
+	session.mu.Unlock()
+}
+
+func (c *Client) installToken(session *clientSession, token string) {
+	until := c.Now().Add(15 * time.Minute).Unix()
+	parts := strings.Split(token, ".")
+	if len(parts) == 3 {
+		raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+		var claims struct {
+			Exp int64 `json:"exp"`
+		}
+		if err == nil && json.Unmarshal(raw, &claims) == nil && claims.Exp > 0 {
+			until = claims.Exp
+		}
+	}
+	session.mu.Lock()
+	session.token, session.tokenUntil = token, until
+	session.mu.Unlock()
+}
+
+func listRecords[T any](ctx context.Context, c *Client, session *clientSession, collection string, query url.Values) ([]T, error) {
+	token, err := c.authenticate(ctx, session)
+	if err != nil {
 		return nil, err
 	}
 	items := []T{}
@@ -165,13 +199,13 @@ func listRecords[T any](ctx context.Context, c *Client, cfg domain.BeszelConfig,
 			Items      []T `json:"items"`
 			TotalPages int `json:"totalPages"`
 		}
-		err := c.request(ctx, cfg, "GET", "/api/collections/"+collection+"/records", query, nil, &response, true)
+		err := c.request(ctx, session.config, "GET", "/api/collections/"+collection+"/records", query, nil, &response, token)
 		if errors.Is(err, ErrAuth) {
-			c.token = ""
-			if err = c.authenticate(ctx, cfg); err != nil {
+			c.clearToken(session, token)
+			if token, err = c.authenticate(ctx, session); err != nil {
 				return nil, err
 			}
-			err = c.request(ctx, cfg, "GET", "/api/collections/"+collection+"/records", query, nil, &response, true)
+			err = c.request(ctx, session.config, "GET", "/api/collections/"+collection+"/records", query, nil, &response, token)
 		}
 		if err != nil {
 			return nil, err

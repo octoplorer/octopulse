@@ -115,6 +115,7 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 	s.Check, s.Changed, s.Heartbeat = scheduler.Check, scheduler.NotifyConfigurationChanged, scheduler.Heartbeat
 	s.NextCheck = scheduler.NextCheckAt
 	s.Stats, s.Latency, s.TestChannel = stats.Availability, stats.Latency, worker.TestChannel
+	s.StatsBatch, s.LatencyBatch = stats.AvailabilityBatch, stats.LatencyBatch
 	s.Wake = func() { scheduler.Wake(); stats.Wake() }
 	start := time.Now()
 	if err := scheduler.Start(ctx); err != nil {

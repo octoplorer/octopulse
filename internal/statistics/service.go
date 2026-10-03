@@ -55,18 +55,44 @@ func (s *Service) window(from, to int64) (int64, int64, error) {
 }
 
 func (s *Service) Availability(ctx context.Context, id string, from, to int64) (domain.Availability, error) {
+	results, err := s.AvailabilityBatch(ctx, []string{id}, from, to)
+	if err != nil {
+		return domain.Availability{}, err
+	}
+	result, ok := results[id]
+	if !ok {
+		return domain.Availability{}, store.ErrNotFound
+	}
+	return result, nil
+}
+
+// AvailabilityBatch calculates a common window from one database snapshot.
+// Unknown IDs are omitted; an empty request returns an empty map.
+func (s *Service) AvailabilityBatch(ctx context.Context, ids []string, from, to int64) (map[string]domain.Availability, error) {
 	from, to, err := s.window(from, to)
 	if err != nil {
-		return domain.Availability{}, err
+		return nil, err
 	}
-	snapshot, err := s.Store.ReadStatistics(ctx, id, from, to, 0)
+	results := map[string]domain.Availability{}
+	if len(ids) == 0 {
+		return results, nil
+	}
+	snapshots, err := s.Store.ReadStatisticsBatch(ctx, ids, from, to, 0)
 	if err != nil {
-		return domain.Availability{}, err
+		return nil, err
 	}
-	if snapshot.Monitor.Kind == domain.MonitorCertificate {
-		return domain.Availability{From: from, To: to, UnknownMs: to - from}, nil
+	var maintenance map[string][]span
+	for id, snapshot := range snapshots {
+		if snapshot.Monitor.Kind == domain.MonitorCertificate {
+			results[id] = domain.Availability{From: from, To: to, UnknownMs: to - from}
+			continue
+		}
+		if maintenance == nil {
+			maintenance = maintenanceSpans(snapshot.Maintenance)
+		}
+		results[id] = prepareAvailability(snapshot, maintenance[id]).calculate(from, to)
 	}
-	return calculate(snapshot, from, to), nil
+	return results, nil
 }
 
 func (s *Service) retention(ctx context.Context) (domain.Retention, error) {
@@ -92,32 +118,52 @@ func (s *Service) retention(ctx context.Context) (domain.Retention, error) {
 }
 
 func (s *Service) Latency(ctx context.Context, id string, from, to int64) ([]domain.LatencyPoint, error) {
+	results, err := s.LatencyBatch(ctx, []string{id}, from, to)
+	if err != nil {
+		return nil, err
+	}
+	result, ok := results[id]
+	if !ok {
+		return nil, store.ErrNotFound
+	}
+	return result, nil
+}
+
+// LatencyBatch reads retention settings once and all requested series together.
+// This read snapshot is independent of an AvailabilityBatch call.
+func (s *Service) LatencyBatch(ctx context.Context, ids []string, from, to int64) (map[string][]domain.LatencyPoint, error) {
 	from, to, err := s.window(from, to)
 	if err != nil {
 		return nil, err
+	}
+	results := map[string][]domain.LatencyPoint{}
+	if len(ids) == 0 {
+		return results, nil
 	}
 	retention, err := s.retention(ctx)
 	if err != nil {
 		return nil, err
 	}
 	now := s.now().UnixMilli()
-	fiveMinuteBefore := now - int64(retention.FiveMinuteDays)*dayMS
-	rawBefore := now - int64(retention.RoundDays)*dayMS
 	width := fiveMinuteMS
-	if from < fiveMinuteBefore {
+	if from < now-int64(retention.FiveMinuteDays)*dayMS {
 		width = hourMS
 	}
-	points := map[int64]domain.LatencyPoint{}
-	// Retained latency is a full UTC bucket average. Raw data replaces every
-	// recent bucket, including exact partial-window edges, without a row limit.
-	rawFrom := from
-	if rawFrom < rawBefore {
-		rawFrom = rawBefore
-	}
-	snapshot, err := s.Store.ReadLatency(ctx, id, from, to, rawFrom, width)
+	rawFrom := max(from, now-int64(retention.RoundDays)*dayMS)
+	snapshots, err := s.Store.ReadLatencyBatch(ctx, ids, from, to, rawFrom, width)
 	if err != nil {
 		return nil, err
 	}
+	for id, snapshot := range snapshots {
+		results[id] = latencyPoints(snapshot, from, to, rawFrom)
+	}
+	return results, nil
+}
+
+func latencyPoints(snapshot store.LatencySnapshot, from, to, rawFrom int64) []domain.LatencyPoint {
+	points := map[int64]domain.LatencyPoint{}
+	// Retained latency is a full UTC bucket average. Raw data replaces every
+	// recent bucket, including exact partial-window edges, without a row limit.
 	for _, bucket := range snapshot.Aggregates {
 		if bucket.RoundCount == 0 {
 			continue
@@ -142,7 +188,7 @@ func (s *Service) Latency(ctx context.Context, id string, from, to int64) ([]dom
 		result = append(result, point)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].At < result[j].At })
-	return result, nil
+	return result
 }
 
 func floor(at, width int64) int64 { return at / width * width }

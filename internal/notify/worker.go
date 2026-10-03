@@ -7,12 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
+	"math/rand/v2"
 	"sync"
 	"time"
 
 	"github.com/octoplorer/octopulse/internal/domain"
 	"github.com/octoplorer/octopulse/internal/store"
+	"github.com/octoplorer/octopulse/internal/telemetry"
 )
 
 type SecretResolver interface {
@@ -26,6 +27,8 @@ type Worker struct {
 	MaxAttempts int64
 	RetryBase   time.Duration
 	Now         func() time.Time
+	OnError     func(error)
+	OnDelivery  func(string)
 	slots       chan struct{}
 }
 
@@ -46,7 +49,11 @@ func (w *Worker) Start(ctx context.Context) {
 					return
 				}
 				if err != nil {
-					slog.Error("notification persistence operation failed")
+					if w.OnError != nil {
+						w.OnError(err)
+					} else {
+						telemetry.LogError(ctx, "notification.persistence", err)
+					}
 				}
 				if processed && err == nil {
 					continue
@@ -129,12 +136,16 @@ func (w *Worker) retry(ctx context.Context, d store.Delivery, diagnostic string)
 	}
 	exponent := min(max(d.Attempts-1, 0), 10)
 	delay := min(w.RetryBase*time.Duration(int64(1)<<exponent), 15*time.Minute)
+	// Equal jitter spreads retries while retaining a nonzero bounded delay.
+	if delay > 1 {
+		delay = delay/2 + rand.N(delay-delay/2+1)
+	}
 	return w.finish(ctx, d, "pending", w.Now().UnixMilli()+delay.Milliseconds(), diagnostic, nil)
 }
 
 func (w *Worker) finish(ctx context.Context, d store.Delivery, state string, nextDue int64, diagnostic string, payload *domain.NotificationPayload) error {
 	now := w.Now().UnixMilli()
-	return w.Store.WithTx(ctx, func(tx *store.Tx) error {
+	err := w.Store.WithTx(ctx, func(tx *store.Tx) error {
 		if err := tx.CompleteDelivery(ctx, d.ID, d.LeaseToken, now, state, nextDue, diagnostic); err != nil {
 			return err
 		}
@@ -153,6 +164,10 @@ func (w *Worker) finish(ctx context.Context, d store.Delivery, state string, nex
 		}
 		return tx.Put(ctx, "deliveryMarkers", id, marker)
 	})
+	if err == nil && w.OnDelivery != nil {
+		w.OnDelivery(state)
+	}
+	return err
 }
 
 func (w *Worker) TestChannel(ctx context.Context, id string) error {

@@ -66,3 +66,31 @@ func TestServeWaitsForActiveHTTPHandlers(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAdditionalListenerFailureClosesApplicationListener(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.Close()
+	available, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := available.Addr().String()
+	available.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = serveHTTP(ctx, cancel, &http.Server{Addr: address}, nil, &http.Server{Addr: occupied.Addr().String()})
+	if err == nil {
+		t.Fatal("metrics bind failure was ignored")
+	}
+	if ctx.Err() == nil {
+		t.Fatal("runtime was not cancelled after bind failure")
+	}
+	reopened, err := net.Listen("tcp", address)
+	if err != nil {
+		t.Fatalf("application listener leaked: %v", err)
+	}
+	reopened.Close()
+}

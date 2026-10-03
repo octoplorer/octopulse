@@ -28,6 +28,50 @@ func createTestMonitor(t *testing.T, c *http.Client, base, csrf string) domain.M
 	json.Unmarshal(b, &m)
 	return m
 }
+
+func TestPublicPageBatchesUniqueMonitorsAndRequestedLatency(t *testing.T) {
+	s, ts, client := testServer(t)
+	csrf := bootstrap(t, client, ts.URL)
+	first := createTestMonitor(t, client, ts.URL, csrf)
+	second := createTestMonitor(t, client, ts.URL, csrf)
+	availabilityCalls, latencyCalls := 0, 0
+	s.StatsBatch = func(_ context.Context, ids []string, from, to int64) (map[string]domain.Availability, error) {
+		availabilityCalls++
+		if len(ids) != 2 {
+			t.Fatalf("expected two unique monitor IDs, got %v", ids)
+		}
+		return map[string]domain.Availability{first.ID: {From: from, To: to, UpMs: to - from}, second.ID: {From: from, To: to, DownMs: to - from}}, nil
+	}
+	s.LatencyBatch = func(_ context.Context, ids []string, _, _ int64) (map[string][]domain.LatencyPoint, error) {
+		latencyCalls++
+		if len(ids) != 1 || ids[0] != first.ID {
+			t.Fatalf("unexpected latency IDs: %v", ids)
+		}
+		return map[string][]domain.LatencyPoint{first.ID: {{At: 1, LatencyMs: 12, Success: true}}}, nil
+	}
+	s.Stats = func(context.Context, string, int64, int64) (domain.Availability, error) {
+		t.Fatal("single-monitor statistics fallback used")
+		return domain.Availability{}, nil
+	}
+	s.Latency = func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error) {
+		t.Fatal("single-monitor latency fallback used")
+		return nil, nil
+	}
+	config := domain.PageConfig{Groups: []domain.PageGroup{
+		{ID: "a", Monitors: []domain.PageMonitor{{MonitorID: first.ID, Alias: "Primary", ShowLatency: true}, {MonitorID: second.ID}}},
+		{ID: "b", Monitors: []domain.PageMonitor{{MonitorID: first.ID, Alias: "Repeated", ShowLatency: false}}},
+	}}
+	page, err := s.projectPage(context.Background(), domain.Page{ID: "test-page"}, config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if availabilityCalls != 1 || latencyCalls != 1 {
+		t.Fatalf("batch calls: availability=%d latency=%d", availabilityCalls, latencyCalls)
+	}
+	if page.Groups[0].Monitors[0].Name != "Primary" || len(page.Groups[0].Monitors[0].Latency) != 1 || page.Groups[1].Monitors[0].Name != "Repeated" || len(page.Groups[1].Monitors[0].Latency) != 0 {
+		t.Fatalf("group projection changed: %+v", page.Groups)
+	}
+}
 func TestMonitorCreationDefaultsAndExplicitZero(t *testing.T) {
 	_, ts, c := testServer(t)
 	csrf := bootstrap(t, c, ts.URL)

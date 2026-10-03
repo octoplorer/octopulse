@@ -18,16 +18,22 @@ import (
 	"github.com/octoplorer/octopulse/internal/beszel"
 	"github.com/octoplorer/octopulse/internal/config"
 	"github.com/octoplorer/octopulse/internal/domain"
+	"github.com/octoplorer/octopulse/internal/monitoring"
+	"github.com/octoplorer/octopulse/internal/secrets"
 	"github.com/octoplorer/octopulse/internal/security"
 	"github.com/octoplorer/octopulse/internal/statistics"
 	"github.com/octoplorer/octopulse/internal/store"
+	"github.com/octoplorer/octopulse/internal/telemetry"
 )
 
 type Server struct {
 	Store         *store.Store
 	Vault         *security.Vault
+	Secrets       *secrets.Resolver
+	Monitors      *monitoring.Service
 	Config        config.Config
 	API           huma.API
+	Metrics       *telemetry.Metrics
 	Mux           *http.ServeMux
 	mu            sync.Mutex
 	dummyPassword string
@@ -35,6 +41,8 @@ type Server struct {
 	NextCheck     func(string) int64
 	Stats         func(context.Context, string, int64, int64) (domain.Availability, error)
 	Latency       func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error)
+	StatsBatch    func(context.Context, []string, int64, int64) (map[string]domain.Availability, error)
+	LatencyBatch  func(context.Context, []string, int64, int64) (map[string][]domain.LatencyPoint, error)
 	Changed       func(context.Context, string) error
 	Heartbeat     func(context.Context, string, bool, string) error
 	Wake          func()
@@ -67,7 +75,18 @@ type Ack struct {
 }
 
 func New(st *store.Store, v *security.Vault, c config.Config) *Server {
-	s := &Server{Store: st, Vault: v, Config: c, Mux: http.NewServeMux()}
+	s := &Server{Store: st, Vault: v, Secrets: secrets.New(st, v), Config: c, Mux: http.NewServeMux()}
+	s.Monitors = &monitoring.Service{Store: st, NextCheck: func(id string) int64 {
+		if s.NextCheck != nil {
+			return s.NextCheck(id)
+		}
+		return 0
+	}, Changed: func(ctx context.Context, id string) error {
+		if s.Changed != nil {
+			return s.Changed(ctx, id)
+		}
+		return nil
+	}}
 	s.dummyPassword, _ = security.HashPassword(security.Token())
 	hc := huma.DefaultConfig("Octopulse API", "0.1.0")
 	hc.OpenAPIPath = "/api/openapi"
@@ -123,6 +142,16 @@ func (s *Server) authenticate(ctx context.Context, token string) (identity, erro
 	return identity{User: user.User, Session: session}, nil
 }
 func (s *Server) dispatch(w http.ResponseWriter, r *http.Request) {
+	requestID := security.Token()
+	w.Header().Set("X-Request-ID", requestID)
+	r = r.WithContext(telemetry.WithRequestID(r.Context(), requestID))
+	started := time.Now()
+	response := &responseStatus{ResponseWriter: w, status: http.StatusOK}
+	w = response
+	if s.Metrics != nil {
+		s.Metrics.BeginRequest()
+		defer func() { s.Metrics.EndRequest(r.Pattern, r.Method, response.status, time.Since(started)) }()
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	r = r.WithContext(context.WithValue(ctx, hostContextKey{}, r.Host))
@@ -149,7 +178,13 @@ func (s *Server) dispatch(w http.ResponseWriter, r *http.Request) {
 		}
 		var ident identity
 		if cookie, e := r.Cookie("octopulse_session"); e == nil {
-			ident, _ = s.authenticate(r.Context(), cookie.Value)
+			var authErr error
+			ident, authErr = s.authenticate(r.Context(), cookie.Value)
+			if authErr != nil && !errors.Is(authErr, store.ErrNotFound) {
+				telemetry.LogError(r.Context(), "api.authenticate", authErr)
+				writeProblem(w, http.StatusServiceUnavailable, "Authentication is unavailable")
+				return
+			}
 		}
 		open := path == "/api/v1/setup" || path == "/api/v1/session"
 		if !open {
@@ -207,13 +242,17 @@ func writeProblem(w http.ResponseWriter, status int, detail string) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]any{"status": status, "title": http.StatusText(status), "detail": detail})
 }
-func apiError(e error) error {
+func apiError(ctx context.Context, e error) error {
 	if e == nil {
 		return nil
 	}
 	var status huma.StatusError
 	if errors.As(e, &status) {
 		return status
+	}
+	var invalid *monitoring.ValidationError
+	if errors.As(e, &invalid) {
+		return huma.Error422UnprocessableEntity(invalid.Message)
 	}
 	if errors.Is(e, statistics.ErrInvalidWindow) {
 		return huma.Error422UnprocessableEntity("Invalid history window")
@@ -224,6 +263,7 @@ func apiError(e error) error {
 	if errors.Is(e, store.ErrConflict) {
 		return huma.Error409Conflict("Configuration conflicts with current data")
 	}
+	telemetry.LogError(ctx, "api.persistence", e)
 	return huma.Error500InternalServerError("Persistence operation failed")
 }
 func list[T any](ctx context.Context, s *store.Store, kind string) ([]T, error) {
@@ -247,11 +287,7 @@ func audit(ctx context.Context, t *store.Tx, action, kind, id string) error {
 	return t.Put(ctx, "audit", a.ID, a)
 }
 func (s *Server) ResolveSecret(ctx context.Context, id string) (string, error) {
-	var v domain.SecretRecord
-	if e := s.Store.Get(ctx, "secrets", id, &v); e != nil {
-		return "", errors.New("secret reference is unavailable")
-	}
-	return s.Vault.Decrypt(id, v.Ciphertext)
+	return s.Secrets.ResolveSecret(ctx, id)
 }
 
 func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
@@ -327,3 +363,29 @@ func hostname(h string) string {
 
 // Keep time.Duration in this package for fixed cookie/session lifetime.
 const sessionLifetime = time.Hour * 24 * 7
+
+// Unwrap lets ResponseController retain support for the underlying writer.
+type responseStatus struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func (w *responseStatus) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func (w *responseStatus) WriteHeader(status int) {
+	if status >= 100 && status < 200 {
+		w.ResponseWriter.WriteHeader(status)
+		return
+	}
+	if w.wroteHeader {
+		return
+	}
+	w.status, w.wroteHeader = status, true
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *responseStatus) Write(p []byte) (int, error) {
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(p)
+}

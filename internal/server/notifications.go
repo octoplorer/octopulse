@@ -30,19 +30,19 @@ func (s *Server) registerNotifications() {
 	}) (*Output[Items[DeliveryView]], error) {
 		rows, e := s.Store.ListDeliveries(ctx, in.Limit)
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		items := []DeliveryView{}
 		for _, d := range rows {
 			var p domain.NotificationPayload
 			if e = json.Unmarshal(d.Payload, &p); e != nil {
-				return nil, apiError(e)
+				return nil, apiError(ctx, e)
 			}
 			items = append(items, DeliveryView{ID: d.ID, EventID: d.EventID, MonitorID: p.MonitorID, ChannelID: d.ChannelID, Kind: p.Kind, Status: d.State, CreatedAt: p.CreatedAt, DueAt: d.DueAt, Attempts: d.Attempts, LastError: d.LastError})
 		}
 		tests, e := list[DeliveryView](ctx, s.Store, "channelTests")
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		items = append(items, tests...)
 		sort.Slice(items, func(i, j int) bool { return items[i].CreatedAt > items[j].CreatedAt })
@@ -57,7 +57,7 @@ func (s *Server) registerNotifications() {
 		}
 		var channel domain.Channel
 		if e := s.Store.Get(ctx, "channels", in.ID, &channel); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		record := DeliveryView{ID: domain.ID(), ChannelID: in.ID, Kind: "test", Status: "sending", CreatedAt: domain.Now(), Attempts: 1}
 		if e := s.Store.WithTx(ctx, func(t *store.Tx) error {
@@ -66,7 +66,7 @@ func (s *Server) registerNotifications() {
 			}
 			return audit(ctx, t, "test", "channels", in.ID)
 		}); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		sendError := s.TestChannel(ctx, in.ID)
 		record.Status = "sent"
@@ -81,7 +81,7 @@ func (s *Server) registerNotifications() {
 			saveCtx = done
 		}
 		if e := s.Store.Put(saveCtx, "channelTests", record.ID, record); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		if sendError != nil {
 			return nil, huma.Error502BadGateway(record.LastError)

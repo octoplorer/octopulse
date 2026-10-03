@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/octoplorer/octopulse/internal/domain"
+	"github.com/octoplorer/octopulse/internal/statuspage"
 	"github.com/octoplorer/octopulse/internal/store"
 )
 
@@ -142,22 +142,22 @@ func (s *Server) registerPages() {
 			}
 			return audit(ctx, t, "publish", "pages", p.ID)
 		})
-		return &Output[domain.Page]{Body: p}, statusOrAPIError(e)
+		return &Output[domain.Page]{Body: p}, statusOrAPIError(ctx, e)
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "previewPage", Method: "GET", Path: "/api/v1/pages/{id}/preview"}, func(ctx context.Context, in *IDInput) (*Output[domain.PublicPage], error) {
 		var p domain.Page
 		if e := s.Store.Get(ctx, "pages", in.ID, &p); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		v, e := s.projectPage(ctx, p, p.Draft)
-		return &Output[domain.PublicPage]{Body: v}, apiError(e)
+		return &Output[domain.PublicPage]{Body: v}, apiError(ctx, e)
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "getPublicPage", Method: "GET", Path: "/api/public/pages/{slug}"}, func(ctx context.Context, in *struct {
 		Slug string `path:"slug"`
 	}) (*Output[domain.PublicPage], error) {
 		id, e := s.Store.PageIDBySlug(ctx, in.Slug)
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		host := requestHost(ctx)
 		if !s.adminHost(host) {
@@ -177,7 +177,7 @@ func (s *Server) registerPages() {
 		}
 		id, e := s.Store.PageIDByDomain(ctx, host)
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return s.publishedPage(ctx, id)
 	})
@@ -201,7 +201,7 @@ func (s *Server) registerPages() {
 			}
 			return audit(ctx, t, "update", "incidents", in.ID)
 		})
-		return &Output[domain.Incident]{Body: incident}, apiError(e)
+		return &Output[domain.Incident]{Body: incident}, apiError(ctx, e)
 	})
 }
 
@@ -213,7 +213,7 @@ type IncidentProgress struct {
 func (s *Server) publishedPage(ctx context.Context, id string) (*Output[domain.PublicPage], error) {
 	var p domain.Page
 	if e := s.Store.Get(ctx, "pages", id, &p); e != nil {
-		return nil, apiError(e)
+		return nil, apiError(ctx, e)
 	}
 	if p.Published == nil {
 		return nil, huma.Error404NotFound("Page is not published")
@@ -222,7 +222,7 @@ func (s *Server) publishedPage(ctx context.Context, id string) (*Output[domain.P
 		p.Slug = p.PublishedSlug
 	}
 	v, e := s.projectPage(ctx, p, *p.Published)
-	return &Output[domain.PublicPage]{Body: v}, apiError(e)
+	return &Output[domain.PublicPage]{Body: v}, apiError(ctx, e)
 }
 func hasID(ids []string, id string) bool {
 	for _, v := range ids {
@@ -233,132 +233,7 @@ func hasID(ids []string, id string) bool {
 	return false
 }
 func (s *Server) projectPage(ctx context.Context, p domain.Page, c domain.PageConfig) (domain.PublicPage, error) {
-	now := domain.Now()
-	from := now - 86400000
-	result := domain.PublicPage{ID: p.ID, Slug: p.Slug, Config: c, State: "unknown", Groups: []domain.PublicGroup{}, Incidents: []domain.PublicIncident{}, Maintenance: []domain.PublicMaintenance{}, UpdatedAt: now}
-	maintenance, e := list[domain.Maintenance](ctx, s.Store, "maintenance")
-	if e != nil {
-		return result, e
-	}
-	ids := map[string]bool{}
-	states := []domain.PublicMonitor{}
-	for _, g := range c.Groups {
-		group := domain.PublicGroup{ID: g.ID, Name: g.Name, Monitors: []domain.PublicMonitor{}}
-		for _, ref := range g.Monitors {
-			m, e := s.monitor(ctx, ref.MonitorID)
-			if e != nil {
-				return result, e
-			}
-			ids[m.ID] = true
-			name := ref.Alias
-			if strings.TrimSpace(name) == "" {
-				name = m.Name
-			}
-			item := domain.PublicMonitor{ID: m.ID, Name: name, Type: m.Type, State: m.State, Paused: !m.Enabled, Availability: domain.Availability{From: from, To: now, UnknownMs: now - from}, Latency: []domain.LatencyPoint{}}
-			for _, w := range maintenance {
-				if hasID(w.MonitorIDs, m.ID) && w.StartsAt <= now && now < w.EndsAt {
-					item.Maintenance = true
-				}
-			}
-			if m.Certificate != nil {
-				item.Certificate = &domain.PublicCertificate{State: m.Certificate.State, ExpiresAt: m.Certificate.ExpiresAt, DaysRemaining: m.Certificate.DaysRemaining}
-				if item.Certificate.State == "" {
-					item.Certificate.State = domain.CertificateCheckFailed
-				}
-			}
-			if m.IsAvailability() {
-				if s.Stats != nil {
-					item.Availability, e = s.Stats(ctx, m.ID, from, now)
-					if e != nil {
-						return result, e
-					}
-				}
-				if ref.ShowLatency {
-					if s.Latency != nil {
-						item.Latency, e = s.Latency(ctx, m.ID, from, now)
-						if e != nil {
-							return result, e
-						}
-					} else {
-						rounds, e := s.Store.ListRounds(ctx, m.ID, from, 96)
-						if e != nil {
-							return result, e
-						}
-						for i := len(rounds) - 1; i >= 0; i-- {
-							r := rounds[i]
-							item.Latency = append(item.Latency, domain.LatencyPoint{At: r.FinishedAt, LatencyMs: float64(r.LatencyMS), Success: r.Success})
-						}
-					}
-				}
-			}
-			group.Monitors = append(group.Monitors, item)
-			states = append(states, item)
-		}
-		result.Groups = append(result.Groups, group)
-	}
-	result.State = pageState(states)
-	for _, w := range maintenance {
-		applies := hasID(w.PageIDs, p.ID)
-		for _, id := range w.MonitorIDs {
-			applies = applies || ids[id]
-		}
-		if applies && w.EndsAt > now && w.StartsAt < now+30*86400000 {
-			result.Maintenance = append(result.Maintenance, domain.PublicMaintenance{ID: w.ID, Name: w.Name, Description: w.Description, StartsAt: w.StartsAt, EndsAt: w.EndsAt})
-		}
-	}
-	incidents, e := list[domain.Incident](ctx, s.Store, "incidents")
-	if e != nil {
-		return result, e
-	}
-	sort.Slice(incidents, func(i, j int) bool { return incidents[i].CreatedAt > incidents[j].CreatedAt })
-	for _, incident := range incidents {
-		if !hasID(incident.PageIDs, p.ID) {
-			continue
-		}
-		if incident.Status != "resolved" || len(result.Incidents) < 100 {
-			result.Incidents = append(result.Incidents, domain.PublicIncident{ID: incident.ID, Title: incident.Title, Body: incident.Body, Status: incident.Status, Impact: incident.Impact, Updates: incident.Updates, CreatedAt: incident.CreatedAt, ResolvedAt: incident.ResolvedAt})
-		}
-		if incident.Status != "resolved" {
-			if incident.Impact == "outage" {
-				result.State = "outage"
-			} else if incident.Impact == "partial" && result.State != "outage" {
-				result.State = "partial"
-			}
-		}
-	}
-	return result, nil
+	reader := statuspage.Reader{Store: s.Store, Monitors: s.Monitors, Stats: s.Stats, Latency: s.Latency, StatsBatch: s.StatsBatch, LatencyBatch: s.LatencyBatch}
+	return reader.Project(ctx, p, c)
 }
-func pageState(items []domain.PublicMonitor) string {
-	eligible, down, unknown, maintenance := 0, 0, 0, 0
-	for _, m := range items {
-		if m.Paused || m.Type == domain.MonitorCertificate {
-			continue
-		}
-		eligible++
-		if m.Maintenance {
-			maintenance++
-			continue
-		}
-		switch m.State {
-		case domain.StateDown:
-			down++
-		case domain.StateUp:
-		default:
-			unknown++
-		}
-	}
-	switch {
-	case eligible == 0:
-		return "unknown"
-	case down == eligible:
-		return "outage"
-	case down > 0:
-		return "partial"
-	case unknown > 0:
-		return "unknown"
-	case maintenance > 0:
-		return "maintenance"
-	default:
-		return "operational"
-	}
-}
+func pageState(items []domain.PublicMonitor) string { return statuspage.State(items) }

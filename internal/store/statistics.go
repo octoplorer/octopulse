@@ -29,136 +29,143 @@ type LatencySnapshot struct {
 	Rounds     []RoundBucket
 }
 
-func (s *Store) ReadLatency(ctx context.Context, id string, from, to, rawFrom, widthMS int64) (snapshot LatencySnapshot, err error) {
-	if widthMS <= 0 || from >= to {
-		return snapshot, fmt.Errorf("invalid latency window")
-	}
-	options := &sql.TxOptions{ReadOnly: true}
-	if s.driver == "postgres" {
-		options.Isolation = sql.LevelRepeatableRead
-	}
-	tx, err := s.read.BeginTx(ctx, options)
+func (s *Store) ReadLatency(ctx context.Context, id string, from, to, rawFrom, widthMS int64) (LatencySnapshot, error) {
+	snapshots, err := s.ReadLatencyBatch(ctx, []string{id}, from, to, rawFrom, widthMS)
 	if err != nil {
-		return snapshot, mapError(err)
+		return LatencySnapshot{}, err
 	}
-	defer tx.Rollback()
-	if _, err = s.getMonitor(ctx, tx, id); err != nil {
-		return snapshot, err
-	}
-	start := from / widthMS * widthMS
-	rows, err := tx.QueryContext(ctx, s.sql(`SELECT monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count,successful_round_count FROM aggregates WHERE monitor_id=? AND bucket_at>=? AND bucket_at<? AND width_ms=? ORDER BY bucket_at`), id, start, to, widthMS)
-	if err != nil {
-		return snapshot, mapError(err)
-	}
-	snapshot.Aggregates = []Aggregate{}
-	for rows.Next() {
-		var row Aggregate
-		if err = rows.Scan(&row.MonitorID, &row.BucketAt, &row.WidthMS, &row.UpMS, &row.DownMS, &row.UnknownMS, &row.ExcludedMS, &row.LatencyTotalMS, &row.RoundCount, &row.SuccessfulRoundCount); err != nil {
-			rows.Close()
-			return snapshot, err
-		}
-		snapshot.Aggregates = append(snapshot.Aggregates, row)
-	}
-	if err = rows.Err(); err != nil {
-		rows.Close()
-		return snapshot, err
-	}
-	rows.Close()
-	if rawFrom < to {
-		snapshot.Rounds, err = s.roundBuckets(ctx, tx, id, rawFrom, to, widthMS)
-		if err != nil {
-			return snapshot, err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return snapshot, mapError(err)
+	snapshot, ok := snapshots[id]
+	if !ok {
+		return LatencySnapshot{}, ErrNotFound
 	}
 	return snapshot, nil
 }
 
-// Statistics reads use a single snapshot. PostgreSQL Read Committed would allow
-// an edited maintenance plan between separate reads; Repeatable Read prevents
-// that. SQLite's deferred read transaction pins its WAL snapshot on first read.
-func (s *Store) ReadStatistics(ctx context.Context, id string, from, to, widthMS int64) (snapshot StatisticsSnapshot, err error) {
-	if from >= to || widthMS < 0 {
-		return snapshot, fmt.Errorf("invalid statistics window")
+// ReadLatencyBatch returns retained and raw latency in a consistent snapshot.
+// Unknown monitor IDs are omitted and duplicate IDs are read only once.
+func (s *Store) ReadLatencyBatch(ctx context.Context, ids []string, from, to, rawFrom, widthMS int64) (map[string]LatencySnapshot, error) {
+	if widthMS <= 0 || from >= to {
+		return nil, fmt.Errorf("invalid latency window")
 	}
-	options := &sql.TxOptions{ReadOnly: true}
-	if s.driver == "postgres" {
-		options.Isolation = sql.LevelRepeatableRead
+	result := map[string]LatencySnapshot{}
+	if len(ids) == 0 {
+		return result, nil
 	}
-	tx, err := s.read.BeginTx(ctx, options)
+	err := s.withReadSnapshot(ctx, func(q dbtx) error {
+		return forMonitorBatches(ids, func(batch []string) error {
+			monitors, err := s.readMonitors(ctx, q, batch)
+			if err != nil {
+				return err
+			}
+			for _, m := range monitors {
+				result[m.ID] = LatencySnapshot{Aggregates: []Aggregate{}, Rounds: []RoundBucket{}}
+			}
+			aggregates, err := s.readLatencyAggregates(ctx, q, batch, from/widthMS*widthMS, to, widthMS)
+			if err != nil {
+				return err
+			}
+			for _, row := range aggregates {
+				snapshot := result[row.MonitorID]
+				snapshot.Aggregates = append(snapshot.Aggregates, row)
+				result[row.MonitorID] = snapshot
+			}
+			if rawFrom < to {
+				buckets, err := s.readRoundBuckets(ctx, q, batch, rawFrom, to, widthMS)
+				if err != nil {
+					return err
+				}
+				for id, rows := range buckets {
+					snapshot := result[id]
+					snapshot.Rounds = rows
+					result[id] = snapshot
+				}
+			}
+			return nil
+		})
+	})
+	return result, err
+}
+
+func (s *Store) ReadStatistics(ctx context.Context, id string, from, to, widthMS int64) (StatisticsSnapshot, error) {
+	snapshots, err := s.ReadStatisticsBatch(ctx, []string{id}, from, to, widthMS)
 	if err != nil {
-		return snapshot, mapError(err)
+		return StatisticsSnapshot{}, err
 	}
-	defer tx.Rollback()
-	if snapshot.Monitor, err = s.getMonitor(ctx, tx, id); err != nil {
-		return snapshot, err
-	}
-	rows, err := tx.QueryContext(ctx, s.sql(`SELECT id,monitor_id,state,started_at,ended_at FROM state_intervals WHERE monitor_id=? AND started_at<? AND (ended_at IS NULL OR ended_at>?) ORDER BY started_at,id`), id, to, from)
-	if err != nil {
-		return snapshot, mapError(err)
-	}
-	snapshot.Intervals = []Interval{}
-	for rows.Next() {
-		var interval Interval
-		var ended sql.NullInt64
-		if err = rows.Scan(&interval.ID, &interval.MonitorID, &interval.State, &interval.StartedAt, &ended); err != nil {
-			rows.Close()
-			return snapshot, err
-		}
-		if ended.Valid {
-			interval.EndedAt = &ended.Int64
-		}
-		snapshot.Intervals = append(snapshot.Intervals, interval)
-	}
-	if err = rows.Err(); err != nil {
-		rows.Close()
-		return snapshot, err
-	}
-	rows.Close()
-	if snapshot.Maintenance, err = s.list(ctx, tx, "maintenance"); err != nil {
-		return snapshot, err
-	}
-	err = tx.QueryRowContext(ctx, `SELECT at_ms FROM watermarks WHERE name='collection'`).Scan(&snapshot.CollectionThrough)
-	if err == nil {
-		snapshot.HasCollectionWatermark = true
-	} else if !errors.Is(err, sql.ErrNoRows) {
-		return snapshot, mapError(err)
-	}
-	if widthMS > 0 {
-		snapshot.Rounds, err = s.roundBuckets(ctx, tx, id, from, to, widthMS)
-		if err != nil {
-			return snapshot, err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return snapshot, mapError(err)
+	snapshot, ok := snapshots[id]
+	if !ok {
+		return StatisticsSnapshot{}, ErrNotFound
 	}
 	return snapshot, nil
+}
+
+// ReadStatisticsBatch loads maintenance and the collection watermark once for
+// the whole request. The shared maintenance slice is immutable to callers.
+func (s *Store) ReadStatisticsBatch(ctx context.Context, ids []string, from, to, widthMS int64) (map[string]StatisticsSnapshot, error) {
+	if from >= to || widthMS < 0 {
+		return nil, fmt.Errorf("invalid statistics window")
+	}
+	result := map[string]StatisticsSnapshot{}
+	if len(ids) == 0 {
+		return result, nil
+	}
+	err := s.withReadSnapshot(ctx, func(q dbtx) error {
+		maintenance, err := s.list(ctx, q, "maintenance")
+		if err != nil {
+			return err
+		}
+		var collectionThrough int64
+		err = q.QueryRowContext(ctx, `SELECT at_ms FROM watermarks WHERE name='collection'`).Scan(&collectionThrough)
+		hasWatermark := err == nil
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return mapError(err)
+		}
+		return forMonitorBatches(ids, func(batch []string) error {
+			monitors, err := s.readMonitors(ctx, q, batch)
+			if err != nil {
+				return err
+			}
+			for _, m := range monitors {
+				result[m.ID] = StatisticsSnapshot{Monitor: m, Intervals: []Interval{}, Rounds: []RoundBucket{}, Maintenance: maintenance, CollectionThrough: collectionThrough, HasCollectionWatermark: hasWatermark}
+			}
+			intervals, err := s.readStatisticsIntervals(ctx, q, batch, from, to)
+			if err != nil {
+				return err
+			}
+			for _, row := range intervals {
+				snapshot := result[row.MonitorID]
+				snapshot.Intervals = append(snapshot.Intervals, row)
+				result[row.MonitorID] = snapshot
+			}
+			if widthMS > 0 {
+				buckets, err := s.readRoundBuckets(ctx, q, batch, from, to, widthMS)
+				if err != nil {
+					return err
+				}
+				for id, rows := range buckets {
+					snapshot := result[id]
+					snapshot.Rounds = rows
+					result[id] = snapshot
+				}
+			}
+			return nil
+		})
+	})
+	return result, err
 }
 
 func (s *Store) RoundBuckets(ctx context.Context, id string, from, to, widthMS int64) ([]RoundBucket, error) {
-	return s.roundBuckets(ctx, s.read, id, from, to, widthMS)
-}
-func (s *Store) roundBuckets(ctx context.Context, q dbtx, id string, from, to, widthMS int64) ([]RoundBucket, error) {
 	if widthMS <= 0 || from >= to {
 		return nil, fmt.Errorf("invalid round bucket window")
 	}
-	rows, err := q.QueryContext(ctx, s.sql(`SELECT (finished_at / ?) * ? AS bucket_at,SUM(latency_ms),COUNT(*),SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) FROM rounds WHERE monitor_id=? AND finished_at>=? AND finished_at<? GROUP BY 1 ORDER BY bucket_at`), widthMS, widthMS, id, from, to)
+	buckets, err := s.readRoundBuckets(ctx, s.read, []string{id}, from, to, widthMS)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, err
 	}
-	defer rows.Close()
-	result := []RoundBucket{}
-	for rows.Next() {
-		var bucket RoundBucket
-		if err = rows.Scan(&bucket.At, &bucket.LatencyTotalMS, &bucket.Count, &bucket.Successes); err != nil {
-			return nil, err
-		}
-		result = append(result, bucket)
+	rows := buckets[id]
+	if rows == nil {
+		rows = []RoundBucket{}
 	}
-	return result, mapError(rows.Err())
+	return rows, nil
 }
 
 func (s *Store) EarliestStatisticsAt(ctx context.Context, id string) (int64, error) {

@@ -28,7 +28,7 @@ func collection[T any, P resourcePointer[T]](s *Server, kind string, h resourceH
 	huma.Register(s.API, huma.Operation{OperationID: "list" + strings.Title(kind), Method: "GET", Path: path}, func(ctx context.Context, _ *struct{}) (*Output[Items[T]], error) {
 		items, e := list[T](ctx, s.Store, kind)
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		if h.Project != nil {
 			for i := range items {
@@ -40,7 +40,7 @@ func collection[T any, P resourcePointer[T]](s *Server, kind string, h resourceH
 	huma.Register(s.API, huma.Operation{OperationID: "get" + strings.Title(kind), Method: "GET", Path: path + "/{id}"}, func(ctx context.Context, in *IDInput) (*Output[T], error) {
 		var v T
 		if e := s.Store.Get(ctx, kind, in.ID, &v); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		if h.Project != nil {
 			v = h.Project(ctx, v)
@@ -74,7 +74,7 @@ func collection[T any, P resourcePointer[T]](s *Server, kind string, h resourceH
 			return audit(ctx, t, "save", kind, id)
 		})
 		if e != nil {
-			return nil, statusOrAPIError(e)
+			return nil, statusOrAPIError(ctx, e)
 		}
 		if h.Project != nil {
 			v = h.Project(ctx, v)
@@ -88,7 +88,7 @@ func collection[T any, P resourcePointer[T]](s *Server, kind string, h resourceH
 	huma.Register(s.API, huma.Operation{OperationID: "update" + strings.Title(kind), Method: "PATCH", Path: path + "/{id}"}, func(ctx context.Context, in *WriteInput[T]) (*Output[T], error) {
 		var exists T
 		if e := s.Store.Get(ctx, kind, in.ID, &exists); e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return save(ctx, in.ID, in.Body)
 	})
@@ -109,7 +109,7 @@ func collection[T any, P resourcePointer[T]](s *Server, kind string, h resourceH
 		if e == nil && h.Changed != nil {
 			h.Changed()
 		}
-		return &Output[Ack]{Body: Ack{true}}, statusOrAPIError(e)
+		return &Output[Ack]{Body: Ack{true}}, statusOrAPIError(ctx, e)
 	})
 }
 
@@ -220,7 +220,7 @@ func (s *Server) registerConfiguration() {
 		v := domain.DefaultSettings()
 		e := s.Store.Get(ctx, "settings", "organization", &v)
 		if e != nil && !errors.Is(e, store.ErrNotFound) {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		return &Output[domain.Settings]{Body: v}, nil
 	})
@@ -258,11 +258,11 @@ func (s *Server) registerConfiguration() {
 			}
 			return audit(ctx, t, "save", "settings", "organization")
 		})
-		return &Output[domain.Settings]{Body: v}, apiError(e)
+		return &Output[domain.Settings]{Body: v}, apiError(ctx, e)
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "listAudit", Method: "GET", Path: "/api/v1/audit"}, func(ctx context.Context, _ *struct{}) (*Output[Items[domain.Audit]], error) {
 		v, e := list[domain.Audit](ctx, s.Store, "audit")
-		return &Output[Items[domain.Audit]]{Body: Items[domain.Audit]{v}}, apiError(e)
+		return &Output[Items[domain.Audit]]{Body: Items[domain.Audit]{v}}, apiError(ctx, e)
 	})
 }
 
@@ -275,7 +275,7 @@ func (s *Server) registerSecrets() {
 	huma.Register(s.API, huma.Operation{OperationID: "listSecrets", Method: "GET", Path: "/api/v1/secrets"}, func(ctx context.Context, _ *struct{}) (*Output[Items[domain.Secret]], error) {
 		v, e := list[domain.SecretRecord](ctx, s.Store, "secrets")
 		if e != nil {
-			return nil, apiError(e)
+			return nil, apiError(ctx, e)
 		}
 		r := []domain.Secret{}
 		for _, secret := range v {
@@ -295,7 +295,7 @@ func (s *Server) registerSecrets() {
 		} else {
 			var old domain.SecretRecord
 			if e := s.Store.Get(ctx, "secrets", id, &old); e != nil {
-				return nil, apiError(e)
+				return nil, apiError(ctx, e)
 			}
 			record.CreatedAt = old.CreatedAt
 		}
@@ -306,7 +306,7 @@ func (s *Server) registerSecrets() {
 			}
 			return audit(ctx, t, "save", "secrets", record.ID)
 		})
-		return &Output[domain.Secret]{Body: record.Secret}, apiError(e)
+		return &Output[domain.Secret]{Body: record.Secret}, apiError(ctx, e)
 	}
 	huma.Register(s.API, huma.Operation{OperationID: "createSecret", Method: "POST", Path: "/api/v1/secrets", MaxBodyBytes: 8 << 20}, func(ctx context.Context, in *CreateInput[SecretWrite]) (*Output[domain.Secret], error) {
 		return save(ctx, "", in.Body)
@@ -354,6 +354,6 @@ func (s *Server) registerSecrets() {
 			}
 			return audit(ctx, t, "delete", "secrets", in.ID)
 		})
-		return &Output[Ack]{Body: Ack{true}}, apiError(e)
+		return &Output[Ack]{Body: Ack{true}}, apiError(ctx, e)
 	})
 }

@@ -20,26 +20,40 @@ type ProfileWrite struct {
 
 func (s *Server) registerProfile() {
 	huma.Register(s.API, huma.Operation{OperationID: "updateProfile", Method: "PATCH", Path: "/api/v1/profile"}, func(ctx context.Context, in *CreateInput[ProfileWrite]) (*Output[domain.User], error) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
 		v := in.Body
 		if _, e := time.LoadLocation(v.Timezone); e != nil {
 			return nil, huma.Error422UnprocessableEntity("Invalid timezone")
 		}
+		var original domain.UserRecord
+		var passwordHash string
+		if v.Password != "" {
+			if err := s.Store.Get(ctx, "users", CurrentUser(ctx).ID, &original); err != nil {
+				return nil, apiError(ctx, err)
+			}
+			if !security.CheckPassword(original.PasswordHash, v.OldPassword) {
+				return nil, huma.Error403Forbidden("Current password is incorrect")
+			}
+			var err error
+			passwordHash, err = security.HashPassword(v.Password)
+			if err != nil {
+				return nil, huma.Error422UnprocessableEntity(err.Error())
+			}
+		}
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		var record domain.UserRecord
 		e := s.Store.WithTx(ctx, func(t *store.Tx) error {
 			if e := t.Get(ctx, "users", CurrentUser(ctx).ID, &record); e != nil {
 				return e
 			}
-			if v.Password != "" {
-				if !security.CheckPassword(record.PasswordHash, v.OldPassword) {
-					return huma.Error403Forbidden("Current password is incorrect")
+			if !record.Enabled {
+				return huma.Error403Forbidden("Account is disabled")
+			}
+			if passwordHash != "" {
+				if record.PasswordHash != original.PasswordHash {
+					return huma.Error409Conflict("Password changed; retry with the current password")
 				}
-				hash, e := security.HashPassword(v.Password)
-				if e != nil {
-					return huma.Error422UnprocessableEntity(e.Error())
-				}
-				record.PasswordHash = hash
+				record.PasswordHash = passwordHash
 				sessions, e := t.List(ctx, "sessions")
 				if e != nil {
 					return e
@@ -65,6 +79,6 @@ func (s *Server) registerProfile() {
 			}
 			return audit(ctx, t, "profile", "users", record.ID)
 		})
-		return &Output[domain.User]{Body: record.User}, statusOrAPIError(e)
+		return &Output[domain.User]{Body: record.User}, statusOrAPIError(ctx, e)
 	})
 }

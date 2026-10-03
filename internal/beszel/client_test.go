@@ -216,9 +216,9 @@ func TestActualBeszelHubReadonlyIntegration(t *testing.T) {
 	if err != nil || len(containers.Items) != 1 || containers.Items[0].Name != "fixture-container" {
 		t.Fatal(containers, err)
 	}
-	c.op.Lock()
-	c.tokenUntil = time.Now().Unix()
-	c.op.Unlock()
+	c.session.mu.Lock()
+	c.session.tokenUntil = time.Now().Unix()
+	c.session.mu.Unlock()
 	if err = c.Poll(ctx); err != nil {
 		t.Fatal("real token refresh", err)
 	}

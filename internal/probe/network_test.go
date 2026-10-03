@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/pem"
+	"errors"
 	"io"
 	"math/big"
 	"net"
@@ -530,5 +531,76 @@ func TestAuthenticatedSOCKSProxyHTTPAndTCP(t *testing.T) {
 	result := runner.Run(context.Background(), tcp)
 	if result.Success || strings.Contains(result.Error, "bad-pass") {
 		t.Fatal("SOCKS auth failure missing or leaked secret", result)
+	}
+}
+
+func TestSOCKSHandshakeHonorsCancellationAndDeadline(t *testing.T) {
+	for _, mode := range []string{"cancel", "deadline"} {
+		t.Run(mode, func(t *testing.T) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			greeting := make(chan struct{})
+			closed := make(chan error, 1)
+			go func() {
+				conn, err := listener.Accept()
+				if err != nil {
+					closed <- err
+					return
+				}
+				defer conn.Close()
+				_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+				var request [3]byte
+				if _, err := io.ReadFull(conn, request[:]); err != nil {
+					closed <- err
+					return
+				}
+				close(greeting)
+				// Leave the client blocked waiting for SOCKS method negotiation.
+				_, err = conn.Read(request[:1])
+				closed <- err
+			}()
+			ctx, cancel := context.WithCancel(context.Background())
+			if mode == "deadline" {
+				cancel()
+				ctx, cancel = context.WithTimeout(context.Background(), 250*time.Millisecond)
+			}
+			defer cancel()
+			result := make(chan error, 1)
+			go func() {
+				x := &execution{runner: NewRunner(nil)}
+				conn, err := x.dial(ctx, domain.ConnectionConfig{ProxyURL: "socks5h://" + listener.Addr().String()}, "unresolved.target.test:443")
+				if conn != nil {
+					conn.Close()
+				}
+				result <- err
+			}()
+			select {
+			case <-greeting:
+			case <-time.After(time.Second):
+				t.Fatal("SOCKS handshake did not start")
+			}
+			if mode == "cancel" {
+				cancel()
+			}
+			select {
+			case err := <-result:
+				if err == nil || (mode == "cancel" && !errors.Is(err, context.Canceled)) {
+					t.Fatalf("cancelled SOCKS handshake = %v", err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("SOCKS handshake ignored context cancellation/deadline")
+			}
+			select {
+			case err := <-closed:
+				if !errors.Is(err, io.EOF) {
+					t.Fatalf("cancelled SOCKS socket was not closed: %v", err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("cancelled SOCKS socket remained open")
+			}
+		})
 	}
 }

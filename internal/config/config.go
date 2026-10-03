@@ -10,6 +10,9 @@ import (
 
 type Config struct {
 	Address                   string
+	MetricsAddress            string
+	ProbeConcurrency          int
+	OperationHistoryDays      int
 	Driver                    string
 	DSN                       string
 	DataDir                   string
@@ -26,7 +29,21 @@ func Load() (Config, error) {
 	if c.Driver != "sqlite" && c.Driver != "postgres" {
 		return c, fmt.Errorf("OCTOPULSE_DB_DRIVER must be sqlite or postgres")
 	}
+	c.MetricsAddress = os.Getenv("OCTOPULSE_METRICS_ADDR")
+	if c.MetricsAddress != "" {
+		if _, _, err := net.SplitHostPort(c.MetricsAddress); err != nil {
+			return c, fmt.Errorf("invalid OCTOPULSE_METRICS_ADDR: %w", err)
+		}
+	}
 	var e error
+	c.OperationHistoryDays, e = integer("OCTOPULSE_OPERATION_HISTORY_DAYS", 0, 0, 3650)
+	if e != nil {
+		return c, e
+	}
+	c.ProbeConcurrency, e = integer("OCTOPULSE_PROBE_CONCURRENCY", 100, 1, 1000)
+	if e != nil {
+		return c, e
+	}
 	c.DBMaxConnections, e = integer("OCTOPULSE_DB_MAX_CONNECTIONS", 10, 2, 100)
 	if e != nil {
 		return c, e

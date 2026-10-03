@@ -183,9 +183,10 @@ func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to,
 		retained[bucket.BucketAt] = bucket
 	}
 	rawBefore := s.now().UnixMilli() - int64(retention.RoundDays)*dayMS
+	prepared := prepareAvailability(snapshot, maintenanceSpans(snapshot.Maintenance)[record.ID])
 	rows := make([]store.Aggregate, 0, (to-from)/width)
 	for at := from; at < to; at += width {
-		availability := calculate(snapshot, at, at+width)
+		availability := prepared.calculate(at, at+width)
 		bucket := raw[at]
 		row := store.Aggregate{MonitorID: record.ID, BucketAt: at, WidthMS: width, UpMS: availability.UpMs, DownMS: availability.DownMs, UnknownMS: availability.UnknownMs, ExcludedMS: availability.ExcludedMs, LatencyTotalMS: bucket.LatencyTotalMS, RoundCount: bucket.Count, SuccessfulRoundCount: bucket.Successes}
 		if at < rawBefore {

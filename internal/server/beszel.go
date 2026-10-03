@@ -16,14 +16,14 @@ type BeszelHistoryInput struct {
 }
 
 func (s *Server) registerBeszel() *beszel.Client {
-	client := beszel.New(s.Store, s)
+	client := beszel.New(s.Store, s.Secrets)
 	huma.Register(s.API, huma.Operation{OperationID: "getBeszelConfig", Method: "GET", Path: "/api/v1/beszel/config"}, func(ctx context.Context, _ *struct{}) (*Output[domain.BeszelConfig], error) {
 		if CurrentUser(ctx).Role != domain.RoleAdmin {
 			return nil, huma.Error403Forbidden("Administrator permission required")
 		}
 		cfg := domain.BeszelConfig{PollSeconds: 30}
 		if err := s.Store.Get(ctx, "beszel", "config", &cfg); err != nil && !errors.Is(err, store.ErrNotFound) {
-			return nil, apiError(err)
+			return nil, apiError(ctx, err)
 		}
 		return &Output[domain.BeszelConfig]{Body: cfg}, nil
 	})
@@ -36,31 +36,32 @@ func (s *Server) registerBeszel() *beszel.Client {
 		if err := beszel.ValidateConfig(&in.Body); err != nil {
 			return nil, huma.Error422UnprocessableEntity(err.Error())
 		}
-		err := s.Store.WithTx(ctx, func(tx *store.Tx) error {
-			if in.Body.Enabled {
-				var secret domain.SecretRecord
-				if err := tx.Get(ctx, "secrets", in.Body.PasswordSecretID, &secret); err != nil {
+		err := client.UpdateConfig(ctx, func() error {
+			return s.Store.WithTx(ctx, func(tx *store.Tx) error {
+				if in.Body.Enabled {
+					var secret domain.SecretRecord
+					if err := tx.Get(ctx, "secrets", in.Body.PasswordSecretID, &secret); err != nil {
+						return err
+					}
+				}
+				if err := tx.Put(ctx, "beszel", "config", in.Body); err != nil {
 					return err
 				}
-			}
-			if err := tx.Put(ctx, "beszel", "config", in.Body); err != nil {
-				return err
-			}
-			if err := tx.Delete(ctx, "beszelSnapshots", "systems"); err != nil && !errors.Is(err, store.ErrNotFound) {
-				return err
-			}
-			return audit(ctx, tx, "configure", "beszel", "config")
+				if err := tx.Delete(ctx, "beszelSnapshots", "systems"); err != nil && !errors.Is(err, store.ErrNotFound) {
+					return err
+				}
+				return audit(ctx, tx, "configure", "beszel", "config")
+			})
 		})
 		if err != nil {
-			return nil, apiError(err)
+			return nil, apiError(ctx, err)
 		}
-		client.Invalidate()
 		return &Output[domain.BeszelConfig]{Body: in.Body}, nil
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "listBeszelSystems", Method: "GET", Path: "/api/v1/beszel/systems"}, func(ctx context.Context, _ *struct{}) (*Output[beszel.SystemsResponse], error) {
 		result, err := client.Systems(ctx)
 		if err != nil {
-			return nil, apiError(err)
+			return nil, apiError(ctx, err)
 		}
 		return &Output[beszel.SystemsResponse]{Body: result}, nil
 	})

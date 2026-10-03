@@ -36,6 +36,8 @@ db/
 sqlc.yaml                   # 两组 engine，分别生成
 ```
 
+监控配置与运行状态投影位于 `internal/monitoring`，公开字段投影位于 `internal/statuspage`，秘密解析位于 `internal/secrets`；探测和通知不依赖 HTTP Server。监控列表通过 sqlc JOIN 一次读取配置、runtime 与 engine 快照。公开页按 ID 集合批量读取监控、可用率和延迟，每个批量查询内部使用一致读快照；监控、可用率与延迟这三类读取之间不承诺同一个数据库快照。SQLite 参数分块共享读事务；PostgreSQL 使用 Repeatable Read。
+
 业务服务接收 Store；sqlc 生成的行类型不直接暴露到 Huma API。API 的 Go DTO 仍是前后端契约来源。
 
 ## 配置与运行方式
@@ -80,7 +82,7 @@ PostgreSQL 使用 `database/sql` 管理一个有界连接池，不叠加 pgxpool
 
 应用生成 ID；统计用 UTC Unix 毫秒及整数时长，SQLite `INTEGER` 对应 PostgreSQL `BIGINT`。时区只用于输入解释和界面展示，跨窗口计算使用共用 Go 算法。ID、0/1 布尔、NULL 和错误在适配层映射为统一 Go 类型。
 
-需要筛选、关联或索引的字段使用普通列，例如 monitor_id、类型、启用状态、间隔、due_at。类型专属设置、页面配置和资源文档以 JSON 序列化，两库当前均使用 TEXT；Go 负责相同的验证和业务解释，不依赖数据库专属 JSON 函数。修改文档、运行状态和通知标记仍可放在同一事务中。
+需要筛选、关联或索引的字段使用普通列，例如 monitor_id、类型、启用状态、间隔、due_at。类型专属设置、页面配置和资源文档以 JSON 序列化，两库当前均使用 TEXT；Go 负责相同的验证和业务解释，不依赖数据库专属 JSON 函数解释配置文档。PostgreSQL 批量查询使用 JSON 数组参数展开 ID 集合，该传参差异封装在持久层。修改文档、运行状态和通知标记仍可放在同一事务中。
 
 索引覆盖监控项与时间、统计桶、通知状态与到期时间。规范化后的 slug/domain 设置唯一约束；顺序查询明确第二排序键，避免结果依赖不同数据库的默认排序。
 
@@ -88,13 +90,17 @@ PostgreSQL 使用 `database/sql` 管理一个有界连接池，不叠加 pgxpool
 
 HTTP/DNS/TCP 探测、Shoutrrr 发送及 Beszel 网络请求都在数据库事务外。Go 使用事务对象执行事务内操作，不能混入池上的非事务调用。[Go 事务](https://go.dev/doc/database/execute-transactions)
 
+调度器通过固定数量的 worker 执行主动探测，每个监控最多占用一个排队或执行中的任务；重复调度和手动请求不会追加同项任务。队列存放任务描述，不为每个排队项创建等待 goroutine。配置变更和停机取消排队任务，手动调用方离开后已接收的探测仍由服务生命周期管理。轮询通过批量快照读取配置与 runtime。
+
+修改个人密码时，bcrypt 验证和计算在写事务前完成；事务内重新检查账号状态和原密码哈希，再保存新密码和撤销其他会话，避免慢哈希长期占用 SQLite 唯一写连接。
+
 一轮探测完成后，在一个短事务中校验配置版本和运行代次，写入轮次/尝试，更新确认计数和当前状态，关闭/开启状态区间，创建状态事件及逐渠道通知任务。全部提交或全部回滚；稳定 round_id 和事件/渠道唯一约束使重复提交幂等。编辑、暂停或删除后，过期探测不能覆盖新状态。
 
 被动心跳上报/超期判定同样原子保存最近上报、确认状态、区间和通知任务；超期判断须校验最近上报版本，避免与成功上报竞争后错误改为 Down。证书检查独立保存证书四态、阈值/续期事件及通知，不写入服务 uptime 状态区间。
 
 投递 worker 通过条件 UPDATE 认领到期任务，保存 lease_token/lease_until。发送在事务外，完成或退避更新必须匹配同一 token；崩溃后的过期租约可重新认领。发送前检查事件版本、故障周期和维护规则，取消失效任务。外部发送成功但成功记录尚未提交时崩溃，仍可能重复发送，因此不承诺恰好一次或所有渠道一定送达。
 
-投递 worker 默认并发为 4，单次发送超时为 30 秒；每项任务最多尝试 8 次（含首次），失败后从 5 秒开始指数退避，最长间隔为 15 分钟，达到尝试上限后记录为 `failed`。具体参数见 [投递 worker](../internal/notify/worker.go)。
+投递 worker 默认并发为 4，单次发送超时为 30 秒；每项任务最多尝试 8 次（含首次），失败后以 5 秒为基础指数退避，并在每次上限的 50%–100% 范围加入抖动，最大上限为 15 分钟，达到尝试上限后记录为 `failed`。具体参数见 [投递 worker](../internal/notify/worker.go)。
 
 成功确认事务同时保存该渠道的故障周期投递标记；恢复任务及维护退出后的补发按此标记判断。标记、任务完成和已补发记录原子保存，避免重启后丢失通知顺序依据或重复创建恢复任务。
 
@@ -106,7 +112,7 @@ HTTP/DNS/TCP 探测、Shoutrrr 发送及 Beszel 网络请求都在数据库事�
 
 ## Schema 升级、备份与验证
 
-每次 Schema 变更同时提供两种方言的同业务版本迁移，嵌入二进制；当前 SchemaVersion 为 2。取得运行锁和连接检查后执行迁移，成功后才启动 API/探测/投递，失败退出。版本 2 为聚合增加成功轮次计数，并从仍保留的原始轮次补齐，升级保留行为有专门用例。goose 用版本表跟踪迁移，但不自动验证两库语义等价。[goose Provider](https://pkg.go.dev/github.com/pressly/goose/v3#NewProvider)
+每次 Schema 变更同时提供两种方言的同业务版本迁移，嵌入二进制；当前 SchemaVersion 为 3。取得运行锁和连接检查后执行迁移，成功后才启动 API/探测/投递，失败退出。版本 2 为聚合增加成功轮次计数，并从仍保留的原始轮次补齐，升级保留行为有专门用例。版本 3 增加 `(monitor_id, finished_at)` 索引，匹配统计时间窗口查询。goose 用版本表跟踪迁移，但不自动验证两库语义等价。[goose Provider](https://pkg.go.dev/github.com/pressly/goose/v3#NewProvider)
 
 本实现使用覆盖迁移和运行期的 PostgreSQL advisory lock / SQLite 文件锁，不依赖 goose 默认锁。迁移原子边界是单个文件，不是整个升级批次；当前迁移未使用 `NO TRANSACTION`。已发布文件不修改，以新增迁移修正；数据库版本高于程序支持版本时拒绝启动。[迁移事务](https://pressly.github.io/goose/documentation/annotations/#no-transaction)
 

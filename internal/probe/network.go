@@ -5,18 +5,16 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/octoplorer/octopulse/internal/domain"
+	"golang.org/x/net/proxy"
 )
 
 func (x *execution) tlsConfig(ctx context.Context, c domain.TLSConfig, host string) (*tls.Config, error) {
@@ -128,13 +126,26 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 	if p == nil {
 		return dialDirect(ctx, c, "tcp", address)
 	}
+	if p.Scheme == "socks5" || p.Scheme == "socks5h" {
+		dialer, err := proxy.FromURL(p, makeDialer(c))
+		if err != nil {
+			return nil, err
+		}
+		contextDialer, ok := dialer.(proxy.ContextDialer)
+		if !ok {
+			return nil, errors.New("SOCKS proxy does not support context cancellation")
+		}
+		conn, err := contextDialer.DialContext(ctx, "tcp", address)
+		if err != nil && ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return conn, err
+	}
 	port := p.Port()
 	if port == "" {
 		switch p.Scheme {
 		case "https":
 			port = "443"
-		case "socks5", "socks5h":
-			port = "1080"
 		default:
 			port = "80"
 		}
@@ -158,26 +169,22 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 		}
 		conn = secured
 	}
-	if p.Scheme == "socks5" || p.Scheme == "socks5h" {
-		err = socksConnect(conn, p, address)
-	} else {
-		req := &http.Request{Method: http.MethodConnect, URL: &url.URL{Opaque: address}, Host: address, Header: make(http.Header)}
-		if p.User != nil {
-			password, _ := p.User.Password()
-			req.SetBasicAuth(p.User.Username(), password)
-			req.Header.Set("Proxy-Authorization", req.Header.Get("Authorization"))
-			req.Header.Del("Authorization")
-		}
-		if err = req.Write(conn); err == nil {
-			var response *http.Response
-			var reader = bufio.NewReader(conn)
-			response, err = http.ReadResponse(reader, req)
-			if err == nil {
-				if response.StatusCode != 200 {
-					err = fmt.Errorf("proxy CONNECT rejected (%d)", response.StatusCode)
-				} else {
-					conn = &bufferedConn{Conn: conn, reader: reader}
-				}
+	req := &http.Request{Method: http.MethodConnect, URL: &url.URL{Opaque: address}, Host: address, Header: make(http.Header)}
+	if p.User != nil {
+		password, _ := p.User.Password()
+		req.SetBasicAuth(p.User.Username(), password)
+		req.Header.Set("Proxy-Authorization", req.Header.Get("Authorization"))
+		req.Header.Del("Authorization")
+	}
+	if err = req.Write(conn); err == nil {
+		var response *http.Response
+		var reader = bufio.NewReader(conn)
+		response, err = http.ReadResponse(reader, req)
+		if err == nil {
+			if response.StatusCode != 200 {
+				err = fmt.Errorf("proxy CONNECT rejected (%d)", response.StatusCode)
+			} else {
+				conn = &bufferedConn{Conn: conn, reader: reader}
 			}
 		}
 	}
@@ -194,99 +201,6 @@ type bufferedConn struct {
 }
 
 func (c *bufferedConn) Read(p []byte) (int, error) { return c.reader.Read(p) }
-
-func socksConnect(conn net.Conn, p *url.URL, address string) error {
-	methods := []byte{5, 1, 0}
-	if p.User != nil {
-		methods = []byte{5, 2, 0, 2}
-	}
-	if _, err := conn.Write(methods); err != nil {
-		return err
-	}
-	reply := make([]byte, 2)
-	if _, err := io.ReadFull(conn, reply); err != nil {
-		return err
-	}
-	if reply[0] != 5 {
-		return errors.New("invalid SOCKS proxy response")
-	}
-	if reply[1] == 2 {
-		if p.User == nil {
-			return errors.New("SOCKS proxy requires authentication")
-		}
-		password, _ := p.User.Password()
-		username := p.User.Username()
-		if len(username) > 255 || len(password) > 255 {
-			return errors.New("SOCKS credentials exceed protocol limit")
-		}
-		packet := []byte{1, byte(len(username))}
-		packet = append(packet, username...)
-		packet = append(packet, byte(len(password)))
-		packet = append(packet, password...)
-		if _, err := conn.Write(packet); err != nil {
-			return err
-		}
-		if _, err := io.ReadFull(conn, reply); err != nil {
-			return err
-		}
-		if reply[0] != 1 || reply[1] != 0 {
-			return errors.New("SOCKS authentication failed")
-		}
-	} else if reply[1] != 0 {
-		return errors.New("SOCKS proxy has no supported authentication method")
-	}
-	host, port, err := net.SplitHostPort(address)
-	if err != nil {
-		return err
-	}
-	portNumber, err := strconv.Atoi(port)
-	if err != nil {
-		return err
-	}
-	packet := []byte{5, 1, 0}
-	ip := net.ParseIP(host)
-	if v4 := ip.To4(); v4 != nil {
-		packet = append(packet, 1)
-		packet = append(packet, v4...)
-	} else if ip != nil {
-		packet = append(packet, 4)
-		packet = append(packet, ip.To16()...)
-	} else {
-		if len(host) > 255 {
-			return errors.New("SOCKS target name too long")
-		}
-		packet = append(packet, 3, byte(len(host)))
-		packet = append(packet, host...)
-	}
-	packet = binary.BigEndian.AppendUint16(packet, uint16(portNumber))
-	if _, err = conn.Write(packet); err != nil {
-		return err
-	}
-	header := make([]byte, 4)
-	if _, err = io.ReadFull(conn, header); err != nil {
-		return err
-	}
-	if header[0] != 5 || header[1] != 0 {
-		return errors.New("SOCKS proxy connect failed")
-	}
-	length := 0
-	switch header[3] {
-	case 1:
-		length = 4
-	case 4:
-		length = 16
-	case 3:
-		var size [1]byte
-		if _, err = io.ReadFull(conn, size[:]); err != nil {
-			return err
-		}
-		length = int(size[0])
-	default:
-		return errors.New("invalid SOCKS address type")
-	}
-	_, err = io.CopyN(io.Discard, conn, int64(length+2))
-	return err
-}
 
 func tlsVersion(v uint16) string {
 	switch v {

@@ -3,6 +3,7 @@
 package engine
 
 import (
+	"container/list"
 	"context"
 	"encoding/json"
 	"errors"
@@ -42,14 +43,21 @@ type Engine struct {
 	Runner *probe.Runner
 	// Now and Attempt permit deterministic state-machine tests without replacing
 	// production scheduling. Attempt defaults to Runner.Run.
-	Now             func() time.Time
-	Attempt         func(context.Context, domain.Monitor) probe.Result
-	PollInterval    time.Duration
+	Now          func() time.Time
+	Attempt      func(context.Context, domain.Monitor) probe.Result
+	PollInterval time.Duration
+	// Concurrency limits executing rounds. Configure it before Start.
+	Concurrency int
+	// OnRoundStart observes admission wait when a non-cancelled round begins.
+	OnRoundStart    func(time.Duration)
 	OnError         func(error)
 	mu              sync.Mutex
 	running         map[string]inFlight
 	schedules       map[string]schedule
-	semaphore       chan struct{}
+	semaphore       chan struct{} // standalone Check admission
+	queue           list.List
+	queueChanged    chan struct{}
+	active          int
 	wake            chan struct{}
 	ctx             context.Context
 	cancel          context.CancelFunc
@@ -81,7 +89,7 @@ type Metadata struct {
 type NotificationPayload = domain.NotificationPayload
 
 func New(st *store.Store, runner *probe.Runner) *Engine {
-	e := &Engine{Store: st, Runner: runner, Now: time.Now, PollInterval: time.Second, running: map[string]inFlight{}, schedules: map[string]schedule{}, semaphore: make(chan struct{}, 100), wake: make(chan struct{}, 1)}
+	e := &Engine{Store: st, Runner: runner, Now: time.Now, PollInterval: time.Second, Concurrency: 100, queueChanged: make(chan struct{}), running: map[string]inFlight{}, schedules: map[string]schedule{}, semaphore: make(chan struct{}, 100), wake: make(chan struct{}, 1)}
 	if runner != nil {
 		e.Attempt = runner.Run
 	}
@@ -115,7 +123,14 @@ func (e *Engine) Start(ctx context.Context) error {
 		e.mu.Unlock()
 		return err
 	}
-	e.wg.Add(1)
+	concurrency := e.Concurrency
+	if concurrency <= 0 {
+		concurrency = 100
+	}
+	e.wg.Add(concurrency + 1)
+	for i := 0; i < concurrency; i++ {
+		go e.worker()
+	}
 	go func() {
 		defer e.wg.Done()
 		interval := e.PollInterval
@@ -288,8 +303,12 @@ func getMetadata(ctx context.Context, tx *store.Tx, m domain.Monitor, record sto
 	return meta, nil
 }
 
+func runtimeMatches(runtime store.Runtime, record store.Monitor) bool {
+	return runtime.ConfigVersion == record.ConfigVersion && runtime.Generation == record.Generation && ((record.Enabled && runtime.State != StatePaused) || (!record.Enabled && runtime.State == StatePaused))
+}
+
 func (e *Engine) ensureRuntime(ctx context.Context, record store.Monitor, m domain.Monitor) (store.Runtime, error) {
-	if existing, err := e.Store.GetRuntime(ctx, m.ID); err == nil && existing.ConfigVersion == record.ConfigVersion && existing.Generation == record.Generation && ((record.Enabled && existing.State != StatePaused) || (!record.Enabled && existing.State == StatePaused)) {
+	if existing, err := e.Store.GetRuntime(ctx, m.ID); err == nil && runtimeMatches(existing, record) {
 		return existing, nil
 	}
 	var runtime store.Runtime
@@ -385,7 +404,7 @@ func (e *Engine) NotifyConfigurationChanged(ctx context.Context, id string) erro
 }
 
 func (e *Engine) poll(ctx context.Context) error {
-	monitors, err := e.Store.ListMonitors(ctx)
+	monitors, err := e.Store.ListMonitorSnapshots(ctx)
 	if err != nil {
 		return err
 	}
@@ -395,17 +414,23 @@ func (e *Engine) poll(ctx context.Context) error {
 	}
 	now := e.now()
 	seen := map[string]bool{}
-	for _, record := range monitors {
+	for _, snapshot := range monitors {
+		record := snapshot.Monitor
 		seen[record.ID] = true
 		m, err := decodeMonitor(record)
 		if err != nil {
 			e.report(err)
 			continue
 		}
-		runtime, err := e.ensureRuntime(ctx, record, m)
-		if err != nil {
-			e.report(err)
-			continue
+		var runtime store.Runtime
+		if snapshot.Runtime != nil && runtimeMatches(*snapshot.Runtime, record) {
+			runtime = *snapshot.Runtime
+		} else {
+			runtime, err = e.ensureRuntime(ctx, record, m)
+			if err != nil {
+				e.report(err)
+				continue
+			}
 		}
 		runtime, err = e.expireCollection(ctx, record, m, runtime, now)
 		if err != nil {
@@ -457,8 +482,12 @@ func (e *Engine) poll(ctx context.Context) error {
 			e.report(e.markMaintenanceExit(ctx, m.ID, now))
 		}
 		if due {
-			e.wg.Add(1)
-			go func(id string) { defer e.wg.Done(); e.report(e.Check(ctx, id)) }(m.ID)
+			task, err := e.acceptRound(ctx, record, m, false)
+			if err != nil {
+				e.report(err)
+			} else if !task.managed {
+				e.report(e.runStandalone(task))
+			}
 		}
 	}
 	e.mu.Lock()
@@ -493,95 +522,10 @@ func inMaintenance(raw []json.RawMessage, id string, now int64) bool {
 	return false
 }
 
-// Check accepts one non-overlapping round and waits for its result. Once the
-// engine has started, the round belongs to the engine lifecycle: cancelling the
-// caller stops waiting without shortening a target's configured probe budget.
-// Without Start, the caller supplies the lifetime for standalone execution.
-func (e *Engine) Check(ctx context.Context, id string) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	record, err := e.Store.GetMonitor(ctx, id)
-	if err != nil {
-		return err
-	}
-	m, err := decodeMonitor(record)
-	if err != nil {
-		return err
-	}
-	if !record.Enabled {
-		return ErrPaused
-	}
-	e.mu.Lock()
-	lifetime := e.ctx
-	managed := lifetime != nil
-	if !managed {
-		lifetime = ctx
-	}
-	if err := lifetime.Err(); err != nil {
-		e.mu.Unlock()
-		return err
-	}
-	if _, ok := e.running[id]; ok {
-		e.mu.Unlock()
-		return ErrBusy
-	}
-	roundContext, cancel := context.WithTimeout(lifetime, time.Duration(m.IntervalSeconds)*time.Second)
-	evaluationEpoch := e.schedules[id].evaluationEpoch
-	e.running[id] = inFlight{cancel: cancel, version: record.ConfigVersion, generation: record.Generation}
-	if managed {
-		// Start's loop keeps the wait group live; registering under the same
-		// mutex as Stop's cancellation prevents a new round after shutdown.
-		e.wg.Add(1)
-	}
-	e.mu.Unlock()
-	run := func() error {
-		defer cancel()
-		defer func() { e.mu.Lock(); delete(e.running, id); e.mu.Unlock() }()
-		return e.checkRound(lifetime, roundContext, record, m, evaluationEpoch)
-	}
-	if !managed {
-		return run()
-	}
-	result := make(chan error, 1)
-	abandoned := make(chan struct{})
-	go func() {
-		defer e.wg.Done()
-		result <- run()
-		select {
-		case <-abandoned:
-			select {
-			case err := <-result:
-				e.report(err)
-			default:
-			}
-		default:
-		}
-	}()
-	select {
-	case err := <-result:
-		return err
-	case <-ctx.Done():
-		// Either this caller drains an already completed result or the tracked
-		// worker drains its later result. Exactly one reports a detached error,
-		// and shutdown never leaves an untracked result-waiting goroutine.
-		close(abandoned)
-		select {
-		case err := <-result:
-			e.report(err)
-		default:
-		}
-		return fmt.Errorf("%w: %w", ErrCheckAccepted, ctx.Err())
-	}
-}
-
 func (e *Engine) checkRound(lifetime, roundContext context.Context, record store.Monitor, m domain.Monitor, evaluationEpoch uint64) error {
 	id := record.ID
-	select {
-	case e.semaphore <- struct{}{}:
-		defer func() { <-e.semaphore }()
-	case <-roundContext.Done():
-		return roundContext.Err()
+	if err := roundContext.Err(); err != nil {
+		return err
 	}
 	runtime, err := e.ensureRuntime(roundContext, record, m)
 	if err != nil {
