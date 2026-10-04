@@ -3,7 +3,12 @@ import { defineConfig, presetAttributify, presetIcons, presetWind4 } from 'unocs
 export default defineConfig({
   presets: [
     presetWind4(),
-    presetAttributify({ prefix: 'un-', prefixedOnly: true }),
+    presetAttributify({
+      prefix: 'un-',
+      prefixedOnly: false,
+      // Keep component text props and SVG presentation attributes out of utility extraction.
+      ignoreAttributes: ['text', 'font-size', 'stroke-width'],
+    }),
     presetIcons({
       extraProperties: {
         'display': 'inline-block',

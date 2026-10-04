@@ -15,6 +15,13 @@ import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
 import Toggle from '../../../components/Toggle.vue'
+import { Alert } from '../../../components/ui/alert'
+import { Avatar } from '../../../components/ui/avatar'
+import { Badge } from '../../../components/ui/badge'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldError, FieldGroup } from '../../../components/ui/field'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { currentUser, isAdmin } from '../../../composables/api'
 import { languageOptions } from '../../../composables/i18n'
 import { notify } from '../../../composables/notices'
@@ -115,69 +122,61 @@ function cancel() {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.members')"
-    :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')"
-  >
-    <button v-if="isAdmin()" class="button primary" @click="edit()">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMember') }}
-    </button>
+  <PageHeader :title="t('navigation.members')" :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')">
+    <Button v-if="isAdmin()" variant="primary" @click="edit()">
+      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMember') }}
+    </Button>
   </PageHeader>
-  <section class="card">
+  <Card as="section">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
       <EmptyState v-if="!query.data.value?.items.length" :title="t('users.noMembers')" />
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ t('users.member') }}</th>
-              <th>{{ t('common.role') }}</th>
-              <th>{{ t('common.status') }}</th>
-              <th>{{ t('common.created') }}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in query.data.value.items" :key="user.id">
-              <td>
-                <div un-flex="~ items-center gap-3">
-                  <span class="user-avatar">{{ user.name?.[0] || user.username[0] }}</span><span><span class="monitor-name">{{ user.name || user.username }}</span><span class="monitor-sub">{{ user.username
+      <TableContainer v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t('users.member') }}</TableHead>
+              <TableHead>{{ t('common.role') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead>{{ t('common.created') }}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="user in query.data.value.items" :key="user.id">
+              <TableCell>
+                <div flex="~ items-center gap-3">
+                  <Avatar>{{ user.name?.[0] || user.username[0] }}</Avatar><span><span class="monitor-name block" font="600" un-text="13px">{{ user.name || user.username }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ user.username
                   }}{{ user.id === currentUser?.id ? ` · ${t('users.you')}` : '' }}</span></span>
                 </div>
-              </td>
-              <td>
-                <span class="pill">{{ statusLabel(user.role) }}</span>
-              </td>
-              <td>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</td>
-              <td class="muted" un-text="xs">
+              </TableCell>
+              <TableCell>
+                <Badge>{{ statusLabel(user.role) }}</Badge>
+              </TableCell>
+              <TableCell>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ formatDate(user.createdAt) }}
-              </td>
-              <td>
-                <div v-if="isAdmin()" un-flex="~ gap-2">
-                  <button class="icon-button" :aria-label="t('common.edit')" @click="edit(user)">
-                    <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
-                    :disabled="user.id === currentUser?.id"
-                    :aria-label="t('common.delete')"
-                    @click="confirmDelete(user)"
-                  >
-                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+              </TableCell>
+              <TableCell>
+                <div v-if="isAdmin()" flex="~ gap-2">
+                  <Button :aria-label="t('common.edit')" size="icon" @click="edit(user)">
+                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
+                  </Button><Button :disabled="user.id === currentUser?.id" :aria-label="t('common.delete')" size="icon" @click="confirmDelete(user)">
+                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
+                  </Button>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </AsyncState>
-  </section>
-  <p class="note" un-mt="5">
+  </Card>
+  <Alert mt="5" as="p" variant="default">
     {{ t('users.operatorsManageMonitorsMaintenanceAndPublicPagesAdministrators') }}
-  </p>
+  </Alert>
   <Modal v-model:open="open" :title="form.id ? t('users.editMember') : t('common.addMember')">
     <form id="user-form" @submit.prevent="save">
-      <div class="form-grid">
+      <FieldGroup>
         <Field :label="t('common.username')">
           <input v-model="form.username" required :disabled="!!form.id">
         </Field><Field :label="t('common.displayName')">
@@ -196,53 +195,38 @@ function cancel() {
           </select>
         </Field><Field :label="t('common.language')">
           <select v-model="form.locale">
-            <option
-              v-for="language in languageOptions"
-              :key="language.value"
-              :value="language.value"
-            >
+            <option v-for="language in languageOptions" :key="language.value" :value="language.value">
               {{ language.label }}
             </option>
           </select>
-        </Field><Field class="span-full" :label="t('common.displayTimeZone')">
+        </Field><Field :label="t('common.displayTimeZone')" class="span-full">
           <input v-model="form.timezone" required>
-        </Field><Field
-          class="span-full"
-          :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')"
-          :hint="t('common.atLeast12CharactersUpTo72Bytes')"
-        >
-          <input
-            v-model="form.password"
-            type="password"
-            :required="!form.id"
-            minlength="12"
-            maxlength="72"
-            autocomplete="new-password"
-          >
+        </Field><Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :hint="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
+          <input v-model="form.password" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password">
         </Field>
         <div class="span-full">
           <Toggle v-model="form.enabled" :label="t('users.enableAccount')" />
         </div>
-      </div>
-      <p v-if="error" class="inline-error">
+      </FieldGroup>
+      <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
-      </p>
+      </FieldError>
     </form>
     <template #footer>
-      <button class="button" @click="cancel">
+      <Button @click="cancel">
         {{ t('common.cancel') }}
-      </button><button class="button primary" form="user-form" :disabled="saving">
+      </Button><Button form="user-form" :disabled="saving" variant="primary">
         {{ t('users.saveMember') }}
-      </button>
+      </Button>
     </template>
   </Modal><Modal v-model:open="deleteOpen" :title="t('users.deleteMember')">
     <p>{{ deleteTarget?.name || deleteTarget?.username }}</p>
     <template #footer>
-      <button class="button" @click="deleteOpen = false">
+      <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </button><button class="button danger" @click="remove">
+      </Button><Button variant="danger" @click="remove">
         {{ t('common.delete') }}
-      </button>
+      </Button>
     </template>
   </Modal>
 </template>

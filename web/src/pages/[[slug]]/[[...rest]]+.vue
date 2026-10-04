@@ -4,10 +4,12 @@ import { useHead } from '@unhead/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
 import AsyncState from '../../components/AsyncState.vue'
+
 import StatusPage from '../../components/StatusPage.vue'
+import { Button } from '../../components/ui/button'
+import { Empty, EmptyDescription, EmptyTitle } from '../../components/ui/empty'
 import { usePollingEnabled } from '../../composables/polling'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -54,29 +56,27 @@ useHead(() => {
 </script>
 
 <template>
-  <StatusPage
-    v-if="query.data.value"
-    :page="query.data.value"
-    :incident-id="incidentId"
-    :stale="!!query.error.value"
-    :path-base="isDomain ? '' : `/${route.params.slug}`"
-  />
-  <div v-else class="public-page">
-    <div class="public-inner">
+  <StatusPage v-if="query.data.value" :page="query.data.value" :incident-id="incidentId" :stale="!!query.error.value" :path-base="isDomain ? '' : `/${route.params.slug}`" />
+  <div v-else class="public-page" bg="$bg" un-text="$text" min-h="screen" py="48px" px="24px" font="sans">
+    <div class="public-inner" max-w="870px" mx="auto">
       <AsyncState :pending="query.isPending.value">
-        <div class="empty-state">
-          <h1>{{ t('publicPage.statusPageUnavailable') }}</h1>
-          <p>
+        <Empty>
+          <EmptyTitle as="h1">
+            {{ t('publicPage.statusPageUnavailable') }}
+          </EmptyTitle>
+          <EmptyDescription>
             {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
-          </p>
-          <button class="button" @click="query.refetch()">
+          </EmptyDescription>
+          <Button @click="query.refetch()">
             {{ t('publicPage.tryAgain') }}
-          </button><RouterLink to="/app/login" class="button ghost" un-ml="3">
-            {{
-              t('publicPage.adminSignIn')
-            }}
-          </RouterLink>
-        </div>
+          </Button><Button variant="ghost" as-child>
+            <RouterLink to="/app/login" ml="3">
+              {{
+                t('publicPage.adminSignIn')
+              }}
+            </RouterLink>
+          </Button>
+        </Empty>
       </AsyncState>
     </div>
   </div>

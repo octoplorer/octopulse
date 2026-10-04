@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import Field from './Field.vue'
 import SecretSelect from './SecretSelect.vue'
+import { FieldGroup } from './ui/field'
 
 defineProps<{ secrets: Secret[] }>()
 
@@ -14,7 +15,7 @@ const model = defineModel<ConnectionConfigForm>({ required: true })
 </script>
 
 <template>
-  <div class="form-grid">
+  <FieldGroup>
     <Field :label="t('connectionFields.proxyUrl')" hint="HTTP(S), SOCKS5 / SOCKS5H">
       <input v-model="model.proxyUrl" placeholder="socks5://127.0.0.1:1080">
     </Field><Field :label="t('connectionFields.proxyUsername')">
@@ -32,5 +33,5 @@ const model = defineModel<ConnectionConfigForm>({ required: true })
     >
       <input v-model="model.fixedIp" placeholder="192.0.2.1">
     </Field>
-  </div>
+  </FieldGroup>
 </template>

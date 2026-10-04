@@ -8,7 +8,6 @@ import type {
   System as BeszelSystem,
   GetBeszelHistoryData,
 } from '../../../client/types.gen'
-import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -28,6 +27,14 @@ import PageHeader from '../../../components/PageHeader.vue'
 import SecretSelect from '../../../components/SecretSelect.vue'
 import Sparkline from '../../../components/Sparkline.vue'
 import Toggle from '../../../components/Toggle.vue'
+import { Alert } from '../../../components/ui/alert'
+import { Badge } from '../../../components/ui/badge'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldError } from '../../../components/ui/field'
+import { Separator } from '../../../components/ui/separator'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import { usePollingEnabled } from '../../../composables/polling'
@@ -164,265 +171,221 @@ function percentage(value: number | undefined) {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.servers')"
-    :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')"
-  >
-    <button class="button" @click="query.refetch()">
-      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
-    </button><button v-if="isAdmin()" class="button primary" @click="configure">
-      <span class="i-lucide-settings" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('servers.beszelConnection') }}
-    </button>
+  <PageHeader :title="t('navigation.servers')" :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')">
+    <Button @click="query.refetch()">
+      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+    </Button><Button v-if="isAdmin()" variant="primary" @click="configure">
+      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
+    </Button>
   </PageHeader>
   <div class="alert-strip">
-    <span class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
+    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
   </div>
-  <div v-if="query.data.value?.error" class="error-banner" role="alert">
+  <Alert v-if="query.data.value?.error" role="alert" variant="destructive">
     {{ query.data.value.error }}
-  </div>
+  </Alert>
   <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-    <EmptyState
-      v-if="!query.data.value?.items.length"
-      :title="t('servers.connectYourBeszelHub')"
-      :description="t('servers.useADedicatedAccountToReadItsVisible')"
-    >
-      <button v-if="isAdmin()" class="button primary" @click="configure">
+    <EmptyState v-if="!query.data.value?.items.length" :title="t('servers.connectYourBeszelHub')" :description="t('servers.useADedicatedAccountToReadItsVisible')">
+      <Button v-if="isAdmin()" variant="primary" @click="configure">
         {{ t('servers.configureConnection') }}
-      </button>
+      </Button>
     </EmptyState>
     <div v-else class="servers-grid">
-      <article v-for="server in query.data.value.items" :key="server.id" class="card server-card">
-        <div un-flex="~ items-center justify-between gap-3">
-          <div un-flex="~ items-center gap-3">
-            <span class="monitor-type-icon"><span class="i-lucide-server" un-w="17px" un-h="17px" aria-hidden="true" /></span>
+      <Card v-for="server in query.data.value.items" :key="server.id" class="server-card" as="article">
+        <div flex="~ items-center justify-between gap-3">
+          <div flex="~ items-center gap-3">
+            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
             <div>
               <h2>{{ server.name }}</h2>
-              <p class="muted" un-text="xs">
+              <p class="muted" un-text="13px $muted">
                 {{ server.host || server.id }}
               </p>
             </div>
           </div>
-          <span class="pill">{{ server.status }}</span>
+          <Badge>{{ server.status }}</Badge>
         </div>
         <div class="server-metrics">
           <div>
-            <span class="mini-label">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
+            <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.cpu || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
+            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.memory || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
+            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.disk || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label">{{ t('servers.updated') }}</span>
-            <p class="muted" un-text="xs" un-mt="2">
+            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.updated') }}</span>
+            <p mt="2" class="muted" un-text="13px $muted">
               {{ formatDate(server.updatedAt) }}
             </p>
-            <span v-if="server.stale" class="certificate-risk">{{ t('servers.staleData') }}</span>
+            <span v-if="server.stale" class="certificate-risk" un-text="12px $warning">{{ t('servers.staleData') }}</span>
           </div>
         </div>
-        <div class="section-divider" />
-        <button class="button ghost" un-p="0!" @click="detail(server)">
-          {{ t('servers.historyContainers') }}<span class="i-lucide-arrow-up-right" un-w="14px" un-h="14px" aria-hidden="true" />
-        </button>
-      </article>
+        <Separator />
+        <Button p="0!" variant="ghost" @click="detail(server)">
+          {{ t('servers.historyContainers') }}<span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-up-right" />
+        </Button>
+      </Card>
     </div>
   </AsyncState>
-  <p class="note" un-mt="6">
+  <Alert mt="6" as="p" variant="default">
     {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
-  </p>
+  </Alert>
   <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')">
     <form id="beszel-form" @submit.prevent="save">
-      <p class="note" un-mb="5">
+      <Alert mb="5" as="p" variant="default">
         {{ t('servers.supportsBeszel020XUseADedicated') }}
-      </p>
+      </Alert>
       <Field :label="t('servers.hubUrl')">
-        <input
-          v-model="config.url"
-          type="url"
-          placeholder="https://beszel.example.com"
-          required
-        >
-      </Field><Field :label="t('servers.dedicatedAccountEmail')" un-mt="4">
+        <input v-model="config.url" type="url" placeholder="https://beszel.example.com" required>
+      </Field><Field :label="t('servers.dedicatedAccountEmail')" mt="4">
         <input v-model="config.email" type="email" required>
-      </Field><Field :label="t('servers.passwordSecretReference')" un-mt="4">
-        <SecretSelect
-          v-model="config.passwordSecretId"
-          :secrets="secrets.data.value?.items || []"
-        />
-      </Field><Field :label="t('servers.syncIntervalSeconds')" un-mt="4">
+      </Field><Field :label="t('servers.passwordSecretReference')" mt="4">
+        <SecretSelect v-model="config.passwordSecretId" :secrets="secrets.data.value?.items || []" />
+      </Field><Field :label="t('servers.syncIntervalSeconds')" mt="4">
         <input v-model.number="config.pollSeconds" type="number" min="30" required>
-      </Field><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" un-mt="5" />
-      <p v-if="error" class="inline-error">
+      </Field><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" mt="5" />
+      <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
-      </p>
+      </FieldError>
     </form>
     <template #footer>
-      <button class="button" @click="configOpen = false">
+      <Button @click="configOpen = false">
         {{ t('common.cancel') }}
-      </button><button class="button primary" form="beszel-form" :disabled="saving">
-        <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('servers.saveConnection') }}
-      </button>
+      </Button><Button form="beszel-form" :disabled="saving" variant="primary">
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('servers.saveConnection') }}
+      </Button>
     </template>
   </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>
-    <div v-if="selected?.info" class="hint-grid" un-mb="5">
+    <div v-if="selected?.info" mb="5" class="hint-grid" grid="~ cols-2" gap="15px">
       <div>
-        <span class="mini-label">{{ t('servers.hostname') }}</span>
+        <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
       </div>
       <div>
-        <span class="mini-label">CPU</span>
+        <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span>
         <p>{{ selected.info.cpuModel || '—' }}</p>
-        <p class="muted">
+        <p class="muted" un-text="13px $muted">
           {{ selected.info.cores }} {{ t('servers.cores') }} / {{ selected.info.threads }}
           {{ t('servers.threads') }}
         </p>
       </div>
       <div>
-        <span class="mini-label">{{ t('servers.systemAgent') }}</span>
+        <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.systemAgent') }}</span>
         <p>{{ selected.info.kernel || '—' }}</p>
-        <p class="muted">
+        <p class="muted" un-text="13px $muted">
           {{ selected.info.agentVersion || '—' }} ·
           {{ duration(selected.info.uptimeSeconds * 1000) }}
         </p>
       </div>
     </div>
     <AsyncState :pending="detailLoading" :error="detailError" @retry="selected && detail(selected)">
-      <Tabs.Root v-model="tab">
-        <Tabs.List class="tabs-list">
-          <Tabs.Trigger class="tabs-trigger" value="history">
+      <TabsRoot v-model="tab">
+        <TabsList>
+          <TabsTrigger value="history">
             {{
               t('servers.history')
             }}
-          </Tabs.Trigger><Tabs.Trigger class="tabs-trigger" value="containers">
+          </TabsTrigger><TabsTrigger value="containers">
             {{
               t('servers.containers')
             }}
-          </Tabs.Trigger>
-        </Tabs.List><Tabs.Content value="history">
-          <div un-flex="~ items-center justify-between gap-3" un-mt="5">
-            <p class="note">
+          </TabsTrigger>
+        </TabsList><TabsContent value="history">
+          <div flex="~ items-center justify-between gap-3" mt="5">
+            <Alert as="p" variant="default">
               {{ t('common.source') }}: {{ historyMeta?.source || 'Beszel' }} ·
               {{ formatDate(historyMeta?.syncedAt)
               }}<span v-if="historyMeta?.stale"> · {{ t('common.staleData') }}</span>
-            </p>
-            <select
-              v-model="historyRange"
-              :aria-label="t('servers.historyRange')"
-              @change="selected && detail(selected)"
-            >
+            </Alert>
+            <select v-model="historyRange" :aria-label="t('servers.historyRange')" @change="selected && detail(selected)">
               <option v-for="range in ['1h', '12h', '24h', '1w', '30d']" :key="range">
                 {{ range }}
               </option>
             </select>
           </div>
-          <p v-if="historyMeta?.error" class="inline-error">
+          <FieldError v-if="historyMeta?.error" as="p" py="10px" px="0">
             {{ historyMeta.error }}
-          </p>
+          </FieldError>
           <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
-          <div v-else un-py="6">
-            <div class="hint-grid">
+          <div v-else py="6">
+            <div class="hint-grid" grid="~ cols-2" gap="15px">
               <section>
                 <h3>CPU (%)</h3>
-                <Sparkline
-                  show-scale
-                  :values="history.map((x) => x.cpu)"
-                  :timestamps="history.map((x) => x.at)"
-                  :height="115"
-                />
+                <Sparkline show-scale :values="history.map((x) => x.cpu)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
               <section>
                 <h3>{{ t('common.memory') }} (%)</h3>
-                <Sparkline
-                  show-scale
-                  :values="history.map((x) => x.memory)"
-                  :timestamps="history.map((x) => x.at)"
-                  :height="115"
-                />
+                <Sparkline show-scale :values="history.map((x) => x.memory)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
               <section>
                 <h3>{{ t('servers.disk2') }} (%)</h3>
-                <Sparkline
-                  show-scale
-                  :values="history.map((x) => x.disk)"
-                  :timestamps="history.map((x) => x.at)"
-                  :height="115"
-                />
+                <Sparkline show-scale :values="history.map((x) => x.disk)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
               <section>
                 <h3>{{ t('servers.networkReceived') }} (MiB/s)</h3>
-                <Sparkline
-                  show-scale
-                  :values="history.map((x) => x.networkIn / 1048576)"
-                  :timestamps="history.map((x) => x.at)"
-                  :height="115"
-                />
+                <Sparkline show-scale :values="history.map((x) => x.networkIn / 1048576)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
               <section>
                 <h3>{{ t('servers.networkSent') }} (MiB/s)</h3>
-                <Sparkline
-                  show-scale
-                  :values="history.map((x) => x.networkOut / 1048576)"
-                  :timestamps="history.map((x) => x.at)"
-                  :height="115"
-                />
+                <Sparkline show-scale :values="history.map((x) => x.networkOut / 1048576)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
             </div>
-            <p class="muted" un-text="xs" un-mt="5">
+            <p mt="5" class="muted" un-text="13px $muted">
               {{ formatDate(history[0]?.at) }} — {{ formatDate(history.at(-1)?.at) }}
             </p>
           </div>
-        </Tabs.Content><Tabs.Content value="containers">
-          <p class="note" un-mt="5">
+        </TabsContent><TabsContent value="containers">
+          <Alert mt="5" as="p" variant="default">
             {{ t('common.source') }}: {{ containersMeta?.source || 'Beszel' }} ·
             {{ formatDate(containersMeta?.syncedAt)
             }}<span v-if="containersMeta?.stale"> · {{ t('common.staleData') }}</span>
-          </p>
-          <p v-if="containersMeta?.error" class="inline-error">
+          </Alert>
+          <FieldError v-if="containersMeta?.error" as="p" py="10px" px="0">
             {{ containersMeta.error }}
-          </p>
+          </FieldError>
           <EmptyState v-if="!containers.length" :title="t('servers.noVisibleContainerData')" />
-          <div v-else class="table-wrap" un-mt="5">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>{{ t('servers.container') }}</th>
-                  <th>{{ t('common.status') }}</th>
-                  <th>CPU</th>
-                  <th>{{ t('common.memory') }} (MiB)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="container in containers" :key="container.id || container.name">
-                  <td>
-                    <span class="monitor-name">{{ container.name }}</span><span class="monitor-sub">{{ container.image }}</span>
-                  </td>
-                  <td>{{ container.status }}</td>
-                  <td>{{ percentage(container.cpu) }}</td>
-                  <td>
+          <TableContainer v-else mt="5">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{{ t('servers.container') }}</TableHead>
+                  <TableHead>{{ t('common.status') }}</TableHead>
+                  <TableHead>CPU</TableHead>
+                  <TableHead>{{ t('common.memory') }} (MiB)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="container in containers" :key="container.id || container.name">
+                  <TableCell>
+                    <span class="monitor-name block" font="600" un-text="13px">{{ container.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ container.image }}</span>
+                  </TableCell>
+                  <TableCell>{{ container.status }}</TableCell>
+                  <TableCell>{{ percentage(container.cpu) }}</TableCell>
+                  <TableCell>
                     {{
                       n(container.memory, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
                     }}
                     MiB
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Tabs.Content>
-      </Tabs.Root>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabsContent>
+      </TabsRoot>
     </AsyncState>
   </Modal>
 </template>

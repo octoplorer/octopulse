@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Settings as OrganizationSettings } from '../../../client/types.gen'
-import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -12,6 +11,11 @@ import {
 import AsyncState from '../../../components/AsyncState.vue'
 import Field from '../../../components/Field.vue'
 import PageHeader from '../../../components/PageHeader.vue'
+import { Alert } from '../../../components/ui/alert'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldActions, FieldGroup, FieldSection } from '../../../components/ui/field'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { currentUser, isAdmin } from '../../../composables/api'
 import { languageOptions } from '../../../composables/i18n'
 import { notify } from '../../../composables/notices'
@@ -109,46 +113,39 @@ async function saveProfile() {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('common.settings')"
-    :description="t('settings.configureTheWorkspaceForYourOrganizationAndYour')"
-  /><AsyncState :pending="loading">
-    <div v-if="error" class="validation-error" role="alert">
+  <PageHeader :title="t('common.settings')" :description="t('settings.configureTheWorkspaceForYourOrganizationAndYour')" /><AsyncState :pending="loading">
+    <Alert v-if="error" role="alert" variant="validation">
       {{ error }}
-    </div>
-    <section class="card" un-max-w="4xl">
-      <Tabs.Root v-model="tab">
-        <Tabs.List class="tabs-list">
-          <Tabs.Trigger class="tabs-trigger" value="personal">
+    </Alert>
+    <Card max-w="4xl" as="section">
+      <TabsRoot v-model="tab">
+        <TabsList>
+          <TabsTrigger value="personal">
             {{
               t('settings.personalPreferences')
             }}
-          </Tabs.Trigger><Tabs.Trigger class="tabs-trigger" value="organization">
+          </TabsTrigger><TabsTrigger value="organization">
             {{
               t('settings.organizationSettings')
             }}
-          </Tabs.Trigger><Tabs.Trigger v-if="isAdmin()" class="tabs-trigger" value="retention">
+          </TabsTrigger><TabsTrigger v-if="isAdmin()" value="retention">
             {{
               t('settings.dataRetention')
             }}
-          </Tabs.Trigger>
-        </Tabs.List><Tabs.Content value="personal">
+          </TabsTrigger>
+        </TabsList><TabsContent value="personal">
           <form @submit.prevent="saveProfile">
-            <div class="form-section">
+            <FieldSection>
               <h2>{{ t('settings.displayPreferences') }}</h2>
-              <p class="muted">
+              <p class="muted" un-text="13px $muted">
                 {{ t('settings.yourDisplayTimeZoneDoesNotChangeUtc') }}
               </p>
-              <div class="form-grid">
+              <FieldGroup>
                 <Field :label="t('common.displayName')">
                   <input v-model="profile.name">
                 </Field><Field :label="t('common.language')">
                   <select v-model="profile.locale">
-                    <option
-                      v-for="language in languageOptions"
-                      :key="language.value"
-                      :value="language.value"
-                    >
+                    <option v-for="language in languageOptions" :key="language.value" :value="language.value">
                       {{ language.label }}
                     </option>
                   </select>
@@ -167,132 +164,86 @@ async function saveProfile() {
                     </option>
                   </select>
                 </Field>
-              </div>
-            </div>
-            <div class="form-section">
+              </FieldGroup>
+            </FieldSection>
+            <FieldSection>
               <h2>{{ t('settings.changePassword') }}</h2>
-              <p class="muted">
+              <p class="muted" un-text="13px $muted">
                 {{ t('settings.leaveEmptyToKeepYourPassword') }}
               </p>
-              <div class="form-grid">
+              <FieldGroup>
                 <Field :label="t('settings.currentPassword')">
-                  <input
-                    v-model="profile.oldPassword"
-                    type="password"
-                    autocomplete="current-password"
-                    :required="!!profile.password"
-                  >
-                </Field><Field
-                  :label="t('settings.newPassword')"
-                  :hint="t('common.atLeast12CharactersUpTo72Bytes')"
-                >
-                  <input
-                    v-model="profile.password"
-                    type="password"
-                    autocomplete="new-password"
-                    minlength="12"
-                    maxlength="72"
-                  >
+                  <input v-model="profile.oldPassword" type="password" autocomplete="current-password" :required="!!profile.password">
+                </Field><Field :label="t('settings.newPassword')" :hint="t('common.atLeast12CharactersUpTo72Bytes')">
+                  <input v-model="profile.password" type="password" autocomplete="new-password" minlength="12" maxlength="72">
                 </Field>
-              </div>
-              <div class="form-actions">
-                <button class="button primary" :disabled="saving">
-                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.savePreferences') }}
-                </button>
-              </div>
-            </div>
+              </FieldGroup>
+              <FieldActions>
+                <Button :disabled="saving" variant="primary">
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.savePreferences') }}
+                </Button>
+              </FieldActions>
+            </FieldSection>
           </form>
-        </Tabs.Content><Tabs.Content value="organization">
+        </TabsContent><TabsContent value="organization">
           <form @submit.prevent="saveOrganization">
-            <div class="form-section">
+            <FieldSection>
               <h2>{{ t('settings.organization') }}</h2>
-              <p class="muted">
+              <p class="muted" un-text="13px $muted">
                 {{ t('settings.organizationSettingsProvideDefaultsForAccountsAndMaintenance') }}
               </p>
-              <div class="form-grid">
+              <FieldGroup>
                 <Field :label="t('common.organizationName')">
                   <input v-model="form.organizationName" :disabled="!isAdmin()" required>
                 </Field><Field :label="t('common.organizationTimeZone')">
                   <input v-model="form.timezone" :disabled="!isAdmin()" required>
                 </Field><Field :label="t('settings.defaultLanguage')">
                   <select v-model="form.locale" :disabled="!isAdmin()">
-                    <option
-                      v-for="language in languageOptions"
-                      :key="language.value"
-                      :value="language.value"
-                    >
+                    <option v-for="language in languageOptions" :key="language.value" :value="language.value">
                       {{ language.label }}
                     </option>
                   </select>
-                </Field><Field
-                  class="span-full"
-                  :label="t('settings.allowedStatusPageDomainsOnePerLine')"
-                  :hint="t('settings.hostnamesOnlyWithoutSchemeOrPathConfigureDns')"
-                >
-                  <textarea
-                    v-model="domains"
-                    :disabled="!isAdmin()"
-                    placeholder="status.example.com"
-                  />
+                </Field><Field :label="t('settings.allowedStatusPageDomainsOnePerLine')" :hint="t('settings.hostnamesOnlyWithoutSchemeOrPathConfigureDns')" class="span-full">
+                  <textarea v-model="domains" :disabled="!isAdmin()" placeholder="status.example.com" />
                 </Field>
-              </div>
-              <div v-if="isAdmin()" class="form-actions">
-                <button class="button primary" :disabled="saving">
-                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.saveOrganization') }}
-                </button>
-              </div>
-            </div>
+              </FieldGroup>
+              <FieldActions v-if="isAdmin()">
+                <Button :disabled="saving" variant="primary">
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.saveOrganization') }}
+                </Button>
+              </FieldActions>
+            </FieldSection>
           </form>
-        </Tabs.Content><Tabs.Content v-if="isAdmin()" value="retention">
+        </TabsContent><TabsContent v-if="isAdmin()" value="retention">
           <form @submit.prevent="saveOrganization">
-            <div class="form-section">
+            <FieldSection>
               <h2>{{ t('settings.historyRetention') }}</h2>
-              <p class="muted">
+              <p class="muted" un-text="13px $muted">
                 {{ t('settings.configureRawAndAggregatedHistoryWindowsCleanupRuns') }}
               </p>
-              <div class="form-grid">
+              <FieldGroup>
                 <Field :label="t('settings.rawRoundsDays')">
-                  <input
-                    v-model.number="form.retention.roundDays"
-                    type="number"
-                    min="1"
-                    required
-                  >
+                  <input v-model.number="form.retention.roundDays" type="number" min="1" required>
                 </Field><Field :label="t('settings.attemptDetailsDays')">
-                  <input
-                    v-model.number="form.retention.attemptDays"
-                    type="number"
-                    min="1"
-                    required
-                  >
+                  <input v-model.number="form.retention.attemptDays" type="number" min="1" required>
                 </Field><Field :label="t('settings.5MinuteAggregatesDays')">
-                  <input
-                    v-model.number="form.retention.fiveMinuteDays"
-                    type="number"
-                    min="1"
-                    required
-                  >
+                  <input v-model.number="form.retention.fiveMinuteDays" type="number" min="1" required>
                 </Field><Field :label="t('settings.hourlyAggregatesStateIntervalsMonths')">
-                  <input
-                    v-model.number="form.retention.historyMonths"
-                    type="number"
-                    min="1"
-                    required
-                  >
+                  <input v-model.number="form.retention.historyMonths" type="number" min="1" required>
                 </Field>
-              </div>
-              <p class="note" un-mt="6">
+              </FieldGroup>
+              <Alert mt="6" as="p" variant="default">
                 {{ t('settings.completeRequestResponseBodiesAndSecretHeadersAre') }}
-              </p>
-              <div class="form-actions">
-                <button class="button primary" :disabled="saving">
-                  <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('settings.saveRetention') }}
-                </button>
-              </div>
-            </div>
+              </Alert>
+              <FieldActions>
+                <Button :disabled="saving" variant="primary">
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.saveRetention') }}
+                </Button>
+              </FieldActions>
+            </FieldSection>
           </form>
-        </Tabs.Content>
-      </Tabs.Root>
-    </section>
+        </TabsContent>
+      </TabsRoot>
+    </Card>
   </AsyncState>
 </template>

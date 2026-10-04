@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import Field from './Field.vue'
 import SecretSelect from './SecretSelect.vue'
 import Toggle from './Toggle.vue'
+import { FieldGroup } from './ui/field'
 
 defineProps<{ secrets: Secret[], allowToggle?: boolean }>()
 
@@ -20,9 +21,9 @@ const model = defineModel<TLSConfigForm>({ required: true })
       v-if="allowToggle"
       v-model="model.enabled"
       :label="t('tLSFields.enableTls')"
-      un-mb="5"
+      mb="5"
     />
-    <div class="form-grid">
+    <FieldGroup>
       <Field :label="t('tLSFields.sniServerName')">
         <input v-model="model.serverName" :placeholder="t('tLSFields.useTargetHostname')">
       </Field><Field :label="t('tLSFields.customCaSecret')">
@@ -59,6 +60,6 @@ const model = defineModel<TLSConfigForm>({ required: true })
           :description="t('tLSFields.forKnownSelfSignedServicesVerificationIsEnabled')"
         />
       </div>
-    </div>
+    </FieldGroup>
   </div>
 </template>

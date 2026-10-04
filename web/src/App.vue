@@ -4,6 +4,7 @@ import { useHead } from '@unhead/vue'
 import { watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
+import { Toast, ToastClose, ToastViewport } from './components/ui/toast'
 import { currentUser } from './composables/api'
 import { dismissNotice, notices } from './composables/notices'
 import { dark } from './composables/preferences'
@@ -33,11 +34,11 @@ watch(
 
 <template>
   <RouterView />
-  <div class="toast-stack" :data-theme="dark ? 'dark' : 'light'" aria-live="polite">
-    <div v-for="item in notices" :key="item.id" class="toast" :class="item.kind">
-      <span>{{ item.message }}</span><button :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
+  <ToastViewport :data-theme="dark ? 'dark' : 'light'">
+    <Toast v-for="item in notices" :key="item.id" :variant="item.kind">
+      <span>{{ item.message }}</span><ToastClose :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
         ×
-      </button>
-    </div>
-  </div>
+      </ToastClose>
+    </Toast>
+  </ToastViewport>
 </template>

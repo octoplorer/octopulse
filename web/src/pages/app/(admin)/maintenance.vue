@@ -16,6 +16,11 @@ import EmptyState from '../../../components/EmptyState.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
+import { Badge } from '../../../components/ui/badge'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldError, FieldGroup, FieldLabel } from '../../../components/ui/field'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { canEdit } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import {
@@ -117,41 +122,34 @@ function confirmDelete(value: Maintenance) {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.maintenance')"
-    :description="t('maintenance.plannedWorkKeepsCollectionRunningExcludesDurationAnd')"
-  >
-    <button v-if="canEdit()" class="button primary" @click="edit()">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.scheduleMaintenance') }}
-    </button>
+  <PageHeader :title="t('navigation.maintenance')" :description="t('maintenance.plannedWorkKeepsCollectionRunningExcludesDurationAnd')">
+    <Button v-if="canEdit()" variant="primary" @click="edit()">
+      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.scheduleMaintenance') }}
+    </Button>
   </PageHeader>
-  <section class="card">
+  <Card as="section">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState
-        v-if="!query.data.value?.items.length"
-        :title="t('maintenance.noScheduledMaintenance')"
-        :description="t('maintenance.planAnUpgradeWindowAndInformStatusPage')"
-      />
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ t('maintenance.maintenance') }}</th>
-              <th>{{ t('maintenance.window') }}</th>
-              <th>{{ t('maintenance.scope') }}</th>
-              <th>{{ t('common.status') }}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="window in query.data.value.items" :key="window.id">
-              <td>
-                <span class="monitor-name" un-flex="~ items-center gap-2"><span class="i-lucide-calendar-clock" un-w="15px" un-h="15px" aria-hidden="true" />{{ window.name }}</span><span class="monitor-sub">{{ window.description }}</span>
-              </td>
-              <td class="muted" un-text="xs">
+      <EmptyState v-if="!query.data.value?.items.length" :title="t('maintenance.noScheduledMaintenance')" :description="t('maintenance.planAnUpgradeWindowAndInformStatusPage')" />
+      <TableContainer v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t('maintenance.maintenance') }}</TableHead>
+              <TableHead>{{ t('maintenance.window') }}</TableHead>
+              <TableHead>{{ t('maintenance.scope') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="window in query.data.value.items" :key="window.id">
+              <TableCell>
+                <span flex="~ items-center gap-2" class="monitor-name block" font="600" un-text="13px"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-calendar-clock" />{{ window.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ window.description }}</span>
+              </TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ formatDate(window.startsAt) }}<br>{{ formatDate(window.endsAt) }}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {{
                   t(
                     'counts.monitors',
@@ -159,91 +157,79 @@ function confirmDelete(value: Maintenance) {
                     window.monitorIds.length,
                   )
                 }}
-              </td>
-              <td>
-                <span class="pill">{{ maintenanceStatus(window) }}</span>
-              </td>
-              <td>
-                <div v-if="canEdit()" un-flex="~ gap-1">
-                  <button class="icon-button" :aria-label="t('common.edit')" @click="edit(window)">
-                    <span class="i-lucide-pencil" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
-                    :aria-label="t('common.delete')"
-                    @click="confirmDelete(window)"
-                  >
-                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+              </TableCell>
+              <TableCell>
+                <Badge>{{ maintenanceStatus(window) }}</Badge>
+              </TableCell>
+              <TableCell>
+                <div v-if="canEdit()" flex="~ gap-1">
+                  <Button :aria-label="t('common.edit')" size="icon" @click="edit(window)">
+                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
+                  </Button><Button :aria-label="t('common.delete')" size="icon" @click="confirmDelete(window)">
+                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
+                  </Button>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </AsyncState>
-  </section>
-  <Modal
-    v-model:open="open"
-    :title="form.id ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')"
-    wide
-  >
+  </Card>
+  <Modal v-model:open="open" :title="form.id ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')" wide>
     <form id="maintenance-form" @submit.prevent="save">
-      <div class="form-grid">
-        <Field class="span-full" :label="t('common.name')">
+      <FieldGroup>
+        <Field :label="t('common.name')" class="span-full">
           <input v-model="form.name" required>
-        </Field><Field class="span-full" :label="t('maintenance.description')">
+        </Field><Field :label="t('maintenance.description')" class="span-full">
           <textarea v-model="form.description" />
         </Field><Field :label="t('maintenance.startsAt')">
           <input v-model="start" type="datetime-local" required>
         </Field><Field :label="t('maintenance.endsAt')">
           <input v-model="end" type="datetime-local" required>
-        </Field><Field
-          class="span-full"
-          :label="t('maintenance.windowTimeZone')"
-          :hint="t('maintenance.theInputsAboveAreInterpretedAsWallClock')"
-        >
+        </Field><Field :label="t('maintenance.windowTimeZone')" :hint="t('maintenance.theInputsAboveAreInterpretedAsWallClock')" class="span-full">
           <input v-model="form.timezone" required placeholder="Asia/Shanghai">
         </Field>
         <div class="span-full">
-          <label class="field-label">{{ t('maintenance.affectedMonitors') }}</label>
-          <div class="checkbox-group" un-mt="3">
-            <label
-              v-for="monitor in monitors.data.value?.items"
-              :key="monitor.id"
-              class="checkbox-label"
-            ><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
+          <FieldLabel as="label">
+            {{ t('maintenance.affectedMonitors') }}
+          </FieldLabel>
+          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
               monitor.name
             }}</label>
           </div>
         </div>
         <div class="span-full">
-          <label class="field-label">{{ t('maintenance.showOnStatusPages') }}</label>
-          <div class="checkbox-group" un-mt="3">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
+          <FieldLabel as="label">
+            {{ t('maintenance.showOnStatusPages') }}
+          </FieldLabel>
+          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
               page.name
             }}</label>
           </div>
         </div>
-      </div>
-      <p v-if="error" class="inline-error">
+      </FieldGroup>
+      <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
-      </p>
+      </FieldError>
     </form>
     <template #footer>
-      <button class="button" @click="open = false">
+      <Button @click="open = false">
         {{ t('common.cancel') }}
-      </button><button class="button primary" form="maintenance-form" :disabled="saving">
+      </Button><Button form="maintenance-form" :disabled="saving" variant="primary">
         {{ t('maintenance.saveSchedule') }}
-      </button>
+      </Button>
     </template>
   </Modal><Modal v-model:open="deleteOpen" :title="t('maintenance.deleteMaintenance')">
     <p>{{ deleteTarget?.name }}</p>
     <template #footer>
-      <button class="button" @click="deleteOpen = false">
+      <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </button><button class="button danger" @click="remove">
+      </Button><Button variant="danger" @click="remove">
         {{ t('common.delete') }}
-      </button>
+      </Button>
     </template>
   </Modal>
 </template>

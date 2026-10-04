@@ -26,6 +26,10 @@ import Field from './Field.vue'
 import Modal from './Modal.vue'
 import PageHeader from './PageHeader.vue'
 import StatusPage from './StatusPage.vue'
+import { Alert } from './ui/alert'
+import { Button } from './ui/button'
+import { Card } from './ui/card'
+import { FieldActions, FieldDescription, FieldGroup, FieldLabel, FieldSection } from './ui/field'
 
 const { t } = useI18n({ useScope: 'global' })
 const queryCache = useQueryCache()
@@ -315,28 +319,30 @@ async function remove() {
     "
     :description="t('pageEditor.customizeEachPageIndependentlySaveADraftThen')"
   >
-    <RouterLink to="/app/pages" class="button ghost">
-      <span class="i-lucide-arrow-left" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.allPages') }}
-    </RouterLink><template v-if="canEdit()">
-      <button class="button" :disabled="saving" @click="save()">
-        <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
-      </button><button class="button primary" :disabled="saving" @click="save(true)">
-        <span class="i-lucide-send" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.publishPage') }}
-      </button>
+    <Button as-child variant="ghost">
+      <RouterLink to="/app/pages">
+        <span class="i-lucide-arrow-left" w="14px" h="14px" aria-hidden="true" />{{ t('pageEditor.allPages') }}
+      </RouterLink>
+    </Button><template v-if="canEdit()">
+      <Button :disabled="saving" @click="save()">
+        <span class="i-lucide-save" w="14px" h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
+      </Button><Button :disabled="saving" variant="primary" @click="save(true)">
+        <span class="i-lucide-send" w="14px" h="14px" aria-hidden="true" />{{ t('pageEditor.publishPage') }}
+      </Button>
     </template>
   </PageHeader><AsyncState :pending="loading">
-    <div v-if="error" class="validation-error" role="alert">
+    <Alert v-if="error" role="alert" variant="validation">
       {{ error }}
-    </div>
-    <div class="editor-layout">
+    </Alert>
+    <div class="editor-layout" grid="~ cols-[minmax(0,1fr)_minmax(320px,0.8fr)]" gap="24px">
       <div>
-        <section class="card">
-          <div class="form-section">
+        <Card as="section">
+          <FieldSection>
             <h2>{{ t('pageEditor.pageAccess') }}</h2>
-            <p class="muted">
+            <p un-text="13px $muted">
               {{ t('pageEditor.pathAndCustomDomainServeTheSamePublished') }}
             </p>
-            <div class="form-grid">
+            <FieldGroup>
               <Field :label="t('pageEditor.internalPageName')">
                 <input v-model="form.name" :disabled="!canEdit()" required>
               </Field><Field
@@ -364,44 +370,48 @@ async function remove() {
                   </option>
                 </select>
               </Field>
-            </div>
-            <p v-if="form.publishedAt" class="note" un-mt="5">
+            </FieldGroup>
+            <Alert v-if="form.publishedAt" mt="5" as="p">
               {{ t('pageEditor.lastPublished') }} {{ formatDate(form.publishedAt) }} · v{{
                 form.version
-              }}<a
-                :href="publishedEntry(form).url"
-                class="button small ghost"
-                target="_blank"
-                rel="noopener"
-              ><span class="i-lucide-external-link" un-w="12px" un-h="12px" aria-hidden="true" />{{ t('pageEditor.visitPublicPage') }}</a>
-            </p>
-          </div>
-          <div class="form-section">
+              }}<Button as-child variant="ghost" size="sm">
+                <a
+                  :href="publishedEntry(form).url"
+
+                  target="_blank"
+                  rel="noopener"
+                ><span class="i-lucide-external-link" w="12px" h="12px" aria-hidden="true" />{{ t('pageEditor.visitPublicPage') }}</a>
+              </Button>
+            </Alert>
+          </FieldSection>
+          <FieldSection>
             <h2>{{ t('pageEditor.brandAppearance') }}</h2>
-            <p class="muted">
+            <p un-text="13px $muted">
               {{ t('pageEditor.theseSettingsApplyOnlyToThisStatusPage') }}
             </p>
-            <div class="form-grid">
+            <FieldGroup>
               <Field class="span-full" :label="t('pageEditor.publicTitle')">
                 <input v-model="form.draft.title" :disabled="!canEdit()" required>
               </Field><Field class="span-full" :label="t('pageEditor.pageDescription')">
                 <textarea v-model="form.draft.description" :disabled="!canEdit()" rows="3" />
               </Field><Field class="span-full" :label="t('pageEditor.logoUrl')">
-                <div class="field-row">
+                <div class="field-row" flex="~ items-center gap-10px">
                   <input
                     v-model="form.draft.logoUrl"
                     :disabled="!canEdit()"
                     :placeholder="t('pageEditor.logoPlaceholder')"
-                  ><label v-if="canEdit()" class="button"><span class="i-lucide-upload" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('pageEditor.upload')
-                  }}<input
-                    type="file"
-                    accept="image/png,image/jpeg,image/gif"
-                    un-hidden=""
-                    @change="uploadLogo"
-                  ></label>
+                  ><Button v-if="canEdit()" as-child>
+                    <label><span class="i-lucide-upload" w="14px" h="14px" aria-hidden="true" />{{ t('pageEditor.upload')
+                    }}<input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif"
+                      hidden=""
+                      @change="uploadLogo"
+                    ></label>
+                  </Button>
                 </div>
               </Field><Field :label="t('pageEditor.brandColor')">
-                <div class="field-row">
+                <div class="field-row" flex="~ items-center gap-10px">
                   <input
                     v-model="form.draft.brandColor"
                     type="color"
@@ -426,12 +436,14 @@ async function remove() {
                 </select>
               </Field>
               <div class="span-full">
-                <label class="field-label">{{ t('pageEditor.publicLinks') }}</label>
+                <FieldLabel as="label">
+                  {{ t('pageEditor.publicLinks') }}
+                </FieldLabel>
                 <div
                   v-for="(link, index) in form.draft.links"
                   :key="index"
-                  class="link-editor"
-                  un-mt="3"
+                  class="link-editor" grid="~ cols-[1fr_2fr_auto]" gap="9px" mb="9px"
+                  mt="3"
                 >
                   <input
                     v-model="link.label"
@@ -442,110 +454,113 @@ async function remove() {
                     :disabled="!canEdit()"
                     type="url"
                     placeholder="https://…"
-                  ><button
+                  ><Button
                     v-if="canEdit()"
-                    class="icon-button"
                     :aria-label="t('pageEditor.removeLink')"
+                    size="icon"
                     @click="form.draft.links.splice(index, 1)"
                   >
-                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+                    <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
+                  </Button>
                 </div>
-                <button
+                <Button
                   v-if="canEdit()"
-                  class="button small ghost"
-                  un-mt="2"
+                  mt="2"
+                  variant="ghost"
+                  size="sm"
                   @click="form.draft.links.push({ label: '', url: '' })"
                 >
-                  <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.addLink') }}
-                </button>
+                  <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.addLink') }}
+                </Button>
               </div>
-            </div>
-          </div>
-          <div class="form-section">
+            </FieldGroup>
+          </FieldSection>
+          <FieldSection>
             <h2>{{ t('pageEditor.servicesGroups') }}</h2>
-            <p class="muted">
+            <p un-text="13px $muted">
               {{ t('pageEditor.publishOnlySelectedMonitorsPublicAliasesLeaveInternal') }}
             </p>
-            <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor">
-              <div class="group-editor-header">
+            <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor" border="1px solid $border" rounded="9px" mt="15px" overflow="hidden">
+              <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="$surface-soft" border="b-1px b-solid b-$border">
                 <input
                   v-model="group.name"
                   :aria-label="t('common.groupName')"
                   :disabled="!canEdit()"
                   :placeholder="t('common.groupName')"
                 ><template v-if="canEdit()">
-                  <button
-                    class="icon-button"
+                  <Button
                     :disabled="index === 0"
                     :aria-label="t('pageEditor.moveGroupUp')"
+                    size="icon"
                     @click="move(form.draft.groups, index, -1)"
                   >
-                    <span class="i-lucide-arrow-up" un-w="13px" un-h="13px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
+                    <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
+                  </Button><Button
                     :disabled="index === form.draft.groups.length - 1"
                     :aria-label="t('pageEditor.moveGroupDown')"
+                    size="icon"
                     @click="move(form.draft.groups, index, 1)"
                   >
-                    <span class="i-lucide-arrow-down" un-w="13px" un-h="13px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
+                    <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
+                  </Button><Button
                     :aria-label="t('pageEditor.removeGroup')"
+                    size="icon"
                     @click="form.draft.groups.splice(index, 1)"
                   >
-                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+                    <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
+                  </Button>
                 </template>
               </div>
               <div
                 v-for="(item, mIndex) in group.monitors"
                 :key="item.monitorId"
-                class="group-editor-row"
+                class="group-editor-row" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0"
               >
-                <div un-flex="1" un-min-w="0">
-                  <span class="mini-label">{{
+                <div flex="1" min-w="0">
+                  <span un-text="12px $muted" tracking="0.5px">{{
                     monitors.find((x) => x.id === item.monitorId)?.name
                   }}</span><input
                     v-model="item.alias"
+                    flex="1"
+                    min-w="0"
                     :aria-label="t('common.publicAlias')"
                     :disabled="!canEdit()"
                     :placeholder="t('common.publicAlias')"
-                    un-mt="1"
+                    mt="1"
                   >
-                  <div un-flex="~ gap-4" un-mt="2">
-                    <label class="checkbox-label"><input v-model="item.showUptime" type="checkbox" :disabled="!canEdit()">{{
+                  <div flex="~ gap-4" mt="2">
+                    <label flex="~ items-center gap-8px" un-text="12px $text"><input v-model="item.showUptime" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
                       t('common.uptime')
-                    }}</label><label class="checkbox-label"><input v-model="item.showLatency" type="checkbox" :disabled="!canEdit()">{{
+                    }}</label><label flex="~ items-center gap-8px" un-text="12px $text"><input v-model="item.showLatency" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
                       t('pageEditor.latency')
                     }}</label>
                   </div>
                 </div>
                 <template v-if="canEdit()">
-                  <button
-                    class="icon-button"
+                  <Button
                     :disabled="mIndex === 0"
                     :aria-label="t('pageEditor.moveServiceUp')"
+                    size="icon"
                     @click="move(group.monitors, mIndex, -1)"
                   >
-                    <span class="i-lucide-arrow-up" un-w="13px" un-h="13px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
+                    <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
+                  </Button><Button
                     :disabled="mIndex === group.monitors.length - 1"
                     :aria-label="t('pageEditor.moveServiceDown')"
+                    size="icon"
                     @click="move(group.monitors, mIndex, 1)"
                   >
-                    <span class="i-lucide-arrow-down" un-w="13px" un-h="13px" aria-hidden="true" />
-                  </button><button
-                    class="icon-button"
+                    <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
+                  </Button><Button
                     :aria-label="t('pageEditor.removeService')"
+                    size="icon"
                     @click="group.monitors.splice(mIndex, 1)"
                   >
-                    <span class="i-lucide-x" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+                    <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
+                  </Button>
                 </template>
               </div>
-              <div v-if="canEdit()" class="group-editor-row">
+              <div v-if="canEdit()" class="group-editor-row" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0">
                 <select v-model="newMonitorIds[group.id]" :aria-label="t('common.selectAMonitor')">
                   <option value="">
                     {{ t('common.selectAMonitor') }}
@@ -553,15 +568,15 @@ async function remove() {
                   <option v-for="monitor in monitors" :key="monitor.id" :value="monitor.id">
                     {{ monitor.name }} · {{ monitor.type }}
                   </option>
-                </select><button class="button small" @click="addMonitor(group.id)">
-                  <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.add') }}
-                </button>
+                </select><Button size="sm" @click="addMonitor(group.id)">
+                  <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.add') }}
+                </Button>
               </div>
             </div>
-            <button
+            <Button
               v-if="canEdit()"
-              class="button small"
-              un-mt="4"
+              mt="4"
+              size="sm"
               @click="
                 form.draft.groups.push({
                   id: newID(),
@@ -570,31 +585,31 @@ async function remove() {
                 })
               "
             >
-              <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.addGroup') }}
-            </button>
-          </div>
-        </section>
-        <div class="form-actions">
-          <button
+              <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.addGroup') }}
+            </Button>
+          </FieldSection>
+        </Card>
+        <FieldActions>
+          <Button
             v-if="editing && canEdit()"
-            class="button danger"
-            un-mr="auto"
+            mr="auto"
+            variant="danger"
             @click="deleteOpen = true"
           >
-            <span class="i-lucide-trash-2" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('pageEditor.deletePage') }}
-          </button><button v-if="canEdit()" class="button primary" :disabled="saving" @click="save()">
-            <span class="i-lucide-save" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
-          </button>
-        </div>
+            <span class="i-lucide-trash-2" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.deletePage') }}
+          </Button><Button v-if="canEdit()" :disabled="saving" variant="primary" @click="save()">
+            <span class="i-lucide-save" w="14px" h="14px" aria-hidden="true" />{{ t('common.saveDraft') }}
+          </Button>
+        </FieldActions>
       </div>
-      <aside class="editor-preview">
-        <div class="preview-label">
+      <aside class="editor-preview" pos="sticky" top="20px" self="start">
+        <div class="preview-label" flex="~ items-center justify-between" un-text="12px $muted" mb="12px">
           <strong>{{ t('pageEditor.liveDraftPreview') }}</strong><span>{{ t('pageEditor.responsivePreview') }}</span>
         </div>
         <StatusPage :page="preview" preview />
-        <p class="field-hint" un-mt="3">
+        <FieldDescription as="p" mt="3">
           {{ t('pageEditor.savingRefreshesRealStatisticsNewlySelectedServicesShow') }}
-        </p>
+        </FieldDescription>
       </aside>
     </div>
   </AsyncState><Modal
@@ -603,11 +618,11 @@ async function remove() {
     :description="t('pageEditor.thePagePathAndDomainWillStopPublishing')"
   >
     <template #footer>
-      <button class="button" @click="deleteOpen = false">
+      <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </button><button class="button danger" @click="remove">
+      </Button><Button variant="danger" @click="remove">
         {{ t('common.delete') }}
-      </button>
+      </Button>
     </template>
   </Modal>
 </template>

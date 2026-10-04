@@ -49,7 +49,9 @@ const segments = computed(() => {
 <template>
   <svg
     v-if="segments.length"
-    class="sparkline"
+    class="block sparkline"
+    w="full"
+    overflow="visible"
     :style="{ height: `${height || 60}px`, color: color || 'var(--accent)' }"
     viewBox="0 0 300 60"
     preserveAspectRatio="none"
@@ -87,7 +89,7 @@ const segments = computed(() => {
       vector-effect="non-scaling-stroke"
     />
   </svg>
-  <div v-else class="chart-empty">
+  <div v-else class="chart-empty" h="60px" flex="~ items-center justify-center" un-text="$muted">
     —
   </div>
 </template>

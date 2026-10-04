@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Badge } from './ui/badge'
 
 const props = defineProps<{ state?: string, paused?: boolean, maintenance?: boolean }>()
 
@@ -29,9 +30,25 @@ const labels: Record<string, string> = {
   full_outage: 'states.full_outage',
   insufficient_data: 'states.insufficient_data',
 }
+const appearance: Record<string, 'success' | 'danger' | 'info' | 'warning' | 'muted'> = {
+  up: 'success',
+  normal: 'success',
+  operational: 'success',
+  healthy: 'success',
+  down: 'danger',
+  expired: 'danger',
+  full_outage: 'danger',
+  outage: 'danger',
+  maintenance: 'info',
+  expiring: 'warning',
+  partial_outage: 'warning',
+  partial: 'warning',
+}
 const label = computed(() => (labels[key.value] ? t(labels[key.value]!) : props.state))
 </script>
 
 <template>
-  <span class="state-badge" :data-state="key"><i />{{ label }}</span>
+  <Badge :variant="appearance[key] || 'muted'" :data-state="key" dot>
+    {{ label }}
+  </Badge>
 </template>

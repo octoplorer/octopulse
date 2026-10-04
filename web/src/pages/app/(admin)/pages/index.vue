@@ -5,6 +5,9 @@ import { listPagesQuery } from '../../../../client/@pinia/colada.gen'
 import AsyncState from '../../../../components/AsyncState.vue'
 import EmptyState from '../../../../components/EmptyState.vue'
 import PageHeader from '../../../../components/PageHeader.vue'
+import { Badge } from '../../../../components/ui/badge'
+import { Button } from '../../../../components/ui/button'
+import { Card } from '../../../../components/ui/card'
 import { canEdit } from '../../../../composables/api'
 import { formatDate } from '../../../../composables/preferences'
 import { publishedEntry } from '../../../../lib/pages'
@@ -20,63 +23,53 @@ const query = useQuery({
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.statusPages')"
-    :description="t('pages.shareServiceHealthAndUpdatesWithYourOwn')"
-  >
-    <RouterLink v-if="canEdit()" to="/app/pages/new" class="button primary">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.createStatusPage') }}
-    </RouterLink>
-  </PageHeader><AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-    <EmptyState
-      v-if="!query.data.value?.items.length"
-      :title="t('pages.buildYourFirstStatusPage')"
-      :description="t('pages.chooseBrandingPublicServicesAndGroupsPublishOn')"
-    >
-      <RouterLink v-if="canEdit()" to="/app/pages/new" class="button primary">
-        {{
-          t('common.createStatusPage')
-        }}
+  <PageHeader :title="t('navigation.statusPages')" :description="t('pages.shareServiceHealthAndUpdatesWithYourOwn')">
+    <Button v-if="canEdit()" variant="primary" as-child>
+      <RouterLink to="/app/pages/new">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.createStatusPage') }}
       </RouterLink>
+    </Button>
+  </PageHeader><AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+    <EmptyState v-if="!query.data.value?.items.length" :title="t('pages.buildYourFirstStatusPage')" :description="t('pages.chooseBrandingPublicServicesAndGroupsPublishOn')">
+      <Button v-if="canEdit()" variant="primary" as-child>
+        <RouterLink to="/app/pages/new">
+          {{
+            t('common.createStatusPage')
+          }}
+        </RouterLink>
+      </Button>
     </EmptyState>
     <div v-else class="cards-grid">
-      <article v-for="page in query.data.value.items" :key="page.id" class="card page-tile">
+      <Card v-for="page in query.data.value.items" :key="page.id" class="page-tile" as="article">
         <div class="page-preview-icon">
-          <span class="preview-status" :style="{ background: `${page.draft.brandColor}25` }" /><span
-            un-w="75%"
-          /><span un-w="95%" /><span un-w="85%" /><span un-w="65%" />
+          <span :style="{ background: `${page.draft.brandColor}25` }" class="preview-status" /><span w="75%" /><span w="95%" /><span w="85%" /><span w="65%" />
         </div>
-        <div un-flex="~ justify-between items-center gap-3">
+        <div flex="~ justify-between items-center gap-3">
           <h2>{{ page.name }}</h2>
-          <span class="pill">{{
-            page.publishedAt ? t('common.published') : t('common.draft')
-          }}</span>
+          <Badge>
+            {{
+              page.publishedAt ? t('common.published') : t('common.draft')
+            }}
+          </Badge>
         </div>
-        <p class="muted" un-text="xs">
+        <p class="muted" un-text="13px $muted">
           /{{ page.publishedAt ? publishedEntry(page).slug : page.slug }}
         </p>
-        <p
-          v-if="page.publishedAt ? publishedEntry(page).domain : page.domain"
-          class="muted"
-          un-text="xs"
-          un-flex="~ items-center gap-1.5"
-        >
-          <span class="i-lucide-globe" un-w="11px" un-h="11px" aria-hidden="true" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
+        <p v-if="page.publishedAt ? publishedEntry(page).domain : page.domain" flex="~ items-center gap-1.5" class="muted" un-text="13px $muted">
+          <span w="11px" h="11px" aria-hidden="true" class="i-lucide-globe" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
         </p>
         <div class="tile-actions">
-          <RouterLink :to="`/app/pages/${page.id}`" class="button small">
-            <span class="i-lucide-pencil" un-w="12px" un-h="12px" aria-hidden="true" />{{
-              canEdit() ? t('pages.customize') : t('pages.view')
-            }}
-          </RouterLink><a
-            v-if="page.publishedAt"
-            :href="publishedEntry(page).url"
-            target="_blank"
-            rel="noopener"
-            class="button small ghost"
-          >{{ t('pages.visit') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" /></a><span v-else class="muted" un-text="xs">{{ formatDate(page.updatedAt) }}</span>
+          <Button size="sm" as-child>
+            <RouterLink :to="`/app/pages/${page.id}`">
+              <span w="12px" h="12px" aria-hidden="true" class="i-lucide-pencil" />{{
+                canEdit() ? t('pages.customize') : t('pages.view')
+              }}
+            </RouterLink>
+          </Button><Button v-if="page.publishedAt" variant="ghost" size="sm" as-child>
+            <a :href="publishedEntry(page).url" target="_blank" rel="noopener">{{ t('pages.visit') }}<span w="13px" h="13px" aria-hidden="true" class="i-lucide-arrow-up-right" /></a>
+          </Button><span v-else class="muted" un-text="13px $muted">{{ formatDate(page.updatedAt) }}</span>
         </div>
-      </article>
+      </Card>
     </div>
   </AsyncState>
 </template>

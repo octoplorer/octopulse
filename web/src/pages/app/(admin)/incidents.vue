@@ -16,6 +16,13 @@ import EmptyState from '../../../components/EmptyState.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
+import { Alert } from '../../../components/ui/alert'
+import { Badge } from '../../../components/ui/badge'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldError, FieldGroup, FieldLabel } from '../../../components/ui/field'
+import { Separator } from '../../../components/ui/separator'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, TableToolbar } from '../../../components/ui/table'
 import { canEdit } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import { formatDate, statusLabel } from '../../../composables/preferences'
@@ -126,20 +133,17 @@ async function update() {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.incidents')"
-    :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')"
-  >
-    <button v-if="canEdit()" class="button primary" @click="create">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('incidents.createIncident') }}
-    </button>
+  <PageHeader :title="t('navigation.incidents')" :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')">
+    <Button v-if="canEdit()" variant="primary" @click="create">
+      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('incidents.createIncident') }}
+    </Button>
   </PageHeader>
-  <section class="card">
-    <div class="filter-bar">
+  <Card as="section">
+    <TableToolbar>
       <h2 un-text="sm">
         {{ t('incidents.incidentAnnouncements') }}
       </h2>
-      <select v-model="filter" un-w="auto!" :aria-label="t('incidents.incidentFilter')">
+      <select v-model="filter" w="auto!" :aria-label="t('incidents.incidentFilter')">
         <option value="active">
           {{ t('incidents.active') }}
         </option>
@@ -150,72 +154,60 @@ async function update() {
           {{ t('incidents.all') }}
         </option>
       </select>
-    </div>
+    </TableToolbar>
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState
-        v-if="!items.length"
-        :title="t('incidents.noIncidentsHere')"
-        :description="t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')"
-      />
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ t('incidents.incident') }}</th>
-              <th>{{ t('incidents.progress') }}</th>
-              <th>{{ t('incidents.impact') }}</th>
-              <th>{{ t('common.updated') }}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="incident in items" :key="incident.id">
-              <td>
-                <button class="button ghost" un-p="0!" @click="detail(incident)">
-                  <span class="i-lucide-message-square" un-w="15px" un-h="15px" aria-hidden="true" />{{ incident.title }}
-                </button><span class="monitor-sub">{{
+      <EmptyState v-if="!items.length" :title="t('incidents.noIncidentsHere')" :description="t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')" />
+      <TableContainer v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t('incidents.incident') }}</TableHead>
+              <TableHead>{{ t('incidents.progress') }}</TableHead>
+              <TableHead>{{ t('incidents.impact') }}</TableHead>
+              <TableHead>{{ t('common.updated') }}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="incident in items" :key="incident.id">
+              <TableCell>
+                <Button p="0!" variant="ghost" @click="detail(incident)">
+                  <span w="15px" h="15px" aria-hidden="true" class="i-lucide-message-square" />{{ incident.title }}
+                </Button><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{
                   t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
                 }}</span>
-              </td>
-              <td>
-                <span class="pill">{{ statusLabel(incident.status) }}</span>
-              </td>
-              <td>{{ statusLabel(incident.impact) }}</td>
-              <td class="muted" un-text="xs">
+              </TableCell>
+              <TableCell>
+                <Badge>{{ statusLabel(incident.status) }}</Badge>
+              </TableCell>
+              <TableCell>{{ statusLabel(incident.impact) }}</TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ formatDate(incident.updatedAt) }}
-              </td>
-              <td>
-                <button class="button small" @click="detail(incident)">
+              </TableCell>
+              <TableCell>
+                <Button size="sm" @click="detail(incident)">
                   {{ t('incidents.viewUpdates') }}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </AsyncState>
-  </section>
-  <p class="note" un-mt="5">
+  </Card>
+  <Alert mt="5" as="p" variant="default">
     {{ t('incidents.activeIncidentsMayRaiseAPageSImpact') }}
-  </p>
-  <Modal
-    v-model:open="open"
-    :title="form.id ? t('incidents.editIncident') : t('incidents.createIncident2')"
-    wide
-  >
+  </Alert>
+  <Modal v-model:open="open" :title="form.id ? t('incidents.editIncident') : t('incidents.createIncident2')" wide>
     <form id="incident-form" @submit.prevent="save">
-      <div class="form-grid">
-        <Field class="span-full" :label="t('incidents.title')">
+      <FieldGroup>
+        <Field :label="t('incidents.title')" class="span-full">
           <input v-model="form.title" required>
-        </Field><Field class="span-full" :label="t('incidents.description')">
+        </Field><Field :label="t('incidents.description')" class="span-full">
           <textarea v-model="form.body" rows="5" required />
         </Field><Field :label="t('incidents.progressStatus')">
           <select v-model="form.status">
-            <option
-              v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
-              :key="state"
-              :value="state"
-            >
+            <option v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']" :key="state" :value="state">
               {{ statusLabel(state) }}
             </option>
           </select>
@@ -233,46 +225,46 @@ async function update() {
           </select>
         </Field>
         <div class="span-full">
-          <label class="field-label">{{ t('incidents.publishToStatusPages') }}</label>
-          <div class="checkbox-group" un-mt="3">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
+          <FieldLabel as="label">
+            {{ t('incidents.publishToStatusPages') }}
+          </FieldLabel>
+          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
               page.name
             }}</label>
           </div>
         </div>
         <div class="span-full">
-          <label class="field-label">{{ t('incidents.relatedMonitors') }}</label>
-          <div class="checkbox-group" un-mt="3">
-            <label
-              v-for="monitor in monitors.data.value?.items"
-              :key="monitor.id"
-              class="checkbox-label"
-            ><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
+          <FieldLabel as="label">
+            {{ t('incidents.relatedMonitors') }}
+          </FieldLabel>
+          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
               monitor.name
             }}</label>
           </div>
         </div>
-      </div>
-      <p v-if="error" class="inline-error">
+      </FieldGroup>
+      <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
-      </p>
+      </FieldError>
     </form>
     <template #footer>
-      <button class="button" @click="open = false">
+      <Button @click="open = false">
         {{ t('common.cancel') }}
-      </button><button class="button primary" form="incident-form" :disabled="saving">
+      </Button><Button form="incident-form" :disabled="saving" variant="primary">
         {{ t('incidents.saveIncident') }}
-      </button>
+      </Button>
     </template>
   </Modal><Modal v-model:open="detailOpen" :title="selected?.title || ''" wide>
     <template v-if="selected">
-      <div un-flex="~ items-start justify-between gap-4" un-mb="5">
-        <p class="muted">
+      <div flex="~ items-start justify-between gap-4" mb="5">
+        <p class="muted" un-text="13px $muted">
           {{ selected.body }}
         </p>
-        <button v-if="canEdit()" class="button small" @click="edit(selected)">
+        <Button v-if="canEdit()" size="sm" @click="edit(selected)">
           {{ t('incidents.editIncident2') }}
-        </button>
+        </Button>
       </div>
       <div class="timeline">
         <div class="timeline-entry">
@@ -286,25 +278,21 @@ async function update() {
         </div>
       </div>
       <form v-if="canEdit()" @submit.prevent="update">
-        <div class="section-divider" />
-        <h3 un-mb="4">
+        <Separator />
+        <h3 mb="4">
           {{ t('incidents.publishAnUpdate') }}
         </h3>
         <Field :label="t('incidents.progress2')">
           <select v-model="updateStatus">
-            <option
-              v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
-              :key="state"
-              :value="state"
-            >
+            <option v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']" :key="state" :value="state">
               {{ statusLabel(state) }}
             </option>
           </select>
-        </Field><Field :label="t('incidents.update')" un-mt="4">
+        </Field><Field :label="t('incidents.update')" mt="4">
           <textarea v-model="updateBody" required rows="4" />
-        </Field><button class="button primary" :disabled="saving" un-mt="4">
+        </Field><Button :disabled="saving" mt="4" variant="primary">
           {{ t('incidents.publishUpdate') }}
-        </button>
+        </Button>
       </form>
     </template>
   </Modal>

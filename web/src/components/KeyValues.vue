@@ -4,6 +4,8 @@ import type { NameValueForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
 import SecretSelect from './SecretSelect.vue'
+import { Alert } from './ui/alert'
+import { Button } from './ui/button'
 
 defineProps<{ secrets: Secret[], nameLabel?: string }>()
 
@@ -17,9 +19,9 @@ const values = defineModel<NameValueForm[]>({ required: true })
     <div
       v-for="(item, index) in values"
       :key="index"
-      class="kv-row"
-      un-grid="~ cols-[1fr_1.4fr_1.1fr_auto] gap-2"
-      un-mb="2"
+      class="kv-row [@media(max-width:700px)]:grid-cols-2"
+      grid="~ cols-[1fr_1.4fr_1.1fr_auto] gap-2"
+      mb="2"
     >
       <input
         v-model="item.name"
@@ -30,28 +32,19 @@ const values = defineModel<NameValueForm[]>({ required: true })
         v-model="item.value"
         :placeholder="t('common.value')"
         :aria-label="t('common.value')"
-      ><span v-else class="note" un-text="xs">{{ t('keyValues.valueFromSecret') }}</span><SecretSelect v-model="item.secretRef" :secrets="secrets" optional /><button
+      ><Alert v-else as="span">
+        {{ t('keyValues.valueFromSecret') }}
+      </Alert><SecretSelect v-model="item.secretRef" class="[@media(max-width:700px)]:col-start-1" :secrets="secrets" optional /><Button
         type="button"
-        class="icon-button"
         :aria-label="t('keyValues.removeField')"
+        size="icon"
         @click="values.splice(index, 1)"
       >
-        <span class="i-lucide-x" un-w="15px" un-h="15px" aria-hidden="true" />
-      </button>
+        <span class="i-lucide-x" w="15px" h="15px" aria-hidden="true" />
+      </Button>
     </div>
-    <button type="button" class="button small ghost" @click="values.push({ name: '', value: '' })">
-      <span class="i-lucide-plus" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('keyValues.addField') }}
-    </button>
+    <Button type="button" variant="ghost" size="sm" @click="values.push({ name: '', value: '' })">
+      <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('keyValues.addField') }}
+    </Button>
   </div>
 </template>
-
-<style scoped>
-@media (max-width: 700px) {
-  .kv-row {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  .kv-row select {
-    grid-column: 1/2;
-  }
-}
-</style>

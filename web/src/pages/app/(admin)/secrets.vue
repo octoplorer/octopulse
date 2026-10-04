@@ -14,6 +14,10 @@ import EmptyState from '../../../components/EmptyState.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { FieldError } from '../../../components/ui/field'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import { formatDate } from '../../../composables/preferences'
@@ -83,97 +87,79 @@ function cancel() {
 </script>
 
 <template>
-  <PageHeader
-    :title="t('navigation.secrets')"
-    :description="t('secrets.manageSensitiveValuesUsedByRequestsTlsProxies')"
-  >
-    <button v-if="isAdmin()" class="button primary" @click="edit()">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addSecret') }}
-    </button>
+  <PageHeader :title="t('navigation.secrets')" :description="t('secrets.manageSensitiveValuesUsedByRequestsTlsProxies')">
+    <Button v-if="isAdmin()" variant="primary" @click="edit()">
+      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addSecret') }}
+    </Button>
   </PageHeader>
   <div class="alert-strip">
-    <span class="i-lucide-key-round" un-w="16px" un-h="16px" aria-hidden="true" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
+    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-key-round" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
-  <section class="card">
+  <Card as="section">
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState
-        v-if="!query.data.value?.items.length"
-        :title="t('secrets.noSecretsYet')"
-        :description="t('secrets.storeTokensPemCertificatesProxyPasswordsAndShoutrrr')"
-      />
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ t('common.name') }}</th>
-              <th>{{ t('secrets.referenceId') }}</th>
-              <th>{{ t('secrets.updated') }}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="secret in query.data.value.items" :key="secret.id">
-              <td class="monitor-name">
+      <EmptyState v-if="!query.data.value?.items.length" :title="t('secrets.noSecretsYet')" :description="t('secrets.storeTokensPemCertificatesProxyPasswordsAndShoutrrr')" />
+      <TableContainer v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t('common.name') }}</TableHead>
+              <TableHead>{{ t('secrets.referenceId') }}</TableHead>
+              <TableHead>{{ t('secrets.updated') }}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="secret in query.data.value.items" :key="secret.id">
+              <TableCell class="monitor-name block" font="600" un-text="13px">
                 {{ secret.name }}
-              </td>
-              <td>
-                <code class="muted">{{ secret.id }}</code>
-              </td>
-              <td class="muted" un-text="xs">
+              </TableCell>
+              <TableCell>
+                <code class="muted" un-text="13px $muted">{{ secret.id }}</code>
+              </TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ formatDate(secret.updatedAt) }}
-              </td>
-              <td>
-                <div v-if="isAdmin()" un-flex="~ gap-2">
-                  <button class="button small" @click="edit(secret)">
-                    <span class="i-lucide-pencil" un-w="12px" un-h="12px" aria-hidden="true" />{{ t('secrets.replace') }}
-                  </button><button
-                    class="icon-button"
-                    :aria-label="t('common.delete')"
-                    @click="confirmDelete(secret)"
-                  >
-                    <span class="i-lucide-trash-2" un-w="14px" un-h="14px" aria-hidden="true" />
-                  </button>
+              </TableCell>
+              <TableCell>
+                <div v-if="isAdmin()" flex="~ gap-2">
+                  <Button size="sm" @click="edit(secret)">
+                    <span w="12px" h="12px" aria-hidden="true" class="i-lucide-pencil" />{{ t('secrets.replace') }}
+                  </Button><Button :aria-label="t('common.delete')" size="icon" @click="confirmDelete(secret)">
+                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
+                  </Button>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </AsyncState>
-  </section>
+  </Card>
   <Modal v-model:open="open" :title="form.id ? t('secrets.updateSecret') : t('common.addSecret')">
     <form id="secret-form" @submit.prevent="save">
       <Field :label="t('common.name')">
         <input v-model="form.name" required>
-      </Field><Field
-        :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')"
-        un-mt="5"
-      >
+      </Field><Field :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')" mt="5">
         <textarea v-model="form.value" required rows="6" autocomplete="off" spellcheck="false" />
       </Field>
-      <p v-if="error" class="inline-error">
+      <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
-      </p>
+      </FieldError>
     </form>
     <template #footer>
-      <button class="button" @click="cancel">
+      <Button @click="cancel">
         {{ t('common.cancel') }}
-      </button><button class="button primary" form="secret-form" :disabled="saving">
+      </Button><Button form="secret-form" :disabled="saving" variant="primary">
         {{ t('secrets.saveSecret') }}
-      </button>
+      </Button>
     </template>
-  </Modal><Modal
-    v-model:open="deleteOpen"
-    :title="t('secrets.deleteSecret')"
-    :description="t('secrets.removeMonitorAndChannelReferencesBeforeDeletingA')"
-  >
+  </Modal><Modal v-model:open="deleteOpen" :title="t('secrets.deleteSecret')" :description="t('secrets.removeMonitorAndChannelReferencesBeforeDeletingA')">
     <p>{{ deleteTarget?.name }}</p>
     <template #footer>
-      <button class="button" @click="deleteOpen = false">
+      <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </button><button class="button danger" @click="remove">
+      </Button><Button variant="danger" @click="remove">
         {{ t('common.delete') }}
-      </button>
+      </Button>
     </template>
   </Modal>
 </template>

@@ -11,6 +11,9 @@ import {
 } from '../../client/@pinia/colada.gen'
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
+import { Button } from '../../components/ui/button'
+import { FieldError } from '../../components/ui/field'
+import { Spinner } from '../../components/ui/spinner'
 import { applySession } from '../../composables/api'
 import { dark } from '../../composables/preferences'
 import { errorText } from '../../lib/errors'
@@ -88,11 +91,11 @@ async function submit() {
 </script>
 
 <template>
-  <div class="auth-page" :data-theme="dark ? 'dark' : 'light'">
+  <div :data-theme="dark ? 'dark' : 'light'" class="auth-page">
     <section class="auth-art">
       <Brand />
       <div class="auth-copy">
-        <p class="eyebrow">
+        <p class="eyebrow" un-text="12px $muted" font="500" mb="8px">
           {{ t('login.slogan') }}
         </p>
         <h1>{{ t('login.everyHeartbeat') }}<br>{{ t('login.alwaysInSight') }}</h1>
@@ -100,8 +103,8 @@ async function submit() {
           {{ t('login.monitorServicesRespondToIncidentsAndKeepEveryone') }}
         </p>
       </div>
-      <div class="auth-bottom" un-flex="~ items-center gap-2">
-        <span class="i-lucide-shield-check" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('login.selfHostedYourInfrastructureYourData') }}
+      <div flex="~ items-center gap-2" class="auth-bottom">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />{{ t('login.selfHostedYourInfrastructureYourData') }}
       </div>
     </section>
     <section class="auth-main">
@@ -109,37 +112,27 @@ async function submit() {
         <div class="auth-logo-mobile">
           <Brand />
         </div>
-        <p class="eyebrow">
+        <p class="eyebrow" un-text="12px $muted" font="500" mb="8px">
           {{ required ? t('login.getStarted') : t('login.welcomeBackEyebrow') }}
         </p>
         <h1>
           {{ required ? t('login.createYourWorkspace') : t('login.welcomeBack') }}
         </h1>
-        <p class="muted">
+        <p class="muted" un-text="13px $muted">
           {{
             required
               ? t('login.createTheFirstAdministratorAccountToStartMonitoring')
               : t('login.signInToSeeHowYourServicesAre')
           }}
         </p>
-        <div v-if="loading" class="loading-state">
-          <span class="spinner" />
+        <div v-if="loading" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px $muted">
+          <Spinner />
         </div>
         <form v-else @submit.prevent="submit">
           <Field :label="t('common.username')">
             <input v-model="username" autocomplete="username" required maxlength="100">
-          </Field><Field
-            :label="t('common.password')"
-            :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined"
-          >
-            <input
-              v-model="password"
-              type="password"
-              :autocomplete="required ? 'new-password' : 'current-password'"
-              required
-              :minlength="required ? 12 : undefined"
-              maxlength="72"
-            >
+          </Field><Field :label="t('common.password')" :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
+            <input v-model="password" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72">
           </Field><template v-if="required">
             <Field :label="t('common.organizationName')">
               <input v-model="organizationName" required>
@@ -147,20 +140,20 @@ async function submit() {
               <input v-model="timezone" placeholder="Asia/Shanghai" required>
             </Field>
           </template>
-          <p v-if="error" class="inline-error" role="alert">
+          <FieldError v-if="error" as="p" role="alert" py="10px" px="0">
             {{ error }}
-          </p>
-          <button type="submit" class="button primary" :disabled="saving">
+          </FieldError>
+          <Button type="submit" :disabled="saving" variant="primary">
             {{
               saving
                 ? t('login.connecting')
                 : required
                   ? t('login.createWorkspace')
                   : t('login.signIn')
-            }}<span class="i-lucide-arrow-right" un-w="16px" un-h="16px" aria-hidden="true" />
-          </button>
+            }}<span w="16px" h="16px" aria-hidden="true" class="i-lucide-arrow-right" />
+          </Button>
         </form>
-        <p class="muted" un-text="xs" un-mt="7">
+        <p mt="7" class="muted" un-text="13px $muted">
           {{ t('login.registrationIsClosedContactYourAdministratorForAccess') }}
         </p>
       </div>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Channel, Secret } from '../client/types.gen'
 import type { MonitorForm } from '../lib/monitor-form'
-import { Tabs } from '@ark-ui/vue/tabs'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -36,6 +35,12 @@ import PageHeader from './PageHeader.vue'
 import SecretSelect from './SecretSelect.vue'
 import TLSFields from './TLSFields.vue'
 import Toggle from './Toggle.vue'
+import { Alert } from './ui/alert'
+import { Button } from './ui/button'
+import { Card } from './ui/card'
+import { FieldActions, FieldDescription, FieldGroup, FieldLabel, FieldSection } from './ui/field'
+import { Separator } from './ui/separator'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from './ui/tabs'
 
 const { t } = useI18n({ useScope: 'global' })
 const queryCache = useQueryCache()
@@ -227,23 +232,25 @@ const charsetOptions = [
     :title="editing ? t('monitorEditor.editMonitor') : t('common.createMonitor')"
     :description="t('monitorEditor.defineTheTargetSuccessCriteriaAndConfirmationPolicy')"
   >
-    <RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'" class="button">
-      <span class="i-lucide-arrow-left" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('monitorEditor.back') }}
-    </RouterLink><button class="button primary" :disabled="saving || !canEdit()" form="monitor-form">
-      <span class="i-lucide-save" un-w="15px" un-h="15px" aria-hidden="true" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
-    </button>
+    <Button as-child>
+      <RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'">
+        <span class="i-lucide-arrow-left" w="15px" h="15px" aria-hidden="true" />{{ t('monitorEditor.back') }}
+      </RouterLink>
+    </Button><Button :disabled="saving || !canEdit()" form="monitor-form" variant="primary">
+      <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
+    </Button>
   </PageHeader><AsyncState :pending="loading">
     <form id="monitor-form" @submit.prevent="save">
-      <div v-if="error" class="validation-error" role="alert">
+      <Alert v-if="error" role="alert" variant="validation">
         {{ error }}
-      </div>
-      <section class="card" un-mb="6">
-        <div class="form-section">
+      </Alert>
+      <Card mb="6" as="section">
+        <FieldSection>
           <h2>{{ t('monitorEditor.basicInformation') }}</h2>
-          <p class="muted">
+          <p un-text="13px $muted">
             {{ t('monitorEditor.useARecognizableNameAndGroupRelatedServices') }}
           </p>
-          <div class="form-grid">
+          <FieldGroup>
             <Field :label="t('common.displayName')">
               <input
                 v-model="form.name"
@@ -276,33 +283,33 @@ const charsetOptions = [
                 :description="t('monitorEditor.pausingStopsCollectionAndExcludesPausedTimeFrom')"
               />
             </div>
-          </div>
-        </div>
-      </section>
-      <section class="card">
-        <Tabs.Root v-model="activeTab">
-          <Tabs.List class="tabs-list">
-            <Tabs.Trigger class="tabs-trigger" value="target">
+          </FieldGroup>
+        </FieldSection>
+      </Card>
+      <Card as="section">
+        <TabsRoot v-model="activeTab">
+          <TabsList>
+            <TabsTrigger value="target">
               {{
                 t('monitorEditor.checkTarget')
               }}
-            </Tabs.Trigger><Tabs.Trigger v-if="form.type !== 'heartbeat'" class="tabs-trigger" value="schedule">
+            </TabsTrigger><TabsTrigger v-if="form.type !== 'heartbeat'" value="schedule">
               {{
                 t('monitorEditor.scheduleRetries')
               }}
-            </Tabs.Trigger><Tabs.Trigger class="tabs-trigger" value="notifications">
+            </TabsTrigger><TabsTrigger value="notifications">
               {{
                 t('monitorEditor.notifications')
               }}
-            </Tabs.Trigger>
-          </Tabs.List><Tabs.Content value="target">
+            </TabsTrigger>
+          </TabsList><TabsContent value="target">
             <template v-if="form.type === 'http' && form.http">
-              <div class="form-section">
+              <FieldSection>
                 <h2>{{ t('monitorEditor.httpRequest') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.allRequestMethodsUseTheSameRoundRetry') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.targetUrl')" class="span-full">
                     <input
                       v-model="form.http.url"
@@ -333,21 +340,25 @@ const charsetOptions = [
                     <input v-model="form.http.host" placeholder="api.example.com">
                   </Field>
                   <div class="span-full">
-                    <label class="field-label">{{ t('monitorEditor.queryParameters') }}</label><KeyValues v-model="form.http.query" :secrets="secrets" un-mt="2" />
+                    <FieldLabel as="label">
+                      {{ t('monitorEditor.queryParameters') }}
+                    </FieldLabel><KeyValues v-model="form.http.query" :secrets="secrets" mt="2" />
                   </div>
                   <div class="span-full">
-                    <label class="field-label">{{
-                      t('monitorEditor.requestHeadersRepeatedNamesSupported')
-                    }}</label><KeyValues v-model="form.http.headers" :secrets="secrets" un-mt="2" />
+                    <FieldLabel as="label">
+                      {{
+                        t('monitorEditor.requestHeadersRepeatedNamesSupported')
+                      }}
+                    </FieldLabel><KeyValues v-model="form.http.headers" :secrets="secrets" mt="2" />
                   </div>
-                </div>
-              </div>
-              <div class="form-section">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection>
                 <h2>{{ t('monitorEditor.requestBody') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.configureFormatCharacterEncodingAndCompressionSeparately') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.bodyFormat')">
                     <select v-model="form.http.body.format">
                       <option
@@ -405,46 +416,51 @@ const charsetOptions = [
                     v-if="['form', 'multipart'].includes(form.http.body.format)"
                     class="span-full"
                   >
-                    <label class="field-label">{{ t('monitorEditor.formFields') }}</label><KeyValues v-model="form.http.body.fields" :secrets="secrets" un-mt="2" />
+                    <FieldLabel as="label">
+                      {{ t('monitorEditor.formFields') }}
+                    </FieldLabel><KeyValues v-model="form.http.body.fields" :secrets="secrets" mt="2" />
                   </div>
                   <div v-if="form.http.body.format === 'multipart'" class="span-full">
-                    <label class="field-label">{{ t('monitorEditor.files') }}</label>
-                    <div
+                    <FieldLabel as="label">
+                      {{ t('monitorEditor.files') }}
+                    </FieldLabel>
+                    <Alert
                       v-for="(file, index) in form.http.body.files"
                       :key="index"
-                      class="note"
-                      un-flex="~ items-center gap-3"
-                      un-mt="2"
+                      flex="~ items-center gap-3"
+                      mt="2"
                     >
                       <input
                         v-model="file.field"
                         :aria-label="t('monitorEditor.fieldName')"
                         placeholder="file"
-                      ><span>{{ file.filename }}</span><button
+                      ><span>{{ file.filename }}</span><Button
                         type="button"
-                        class="icon-button"
                         :aria-label="t('monitorEditor.removeFile')"
+                        size="icon"
                         @click="form.http.body.files.splice(index, 1)"
                       >
-                        <span class="i-lucide-x" un-w="15px" un-h="15px" aria-hidden="true" />
-                      </button>
-                    </div>
-                    <label class="button small" un-mt="3"><span class="i-lucide-upload" un-w="13px" un-h="13px" aria-hidden="true" />{{ t('monitorEditor.addFiles')
-                    }}<input type="file" multiple un-hidden="" @change="addFile"></label>
-                    <p class="field-hint" un-mt="2">
+                        <span class="i-lucide-x" w="15px" h="15px" aria-hidden="true" />
+                      </Button>
+                    </Alert>
+                    <Button as-child size="sm">
+                      <label mt="3"><span class="i-lucide-upload" w="13px" h="13px" aria-hidden="true" />{{ t('monitorEditor.addFiles')
+                      }}<input type="file" multiple hidden="" @change="addFile"></label>
+                    </Button>
+                    <FieldDescription as="p" mt="2">
                       {{
                         t('monitorEditor.multipartBoundaryAndContentTypeAreGeneratedAutomatically')
                       }}
-                    </p>
+                    </FieldDescription>
                   </div>
-                </div>
-              </div>
-              <div class="form-section">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection>
                 <h2>{{ t('monitorEditor.authentication') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.credentialsUseExistingSecretReferences') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.authenticationType')">
                     <select v-model="form.http.auth.type">
                       <option value="none">
@@ -487,14 +503,14 @@ const charsetOptions = [
                   >
                     <input v-model="form.http.auth.prefix" placeholder="Bearer ">
                   </Field>
-                </div>
-              </div>
-              <div class="form-section">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection>
                 <h2>{{ t('monitorEditor.successAssertions') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.everyConfiguredAssertionMustPassForASuccessful') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field
                     :label="t('monitorEditor.statusCodes')"
                     :hint="t('monitorEditor.commaSeparatedAcceptedTogetherWithRanges')"
@@ -530,23 +546,23 @@ const charsetOptions = [
                   >
                     <textarea v-model="jsonAssertions" rows="4" spellcheck="false" />
                   </Field>
-                </div>
-              </div>
-              <details class="form-section">
-                <summary class="advanced-summary">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection as="details">
+                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
                   {{ t('monitorEditor.advancedTlsConnectionsTransport') }}
                 </summary>
-                <h3 un-mb="4">
+                <h3 mb="4">
                   TLS
                 </h3>
                 <TLSFields v-model="form.http.tls" :secrets="secrets" />
-                <div class="section-divider" />
-                <h3 un-mb="4">
+                <Separator />
+                <h3 mb="4">
                   {{ t('monitorEditor.networkConnection') }}
                 </h3>
                 <ConnectionFields v-model="form.http.connection" :secrets="secrets" />
-                <div class="section-divider" />
-                <div class="form-grid">
+                <Separator />
+                <FieldGroup>
                   <div class="span-full">
                     <Toggle
                       v-model="form.http.redirects.enabled"
@@ -604,15 +620,15 @@ const charsetOptions = [
                       :label="t('monitorEditor.gzipRequestBody')"
                     />
                   </div>
-                </div>
-              </details>
+                </FieldGroup>
+              </FieldSection>
             </template><template v-if="form.type === 'tcp' && form.tcp">
-              <div class="form-section">
+              <FieldSection>
                 <h2>{{ t('monitorTypes.tcpConnection') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.testAConnectionOrSendAPayloadAnd') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.host')">
                     <input v-model="form.tcp.host" required placeholder="db.example.com">
                   </Field><Field :label="t('common.port')">
@@ -651,26 +667,26 @@ const charsetOptions = [
                       max="16777216"
                     >
                   </Field>
-                </div>
-              </div>
-              <details class="form-section">
-                <summary class="advanced-summary">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection as="details">
+                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
                   {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.tcp.tls" :secrets="secrets" allow-toggle />
-                <div class="section-divider" />
+                <Separator />
                 <ConnectionFields
                   v-model="form.tcp.connection"
                   :secrets="secrets"
                 />
-              </details>
+              </FieldSection>
             </template><template v-if="form.type === 'dns' && form.dns">
-              <div class="form-section">
+              <FieldSection>
                 <h2>{{ t('monitorEditor.dnsQuery') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.validateResponseCodesAndRecordValues') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.queryName')">
                     <input v-model="form.dns.name" required placeholder="example.com">
                   </Field><Field :label="t('monitorEditor.recordType')">
@@ -735,15 +751,15 @@ const charsetOptions = [
                   </Field><Field class="span-full" :label="t('monitorEditor.expectedValuesOnePerLine')">
                     <textarea v-model="dnsValues" />
                   </Field>
-                </div>
-              </div>
+                </FieldGroup>
+              </FieldSection>
             </template><template v-if="form.type === 'heartbeat' && form.heartbeat">
-              <div class="form-section">
+              <FieldSection>
                 <h2>{{ t('monitorTypes.heartbeat') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.servicesReportPeriodicallyMissingAPeriodPlusGrace') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.expectedPeriodSeconds')">
                     <input
                       v-model.number="form.heartbeat.periodSeconds"
@@ -759,18 +775,18 @@ const charsetOptions = [
                       required
                     >
                   </Field>
-                </div>
-                <div class="note" un-mt="5">
+                </FieldGroup>
+                <Alert mt="5">
                   {{ t('monitorEditor.afterSavingGenerateOrRotateTheReportToken') }}
-                </div>
-              </div>
+                </Alert>
+              </FieldSection>
             </template><template v-if="form.type === 'certificate' && form.certificate">
-              <div class="form-section">
+              <FieldSection>
                 <h2>{{ t('monitorEditor.certificateExpiry') }}</h2>
-                <p class="muted">
+                <p un-text="13px $muted">
                   {{ t('monitorEditor.certificateRiskIsDisplayedSeparatelyAndExcludedFrom') }}
                 </p>
-                <div class="form-grid">
+                <FieldGroup>
                   <Field :label="t('monitorEditor.tlsHost')">
                     <input v-model="form.certificate.host" required>
                   </Field><Field :label="t('common.port')">
@@ -787,27 +803,27 @@ const charsetOptions = [
                   >
                     <input v-model="warningDays">
                   </Field>
-                </div>
-              </div>
-              <details class="form-section">
-                <summary class="advanced-summary">
+                </FieldGroup>
+              </FieldSection>
+              <FieldSection as="details">
+                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
                   {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.certificate.tls" :secrets="secrets" />
-                <div class="section-divider" />
+                <Separator />
                 <ConnectionFields
                   v-model="form.certificate.connection"
                   :secrets="secrets"
                 />
-              </details>
+              </FieldSection>
             </template>
-          </Tabs.Content><Tabs.Content v-if="form.type !== 'heartbeat'" value="schedule">
-            <div class="form-section">
+          </TabsContent><TabsContent v-if="form.type !== 'heartbeat'" value="schedule">
+            <FieldSection>
               <h2>{{ t('monitorEditor.checkSchedule') }}</h2>
-              <p class="muted">
+              <p un-text="13px $muted">
                 {{ t('monitorEditor.checksRunOnAFixedCadenceWithoutOverlap') }}
               </p>
-              <div class="form-grid">
+              <FieldGroup>
                 <Field
                   :label="t('monitorEditor.checkIntervalSeconds')"
                   :hint="
@@ -860,45 +876,45 @@ const charsetOptions = [
                     >
                   </Field>
                 </template>
-              </div>
-              <p class="note" un-mt="6">
+              </FieldGroup>
+              <Alert mt="6" as="p">
                 {{ t('monitorEditor.retryCountIsALimitInsufficientBudgetEnds') }}
-              </p>
-            </div>
-          </Tabs.Content><Tabs.Content value="notifications">
-            <div class="form-section">
+              </Alert>
+            </FieldSection>
+          </TabsContent><TabsContent value="notifications">
+            <FieldSection>
               <h2>{{ t('monitorEditor.notificationChannels') }}</h2>
-              <p class="muted">
+              <p un-text="13px $muted">
                 {{
                   t(
                     'monitorEditor.selectAdministratorConfiguredChannelsConfirmedFailuresCreateDurable',
                   )
                 }}
               </p>
-              <div class="checkbox-group">
-                <label v-for="channel in channels" :key="channel.id" class="checkbox-label"><input
+              <div flex="~ gap-12px wrap">
+                <label v-for="channel in channels" :key="channel.id" flex="~ items-center gap-8px" un-text="12px $text"><input
                   v-model="form.notificationChannelIds"
                   type="checkbox"
                   :value="channel.id"
                 >{{ channel.name
-                }}<span v-if="!channel.enabled" class="muted">{{
+                }}<span v-if="!channel.enabled" un-text="13px $muted">{{
                   t('monitorEditor.disabled')
                 }}</span></label>
               </div>
-              <p v-if="!channels.length" class="muted">
+              <p v-if="!channels.length" un-text="13px $muted">
                 {{ t('monitorEditor.noChannelsYetAnAdministratorCanCreateOne') }}
               </p>
-              <div class="section-divider" />
+              <Separator />
               <Toggle
                 v-if="form.type === 'certificate' && form.certificate"
                 v-model="form.certificate.notifyRenewal"
                 :label="t('monitorEditor.notifyOnCertificateRenewal')"
-                un-mb="5"
+                mb="5"
               /><Toggle
                 v-else
                 v-model="form.notifyRecovery"
                 :label="t('monitorEditor.notifyOnRecovery')"
-                un-mb="5"
+                mb="5"
               /><Field
                 v-if="form.type !== 'certificate'"
                 :label="t('monitorEditor.repeatedOutageReminderSeconds')"
@@ -906,17 +922,19 @@ const charsetOptions = [
               >
                 <input v-model.number="form.reminderSeconds" type="number" min="0">
               </Field>
-            </div>
-          </Tabs.Content>
-        </Tabs.Root>
-      </section>
-      <div class="form-actions">
-        <RouterLink to="/app/monitors" class="button">
-          {{ t('common.cancel') }}
-        </RouterLink><button type="submit" class="button primary" :disabled="saving || !canEdit()">
-          <span class="i-lucide-save" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.saveMonitor') }}
-        </button>
-      </div>
+            </FieldSection>
+          </TabsContent>
+        </TabsRoot>
+      </Card>
+      <FieldActions>
+        <Button as-child>
+          <RouterLink to="/app/monitors">
+            {{ t('common.cancel') }}
+          </RouterLink>
+        </Button><Button type="submit" :disabled="saving || !canEdit()" variant="primary">
+          <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ t('common.saveMonitor') }}
+        </Button>
+      </FieldActions>
     </form>
   </AsyncState>
 </template>

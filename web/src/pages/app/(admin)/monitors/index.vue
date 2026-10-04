@@ -7,6 +7,9 @@ import AsyncState from '../../../../components/AsyncState.vue'
 import EmptyState from '../../../../components/EmptyState.vue'
 import PageHeader from '../../../../components/PageHeader.vue'
 import StateBadge from '../../../../components/StateBadge.vue'
+import { Button } from '../../../../components/ui/button'
+import { Card } from '../../../../components/ui/card'
+import { Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableHeader, TableRow, TableToolbar } from '../../../../components/ui/table'
 import { canEdit } from '../../../../composables/api'
 import { usePollingEnabled } from '../../../../composables/polling'
 import { formatDate } from '../../../../composables/preferences'
@@ -47,27 +50,22 @@ const filtered = computed(() =>
 </script>
 
 <template>
-  <PageHeader
-    :title="t('common.monitors')"
-    :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')"
-  >
-    <button class="button" @click="query.refetch()">
-      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
-    </button><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMonitor') }}
-    </RouterLink>
+  <PageHeader :title="t('common.monitors')" :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')">
+    <Button @click="query.refetch()">
+      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+    </Button><Button v-if="canEdit()" variant="primary" as-child>
+      <RouterLink to="/app/monitors/new">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMonitor') }}
+      </RouterLink>
+    </Button>
   </PageHeader>
-  <section class="card">
-    <div class="filter-bar">
-      <div class="search-box">
-        <span class="i-lucide-search" un-w="16px" un-h="16px" aria-hidden="true" /><input
-          v-model="search"
-          :placeholder="t('monitors.searchNameTargetOrTags')"
-          :aria-label="t('monitors.searchMonitors')"
-        >
+  <Card as="section">
+    <TableToolbar>
+      <div class="search-box relative [box-shadow:var(--control-shadow)]" flex="~ items-center 1" gap="8px" un-text="$muted" max-w="340px" min-w="180px" border="1 solid $control-border" rounded="8px" pl="10px" bg="$surface">
+        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-search" /><input v-model="search" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')">
       </div>
-      <div un-flex="~ items-center gap-2">
-        <select v-model="state" un-w="auto!" :aria-label="t('monitors.filterStatus')">
+      <div flex="~ items-center gap-2">
+        <select v-model="state" w="auto!" :aria-label="t('monitors.filterStatus')">
           <option value="all">
             {{ t('monitors.allStates') }}
           </option>
@@ -83,7 +81,7 @@ const filtered = computed(() =>
           <option value="paused">
             {{ t('common.paused') }}
           </option>
-        </select><select v-model="type" un-w="auto!" :aria-label="t('monitors.filterType')">
+        </select><select v-model="type" w="auto!" :aria-label="t('monitors.filterType')">
           <option value="all">
             {{ t('monitors.allTypes') }}
           </option>
@@ -92,87 +90,78 @@ const filtered = computed(() =>
           </option>
         </select>
       </div>
-    </div>
+    </TableToolbar>
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
       <EmptyState
-        v-if="!filtered.length"
-        :title="
+        v-if="!filtered.length" :title="
           items.length ? t('monitors.noMatchingMonitors') : t('monitors.startWatchingYourServices')
-        "
-        :description="
+        " :description="
           items.length
             ? t('monitors.tryChangingYourSearchOrFilters')
             : t('monitors.addAServiceCheckToSeeStatusHistory')
         "
       >
-        <RouterLink
-          v-if="!items.length && canEdit()"
-          to="/app/monitors/new"
-          class="button primary"
-        >
-          {{ t('common.createMonitor') }}
-        </RouterLink>
+        <Button v-if="!items.length && canEdit()" variant="primary" as-child>
+          <RouterLink to="/app/monitors/new">
+            {{ t('common.createMonitor') }}
+          </RouterLink>
+        </Button>
       </EmptyState>
-      <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ t('common.service') }}</th>
-              <th>{{ t('common.status') }}</th>
-              <th>{{ t('common.group') }}</th>
-              <th>{{ t('monitors.intervalRetries') }}</th>
-              <th>{{ t('common.lastCheck') }}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="monitor in filtered" :key="monitor.id">
-              <td>
-                <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3">
-                  <span class="monitor-type-icon"><span
-                    v-if="monitor.type === 'http' || monitor.type === 'dns'" class="i-lucide-globe" un-w="16px" un-h="16px" aria-hidden="true"
-                  /><span v-else class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true" /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
+      <TableContainer v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t('common.service') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead>{{ t('common.group') }}</TableHead>
+              <TableHead>{{ t('monitors.intervalRetries') }}</TableHead>
+              <TableHead>{{ t('common.lastCheck') }}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="monitor in filtered" :key="monitor.id">
+              <TableCell>
+                <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
+                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                 </RouterLink>
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 <StateBadge
                   :state="
                     monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state
-                  "
-                  :paused="!monitor.enabled"
+                  " :paused="!monitor.enabled"
                 />
-              </td>
-              <td class="muted">
+              </TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ monitor.group || '—' }}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {{
                   monitor.type === 'heartbeat'
                     ? monitor.heartbeat?.periodSeconds
                     : monitor.intervalSeconds
                 }}
                 s
-                <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted">/ {{ monitor.retries }}</span>
-              </td>
-              <td class="muted" un-text="xs">
+                <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted" un-text="13px $muted">/ {{ monitor.retries }}</span>
+              </TableCell>
+              <TableCell class="muted" un-text="13px $muted">
                 {{ formatDate(monitor.lastCheckedAt) }}
-              </td>
-              <td>
-                <RouterLink
-                  :to="`/app/monitors/${monitor.id}`"
-                  class="icon-button"
-                  :aria-label="t('monitors.viewDetails')"
-                >
-                  <span class="i-lucide-chevron-right" un-w="16px" un-h="16px" aria-hidden="true" />
-                </RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </TableCell>
+              <TableCell>
+                <Button size="icon" as-child>
+                  <RouterLink :to="`/app/monitors/${monitor.id}`" :aria-label="t('monitors.viewDetails')">
+                    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-chevron-right" />
+                  </RouterLink>
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </AsyncState>
-    <div class="table-footer">
+    <TableFooter>
       <span>{{ t('counts.monitors', { count: filtered.length }, filtered.length) }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span>
-    </div>
-  </section>
+    </TableFooter>
+  </Card>
 </template>

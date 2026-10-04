@@ -12,6 +12,11 @@ import AsyncState from '../../../components/AsyncState.vue'
 import EmptyState from '../../../components/EmptyState.vue'
 import PageHeader from '../../../components/PageHeader.vue'
 import StateBadge from '../../../components/StateBadge.vue'
+import { Alert } from '../../../components/ui/alert'
+import { Badge } from '../../../components/ui/badge'
+import { Button } from '../../../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
+import { Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { canEdit } from '../../../composables/api'
 import { usePollingEnabled } from '../../../composables/polling'
 import { formatDate, statusLabel } from '../../../composables/preferences'
@@ -72,21 +77,19 @@ const nextMaintenance = computed(
 </script>
 
 <template>
-  <PageHeader
-    :title="t('overview.serviceOverview')"
-    :description="t('overview.aClearViewOfEveryServiceHeartbeat')"
-    eyebrow="YOUR INFRASTRUCTURE, AT A GLANCE"
-  >
-    <button class="button" @click="monitors.refetch()">
-      <span class="i-lucide-refresh-cw" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.refresh') }}
-    </button><RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-      <span class="i-lucide-plus" un-w="15px" un-h="15px" aria-hidden="true" />{{ t('common.addMonitor') }}
-    </RouterLink>
+  <PageHeader :title="t('overview.serviceOverview')" :description="t('overview.aClearViewOfEveryServiceHeartbeat')" eyebrow="YOUR INFRASTRUCTURE, AT A GLANCE">
+    <Button @click="monitors.refetch()">
+      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+    </Button><Button v-if="canEdit()" variant="primary" as-child>
+      <RouterLink to="/app/monitors/new">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMonitor') }}
+      </RouterLink>
+    </Button>
   </PageHeader>
   <div class="stats-grid">
-    <div class="card stat-card">
+    <Card class="stat-card">
       <div class="stat-label">
-        {{ t('overview.totalMonitors') }}<span class="stat-icon"><span class="i-lucide-activity" un-w="15px" un-h="15px" aria-hidden="true" /></span>
+        {{ t('overview.totalMonitors') }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" /></span>
       </div>
       <div class="stat-value">
         {{ items.length }}
@@ -95,33 +98,33 @@ const nextMaintenance = computed(
         {{ t('overview.active') }} {{ active.length }} · {{ t('common.paused') }}
         {{ items.length - active.length }}
       </div>
-    </div>
-    <div class="card stat-card">
+    </Card>
+    <Card class="stat-card">
       <div class="stat-label">
-        {{ t('overview.operational') }}<span class="stat-icon"><span class="i-lucide-circle-check" un-w="15px" un-h="15px" aria-hidden="true" /></span>
+        {{ t('overview.operational') }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-circle-check" /></span>
       </div>
-      <div class="stat-value" un-text="[var(--success)]">
+      <div un-text="[var(--success)]" class="stat-value">
         {{ up.length }}
       </div>
       <div class="stat-meta">
         <span class="positive">{{ t('overview.confirmedServiceStates') }}</span>
       </div>
-    </div>
-    <div class="card stat-card">
+    </Card>
+    <Card class="stat-card">
       <div class="stat-label">
         {{ t('overview.needsAttention')
-        }}<span class="stat-icon"><span class="i-lucide-triangle-alert" un-w="15px" un-h="15px" aria-hidden="true" /></span>
+        }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-triangle-alert" /></span>
       </div>
-      <div class="stat-value" :style="{ color: down.length ? 'var(--danger)' : undefined }">
+      <div :style="{ color: down.length ? 'var(--danger)' : undefined }" class="stat-value">
         {{ down.length }}
       </div>
       <div class="stat-meta">
         {{ t('overview.confirmedOutages') }}
       </div>
-    </div>
-    <div class="card stat-card">
+    </Card>
+    <Card class="stat-card">
       <div class="stat-label">
-        {{ t('overview.waitingForData') }}<span class="stat-icon"><span class="i-lucide-clock" un-w="15px" un-h="15px" aria-hidden="true" /></span>
+        {{ t('overview.waitingForData') }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" /></span>
       </div>
       <div class="stat-value">
         {{ unknown.length }}
@@ -129,111 +132,97 @@ const nextMaintenance = computed(
       <div class="stat-meta">
         {{ t('overview.initialChecksOrCollectionGaps') }}
       </div>
-    </div>
+    </Card>
   </div>
   <div class="dashboard-grid">
     <div>
-      <section class="card">
-        <div class="card-header">
+      <Card as="section">
+        <CardHeader>
           <div>
-            <h2>{{ t('common.monitors') }}</h2>
-            <p class="muted">
+            <CardTitle>{{ t('common.monitors') }}</CardTitle>
+            <CardDescription>
               {{ t('overview.outagesFirstSoYouCanFocusOnWhat') }}
-            </p>
+            </CardDescription>
           </div>
-          <RouterLink to="/app/monitors" class="button small ghost">
-            {{ t('overview.viewAll') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" />
-          </RouterLink>
-        </div>
-        <AsyncState
-          :pending="monitors.isPending.value"
-          :error="monitors.error.value"
-          @retry="monitors.refetch()"
-        >
-          <EmptyState
-            v-if="!items.length"
-            :title="t('overview.monitorYourFirstService')"
-            :description="t('overview.httpTcpDnsHeartbeatAndCertificateChecksAre')"
-          >
-            <RouterLink v-if="canEdit()" to="/app/monitors/new" class="button primary">
-              <span class="i-lucide-plus" un-w="14px" un-h="14px" aria-hidden="true" />{{ t('common.createMonitor') }}
+          <Button variant="ghost" size="sm" as-child>
+            <RouterLink to="/app/monitors">
+              {{ t('overview.viewAll') }}<span w="13px" h="13px" aria-hidden="true" class="i-lucide-arrow-up-right" />
             </RouterLink>
+          </Button>
+        </CardHeader>
+        <AsyncState :pending="monitors.isPending.value" :error="monitors.error.value" @retry="monitors.refetch()">
+          <EmptyState v-if="!items.length" :title="t('overview.monitorYourFirstService')" :description="t('overview.httpTcpDnsHeartbeatAndCertificateChecksAre')">
+            <Button v-if="canEdit()" variant="primary" as-child>
+              <RouterLink to="/app/monitors/new">
+                <span w="14px" h="14px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.createMonitor') }}
+              </RouterLink>
+            </Button>
           </EmptyState>
-          <div v-else class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>{{ t('common.service') }}</th>
-                  <th>{{ t('common.status') }}</th>
-                  <th>{{ t('overview.interval') }}</th>
-                  <th>{{ t('common.lastCheck') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="monitor in ordered" :key="monitor.id">
-                  <td>
-                    <RouterLink :to="`/app/monitors/${monitor.id}`" un-flex="~ items-center gap-3">
-                      <span class="monitor-type-icon"><span v-if="monitor.type === 'http'" class="i-lucide-globe" un-w="16px" un-h="16px" aria-hidden="true" /><span
-                        v-else class="i-lucide-server" un-w="16px" un-h="16px" aria-hidden="true"
-                      /></span><span><span class="monitor-name">{{ monitor.name }}</span><span class="monitor-sub">{{ targetOf(monitor) }}</span></span>
+          <TableContainer v-else>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{{ t('common.service') }}</TableHead>
+                  <TableHead>{{ t('common.status') }}</TableHead>
+                  <TableHead>{{ t('overview.interval') }}</TableHead>
+                  <TableHead>{{ t('common.lastCheck') }}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="monitor in ordered" :key="monitor.id">
+                  <TableCell>
+                    <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
+                      <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                     </RouterLink>
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     <StateBadge
                       :state="
                         monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state
-                      "
-                      :paused="!monitor.enabled"
+                      " :paused="!monitor.enabled"
                     />
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     {{
                       monitor.type === 'heartbeat'
                         ? monitor.heartbeat?.periodSeconds
                         : monitor.intervalSeconds
                     }}
                     s
-                  </td>
-                  <td class="muted" un-text="xs">
+                  </TableCell>
+                  <TableCell class="muted" un-text="13px $muted">
                     {{ formatDate(monitor.lastCheckedAt) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </AsyncState>
-        <div v-if="items.length" class="table-footer">
+        <TableFooter v-if="items.length">
           <span>{{
             t('overview.showingMonitors', { shown: ordered.length, total: items.length })
           }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span>
-        </div>
-      </section>
-      <section class="card" un-mt="6">
-        <div class="card-header">
-          <h2>{{ t('overview.publicStatusPages') }}</h2>
-          <RouterLink to="/app/pages" class="button small ghost">
-            {{ t('overview.managePages') }}<span class="i-lucide-arrow-up-right" un-w="13px" un-h="13px" aria-hidden="true" />
-          </RouterLink>
-        </div>
-        <div class="card-body">
-          <EmptyState
-            v-if="!pages.data.value?.items.length"
-            :title="t('overview.keepEveryoneInformed')"
-            :description="t('overview.publishAStatusPageWithYourOwnBrand')"
-          />
-          <div
-            v-for="page in pages.data.value?.items.slice(0, 3)"
-            :key="page.id"
-            un-flex="~ items-center justify-between gap-4"
-            un-py="3"
-          >
-            <div un-flex="~ items-center gap-3">
-              <span un-text="[var(--accent)]" class="i-lucide-globe" un-w="18px" un-h="18px" aria-hidden="true" />
+        </TableFooter>
+      </Card>
+      <Card mt="6" as="section">
+        <CardHeader>
+          <CardTitle>{{ t('overview.publicStatusPages') }}</CardTitle>
+          <Button variant="ghost" size="sm" as-child>
+            <RouterLink to="/app/pages">
+              {{ t('overview.managePages') }}<span w="13px" h="13px" aria-hidden="true" class="i-lucide-arrow-up-right" />
+            </RouterLink>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <EmptyState v-if="!pages.data.value?.items.length" :title="t('overview.keepEveryoneInformed')" :description="t('overview.publishAStatusPageWithYourOwnBrand')" />
+          <div v-for="page in pages.data.value?.items.slice(0, 3)" :key="page.id" flex="~ items-center justify-between gap-4" py="3">
+            <div flex="~ items-center gap-3">
+              <span un-text="[var(--accent)]" w="18px" h="18px" aria-hidden="true" class="i-lucide-globe" />
               <div>
                 <h3 un-text="xs">
                   {{ page.name }}
                 </h3>
-                <p class="muted" un-text="xs">
+                <p class="muted" un-text="13px $muted">
                   /{{ page.publishedAt ? publishedEntry(page).slug : page.slug
                   }}{{
                     (page.publishedAt ? publishedEntry(page).domain : page.domain)
@@ -243,68 +232,57 @@ const nextMaintenance = computed(
                 </p>
               </div>
             </div>
-            <span class="pill">{{
-              page.publishedAt ? t('common.published') : t('common.draft')
-            }}</span>
+            <Badge>
+              {{
+                page.publishedAt ? t('common.published') : t('common.draft')
+              }}
+            </Badge>
           </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     </div>
     <aside>
-      <section class="card">
-        <div class="card-header">
-          <h2>{{ t('overview.incidentActivity') }}</h2>
-          <span class="pill">{{ recentIncidents.length }}</span>
-        </div>
-        <div class="card-body">
-          <p v-if="!recentIncidents.length" class="muted" un-py="4">
+      <Card as="section">
+        <CardHeader>
+          <CardTitle>{{ t('overview.incidentActivity') }}</CardTitle>
+          <Badge>{{ recentIncidents.length }}</Badge>
+        </CardHeader>
+        <CardContent>
+          <p v-if="!recentIncidents.length" py="4" class="muted" un-text="13px $muted">
             {{ t('overview.noIncidentAnnouncementsUpdatesWillAppearHere') }}
           </p>
-          <RouterLink
-            v-for="incident in recentIncidents"
-            :key="incident.id"
-            to="/app/incidents"
-            class="activity-item"
-          >
-            <i
-              class="activity-dot"
-              :style="{ background: incident.status === 'resolved' ? 'var(--success)' : 'var(--warning)' }"
-            />
+          <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="activity-item">
+            <i :style="{ background: incident.status === 'resolved' ? 'var(--success)' : 'var(--warning)' }" class="activity-dot" />
             <div>
               <h3>{{ incident.title }}</h3>
               <p>{{ statusLabel(incident.status) }} · {{ formatDate(incident.updatedAt) }}</p>
             </div>
           </RouterLink>
-        </div>
-      </section>
-      <section class="card" un-mt="6">
-        <div class="card-header">
-          <h2>{{ t('overview.upcomingMaintenance') }}</h2>
-        </div>
-        <div class="card-body">
-          <p v-if="!nextMaintenance.length" class="muted" un-py="4">
+        </CardContent>
+      </Card>
+      <Card mt="6" as="section">
+        <CardHeader>
+          <CardTitle>{{ t('overview.upcomingMaintenance') }}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p v-if="!nextMaintenance.length" py="4" class="muted" un-text="13px $muted">
             {{ t('overview.noScheduledMaintenance') }}
           </p>
-          <RouterLink
-            v-for="window in nextMaintenance"
-            :key="window.id"
-            to="/app/maintenance"
-            class="activity-item"
-          >
-            <span un-text="[var(--muted)]" un-mt="1" class="i-lucide-clock" un-w="15px" un-h="15px" aria-hidden="true" />
+          <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="activity-item">
+            <span un-text="[var(--muted)]" mt="1" w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
             <div>
               <h3>{{ window.name }}</h3>
               <p>{{ formatDate(window.startsAt) }}</p>
             </div>
           </RouterLink>
-        </div>
-      </section>
-      <div class="note" un-mt="6">
-        <p class="eyebrow" un-mb="2">
+        </CardContent>
+      </Card>
+      <Alert mt="6" variant="default">
+        <p mb="8px 2" class="eyebrow" un-text="12px $muted" font="500">
           OCTOPULSE
         </p>
         {{ t('overview.uptimeReflectsConfirmedDurationPausedMaintenanceAndMissing') }}
-      </div>
+      </Alert>
     </aside>
   </div>
 </template>
