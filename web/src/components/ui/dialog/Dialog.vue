@@ -12,10 +12,11 @@ const open = defineModel<boolean>('open', { default: false })
 <template>
   <ArkDialog.Root v-model:open="open" :lazy-mount="true" :unmount-on-exit="true">
     <Teleport to="body">
-      <ArkDialog.Backdrop class="modal-backdrop" position="fixed" inset="0" bg="[#00000060]" z="100" /><ArkDialog.Positioner class="modal-positioner" position="fixed" inset="0" flex="~ items-center justify-center" p="24px" z="101" overflow-y="auto">
+      <ArkDialog.Backdrop class="modal-backdrop" position="fixed" inset="0" bg="[#00000060]" z="100" /><ArkDialog.Positioner position="fixed" inset="0" flex="~ items-center justify-center" p="24px" z="101" overflow-y="auto" class="[@media(max-width:700px)]:p-15px">
         <ArkDialog.Content
           v-bind="$attrs"
-          class="modal-content [&.wide]:max-w-900px"
+          data-theme-boundary
+          class="modal-content [&.wide]:max-w-900px [@media(max-width:700px)]:p-21px"
           bg="$surface"
           un-text="$text"
           p="24px"

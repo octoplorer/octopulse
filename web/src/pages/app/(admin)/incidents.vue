@@ -266,7 +266,7 @@ async function update() {
           {{ t('incidents.editIncident2') }}
         </Button>
       </div>
-      <div class="timeline">
+      <div ml="5px" pl="21px" border="l-1 solid $border" class="[&_.timeline-entry]:relative [&_.timeline-entry]:pb-24px [&_.timeline-entry]:before:content-empty [&_.timeline-entry]:before:absolute [&_.timeline-entry]:before:left-[-26px] [&_.timeline-entry]:before:top-5px [&_.timeline-entry]:before:size-9px [&_.timeline-entry]:before:rounded-full [&_.timeline-entry]:before:border-2 [&_.timeline-entry]:before:border-solid [&_.timeline-entry]:before:border-$surface [&_.timeline-entry]:before:bg-$accent [&_.timeline-entry_h3]:text-12px [&_.timeline-entry_p]:mt-6px [&_.timeline-entry_p]:whitespace-pre-wrap [&_.timeline-entry_p]:text-12px [&_.timeline-entry_p]:text-$muted [&_.timeline-entry_small]:text-12px [&_.timeline-entry_small]:text-$muted">
         <div class="timeline-entry">
           <h3>{{ t('incidents.initialAnnouncement') }}</h3>
           <small>{{ formatDate(selected.createdAt) }}</small>

@@ -3,7 +3,7 @@ defineProps<{ title: string, description?: string, eyebrow?: string }>()
 </script>
 
 <template>
-  <header class="page-header" flex="~ justify-between items-center gap-20px" mb="28px">
+  <header flex="~ justify-between items-center gap-20px" mb="28px" class="[@media(max-width:700px)]:items-start [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:gap-15px [@media(max-width:700px)]:[&_h1]:text-24px [@container_workspace_(max-width:_700px)]:items-start [@container_workspace_(max-width:_700px)]:flex-col [@container_workspace_(max-width:_700px)]:gap-15px">
     <div class="[overflow-wrap:anywhere]" min-w="0">
       <p v-if="eyebrow" class="eyebrow" un-text="12px $muted" font="500" mb="8px">
         {{ eyebrow }}
@@ -13,7 +13,7 @@ defineProps<{ title: string, description?: string, eyebrow?: string }>()
         {{ description }}
       </p>
     </div>
-    <div class="header-actions [overflow-wrap:anywhere]" flex="~ items-center gap-9px wrap" min-w="0">
+    <div class="[overflow-wrap:anywhere] [@media(max-width:700px)]:w-full [@media(max-width:700px)]:flex-wrap [@container_workspace_(max-width:_700px)]:w-full [@container_workspace_(max-width:_700px)]:flex-wrap" flex="~ items-center gap-9px wrap" min-w="0">
       <slot />
     </div>
   </header>

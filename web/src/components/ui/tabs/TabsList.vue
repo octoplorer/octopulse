@@ -8,7 +8,7 @@ const forwarded = useForwardProps(props)
 </script>
 
 <template>
-  <TabList v-bind="forwarded" class="tabs-list" flex="~ items-center gap-24px" border="b-1 solid $border" p="x-20px y-0" bg="$surface">
+  <TabList v-bind="forwarded" class="[@media(max-width:700px)]:gap-18px [@media(max-width:700px)]:px-18px [@media(max-width:700px)]:overflow-auto" flex="~ items-center gap-24px" border="b-1 solid $border" p="x-20px y-0" bg="$surface">
     <slot />
   </TabList>
 </template>

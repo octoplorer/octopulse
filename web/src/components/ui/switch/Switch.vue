@@ -7,7 +7,7 @@ const value = defineModel<boolean>({ default: false })
 
 <template>
   <ArkSwitch.Root
-    class="toggle"
+    class="[&:has(input:focus-visible)_.switch-control]:outline-2 [&:has(input:focus-visible)_.switch-control]:outline-$focus [&:has(input:focus-visible)_.switch-control]:outline-offset-3px"
     flex="~ items-center gap-10px"
     cursor="pointer"
     un-text="12px"

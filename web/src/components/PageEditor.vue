@@ -334,7 +334,7 @@ async function remove() {
     <Alert v-if="error" role="alert" variant="validation">
       {{ error }}
     </Alert>
-    <div class="editor-layout" grid="~ cols-[minmax(0,1fr)_minmax(320px,0.8fr)]" gap="24px">
+    <div grid="~ cols-[minmax(0,1fr)_minmax(320px,0.8fr)]" gap="24px" class="[@media(max-width:1200px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1">
       <div>
         <Card as="section">
           <FieldSection>
@@ -395,7 +395,7 @@ async function remove() {
               </Field><Field class="span-full" :label="t('pageEditor.pageDescription')">
                 <textarea v-model="form.draft.description" :disabled="!canEdit()" rows="3" />
               </Field><Field class="span-full" :label="t('pageEditor.logoUrl')">
-                <div class="field-row" flex="~ items-center gap-10px">
+                <div flex="~ items-center gap-10px" class="[@media(max-width:700px)]:flex-wrap">
                   <input
                     v-model="form.draft.logoUrl"
                     :disabled="!canEdit()"
@@ -411,7 +411,7 @@ async function remove() {
                   </Button>
                 </div>
               </Field><Field :label="t('pageEditor.brandColor')">
-                <div class="field-row" flex="~ items-center gap-10px">
+                <div flex="~ items-center gap-10px" class="[@media(max-width:700px)]:flex-wrap">
                   <input
                     v-model="form.draft.brandColor"
                     type="color"
@@ -442,7 +442,7 @@ async function remove() {
                 <div
                   v-for="(link, index) in form.draft.links"
                   :key="index"
-                  class="link-editor" grid="~ cols-[1fr_2fr_auto]" gap="9px" mb="9px"
+                  grid="~ cols-[1fr_2fr_auto]" gap="9px" mb="9px" class="[@media(max-width:700px)]:grid-cols-1"
                   mt="3"
                 >
                   <input
@@ -514,7 +514,7 @@ async function remove() {
               <div
                 v-for="(item, mIndex) in group.monitors"
                 :key="item.monitorId"
-                class="group-editor-row" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0"
+                flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0" class="[@media(max-width:700px)]:flex-wrap"
               >
                 <div flex="1" min-w="0">
                   <span un-text="12px $muted" tracking="0.5px">{{
@@ -560,7 +560,7 @@ async function remove() {
                   </Button>
                 </template>
               </div>
-              <div v-if="canEdit()" class="group-editor-row" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0">
+              <div v-if="canEdit()" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0" class="[@media(max-width:700px)]:flex-wrap">
                 <select v-model="newMonitorIds[group.id]" :aria-label="t('common.selectAMonitor')">
                   <option value="">
                     {{ t('common.selectAMonitor') }}
@@ -602,7 +602,7 @@ async function remove() {
           </Button>
         </FieldActions>
       </div>
-      <aside class="editor-preview" pos="sticky" top="20px" self="start">
+      <aside pos="sticky" top="20px" self="start" class="[@media(max-width:1200px)]:static [@media(max-width:700px)]:min-w-0">
         <div class="preview-label" flex="~ items-center justify-between" un-text="12px $muted" mb="12px">
           <strong>{{ t('pageEditor.liveDraftPreview') }}</strong><span>{{ t('pageEditor.responsivePreview') }}</span>
         </div>

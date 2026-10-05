@@ -39,10 +39,10 @@ const query = useQuery({
         </RouterLink>
       </Button>
     </EmptyState>
-    <div v-else class="cards-grid">
-      <Card v-for="page in query.data.value.items" :key="page.id" class="page-tile" as="article">
-        <div class="page-preview-icon">
-          <span :style="{ background: `${page.draft.brandColor}25` }" class="preview-status" /><span w="75%" /><span w="95%" /><span w="85%" /><span w="65%" />
+    <div v-else grid="~ cols-3" gap="20px" class="[@media(max-width:1200px)]:grid-cols-2 [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1!">
+      <Card v-for="page in query.data.value.items" :key="page.id" as="article" p="23px" class="[&_h2]:mb-6px [&_h2]:text-16px">
+        <div flex="~ col" gap="9px" h="115px" mb="20px" p="y-15px x-18px" border="1 solid $border" rounded="8px" bg="$surface-soft" class="[&>span]:block [&>span]:h-6px [&>span]:rounded-2px [&>span]:bg-$border">
+          <span :style="{ background: `${page.draft.brandColor}25` }" w="55%" h="10px!" mb="6px" /><span w="75%" /><span w="95%" /><span w="85%" /><span w="65%" />
         </div>
         <div flex="~ justify-between items-center gap-3">
           <h2>{{ page.name }}</h2>
@@ -58,7 +58,7 @@ const query = useQuery({
         <p v-if="page.publishedAt ? publishedEntry(page).domain : page.domain" flex="~ items-center gap-1.5" class="muted" un-text="13px $muted">
           <span w="11px" h="11px" aria-hidden="true" class="i-lucide-globe" />{{ page.publishedAt ? publishedEntry(page).domain : page.domain }}
         </p>
-        <div class="tile-actions">
+        <div flex="~ items-center justify-between" mt="20px" pt="16px" border="t-1 solid $border">
           <Button size="sm" as-child>
             <RouterLink :to="`/app/pages/${page.id}`">
               <span w="12px" h="12px" aria-hidden="true" class="i-lucide-pencil" />{{

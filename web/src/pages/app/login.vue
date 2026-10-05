@@ -91,10 +91,10 @@ async function submit() {
 </script>
 
 <template>
-  <div :data-theme="dark ? 'dark' : 'light'" class="auth-page">
-    <section class="auth-art">
+  <div data-theme-boundary :data-theme="dark ? 'dark' : 'light'" grid="~ cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" min-h="screen" bg="$bg" un-text="$text" class="[@media(max-width:900px)]:grid-cols-1">
+    <section flex="~ col" justify="between" min-h="screen" p="48px" bg="$surface-soft" border="r-1 solid $border" un-text="$text" class="[&_.brand-icon]:bg-$surface [&_.brand]:text-22px [@media(max-width:900px)]:hidden">
       <Brand />
-      <div class="auth-copy">
+      <div relative my="auto" max-w="460px" class="[&_h1]:text-[clamp(32px,3.2vw,46px)] [&_h1]:font-500 [&_h1]:leading-[1.2] [&_h1]:tracking-[-1.2px] [&>p]:mt-24px [&>p]:max-w-360px [&>p]:text-14px [&>p]:text-$muted">
         <p class="eyebrow" un-text="12px $muted" font="500" mb="8px">
           {{ t('login.slogan') }}
         </p>
@@ -103,13 +103,13 @@ async function submit() {
           {{ t('login.monitorServicesRespondToIncidentsAndKeepEveryone') }}
         </p>
       </div>
-      <div flex="~ items-center gap-2" class="auth-bottom">
+      <div flex="~ items-center gap-2" un-text="12px $muted">
         <span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />{{ t('login.selfHostedYourInfrastructureYourData') }}
       </div>
     </section>
-    <section class="auth-main">
-      <div class="auth-form">
-        <div class="auth-logo-mobile">
+    <section flex="~ items-center justify-center" p="48px" bg="$surface" class="[@media(max-width:900px)]:min-h-screen [@media(max-width:700px)]:px-20px [@media(max-width:700px)]:py-32px">
+      <div w="full" max-w="360px" class="[&_h1]:text-26px [&>p]:mt-10px [&>p]:mb-30px [&_form]:flex [&_form]:flex-col [&_form]:gap-18px [&_form_.button]:min-h-40px [&_form_.button]:px-12px [&_form_.button]:py-10px">
+        <div hidden mb="35px" class="[@media(max-width:900px)]:block">
           <Brand />
         </div>
         <p class="eyebrow" un-text="12px $muted" font="500" mb="8px">

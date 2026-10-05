@@ -158,7 +158,7 @@ function viewRound(round: Round) {
           </Button>
         </template>
       </PageHeader>
-      <div class="stats-grid">
+      <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-$muted [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-$muted [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-$muted [&_.positive]:text-$success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
         <Card class="stat-card">
           <div class="stat-label">
             {{ t('monitorDetails.currentState') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
@@ -277,7 +277,7 @@ function viewRound(round: Round) {
           </div>
         </CardContent>
       </Card>
-      <div v-if="monitor.certificate" class="alert-strip">
+      <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid $border" rounded="8px" bg="$surface" un-text="12px $muted">
         <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
@@ -288,7 +288,7 @@ function viewRound(round: Round) {
           }}
           · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span>
       </div>
-      <div class="detail-layout">
+      <div grid="~ cols-[minmax(0,1fr)_280px]" gap="22px" class="[&>*]:min-w-0 [@media(max-width:1200px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1!">
         <Card as="section">
           <TabsRoot v-model="tab">
             <TabsList>

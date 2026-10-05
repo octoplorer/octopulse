@@ -178,7 +178,7 @@ function percentage(value: number | undefined) {
       <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
     </Button>
   </PageHeader>
-  <div class="alert-strip">
+  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid $border" rounded="8px" bg="$surface" un-text="12px $muted">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
@@ -192,8 +192,8 @@ function percentage(value: number | undefined) {
         {{ t('servers.configureConnection') }}
       </Button>
     </EmptyState>
-    <div v-else class="servers-grid">
-      <Card v-for="server in query.data.value.items" :key="server.id" class="server-card" as="article">
+    <div v-else grid="~ cols-3" gap="20px" class="[@media(max-width:1200px)]:grid-cols-2 [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1!">
+      <Card v-for="server in query.data.value.items" :key="server.id" as="article" p="22px" class="[&_h2]:text-16px">
         <div flex="~ items-center justify-between gap-3">
           <div flex="~ items-center gap-3">
             <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
@@ -206,7 +206,7 @@ function percentage(value: number | undefined) {
           </div>
           <Badge>{{ server.status }}</Badge>
         </div>
-        <div class="server-metrics">
+        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-$border [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-$accent">
           <div>
             <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
             <div class="metric-progress">
@@ -269,7 +269,7 @@ function percentage(value: number | undefined) {
       </Button>
     </template>
   </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>
-    <div v-if="selected?.info" mb="5" class="hint-grid" grid="~ cols-2" gap="15px">
+    <div v-if="selected?.info" mb="5" grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
       <div>
         <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
@@ -321,7 +321,7 @@ function percentage(value: number | undefined) {
           </FieldError>
           <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
           <div v-else py="6">
-            <div class="hint-grid" grid="~ cols-2" gap="15px">
+            <div grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
               <section>
                 <h3>CPU (%)</h3>
                 <Sparkline show-scale :values="history.map((x) => x.cpu)" :timestamps="history.map((x) => x.at)" :height="115" />

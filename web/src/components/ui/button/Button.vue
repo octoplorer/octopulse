@@ -16,7 +16,7 @@ const variants = {
 const sizes = {
   default: '',
   sm: 'small [&[data-size=sm]]:min-h-28px [&[data-size=sm]]:py-4px [&[data-size=sm]]:px-8px [&[data-size=sm]]:rounded-6px [&[data-size=sm]]:text-12px',
-  icon: 'icon-button [&[data-size=icon]]:gap-0 [&[data-size=icon]]:[font-size:inherit] [&[data-size=icon]]:[font-weight:inherit] [&[data-size=icon]]:[line-height:inherit] [&[data-size=icon]]:[white-space:inherit] [&[data-size=icon]]:shrink-0 [&[data-size=icon]]:min-w-32px [&[data-size=icon]]:min-h-32px [&[data-size=icon]]:p-7px [&[data-size=icon]]:rounded-6px [&[data-size=icon]]:border-transparent [&[data-size=icon]]:bg-transparent [&[data-size=icon]]:text-$muted [&[data-size=icon]]:shadow-none [&[data-size=icon]:hover]:bg-$surface-soft [&[data-size=icon]:hover]:text-$text',
+  icon: '[&[data-size=icon]]:gap-0 [@media(max-width:700px)]:[&[data-size=icon]]:min-h-36px [&[data-size=icon]]:[font-size:inherit] [&[data-size=icon]]:[font-weight:inherit] [&[data-size=icon]]:[line-height:inherit] [&[data-size=icon]]:[white-space:inherit] [&[data-size=icon]]:shrink-0 [&[data-size=icon]]:min-w-32px [&[data-size=icon]]:min-h-32px [&[data-size=icon]]:p-7px [&[data-size=icon]]:rounded-6px [&[data-size=icon]]:border-transparent [&[data-size=icon]]:bg-transparent [&[data-size=icon]]:text-$muted [&[data-size=icon]]:shadow-none [&[data-size=icon]:hover]:bg-$surface-soft [&[data-size=icon]:hover]:text-$text',
 }
 </script>
 

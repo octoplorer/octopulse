@@ -69,21 +69,22 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
 
 <template>
   <div
-    class="public-page"
+    data-theme-boundary
     :class="{ preview }"
     :data-theme="dark ? 'dark' : 'light'"
     :style="{ '--accent': page.config.brandColor || '#2563eb' }" bg="$bg" un-text="$text" min-h="screen" py="48px" px="24px" font="sans"
+    class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px [@media(max-width:700px)]:[&_.public-incident>div]:flex-wrap [&.preview]:min-h-0 [&.preview]:border-1 [&.preview]:border-solid [&.preview]:border-$border [&.preview]:rounded-11px [&.preview]:p-23px [&.preview_.public-header]:mb-15px [&.preview_.public-brand]:text-18px [&.preview_.public-overall]:mt-10px [&.preview_.public-overall]:p-20px [&.preview_.public-overall_h1]:text-16px [&.preview_.public-monitor]:p-17px [&.preview_.public-footer]:text-12px [&.preview_.public-nav]:hidden [&.preview_.public-monitor-head]:flex-wrap"
   >
     <div class="public-inner" max-w="870px" mx="auto">
-      <header class="public-header" flex="~ items-center justify-between gap-20px" mb="30px">
-        <div class="public-brand" flex="~ items-center gap-12px" font="[var(--font-sans)] 600" un-text="22px" tracking="-0.5px" break="anywhere">
+      <header class="public-header [@media(max-width:700px)]:items-start [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:gap-13px" flex="~ items-center justify-between gap-20px" mb="30px">
+        <div class="public-brand [@media(max-width:700px)]:text-21px" flex="~ items-center gap-12px" font="[var(--font-sans)] 600" un-text="22px" tracking="-0.5px" break="anywhere">
           <img v-if="page.config.logoUrl" :src="page.config.logoUrl" alt="" size="36px" object="contain"><span
             v-else
             class="brand-icon [box-shadow:var(--control-shadow)]"
-            :style="{ background: page.config.brandColor || '#2563eb' }" flex="~ items-center justify-center shrink-0" size="32px" un-text="$text" bg="$surface" border="1px solid $control-border" rounded="8px"
+            :style="{ background: page.config.brandColor || '#2563eb' }" flex="~ items-center justify-center shrink-0" size="32px" un-text="white" bg="$surface" border="1px solid $control-border" rounded="8px"
           ><span class="i-lucide-activity" w="20px" h="20px" aria-hidden="true" /></span>{{ page.config.title || 'Octopulse' }}
         </div>
-        <nav class="public-nav" flex="~ items-center wrap gap-17px" un-text="12px $muted">
+        <nav class="public-nav [@media(max-width:700px)]:flex-wrap [@media(max-width:700px)]:gap-13px" flex="~ items-center wrap gap-17px" un-text="12px $muted">
           <a
             v-for="link in page.config.links"
             :key="link.url"
@@ -108,7 +109,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
       <p v-if="page.config.description" class="status-page-description" un-text="13px $muted" max-w="600px" mb="25px">
         {{ page.config.description }}
       </p>
-      <div v-if="!incidentId" class="public-overall" p="30px" mt="20px" mb="29px" border="1px solid $border" rounded="12px" bg="$surface" flex="~ items-center gap-17px">
+      <div v-if="!incidentId" class="public-overall [@media(max-width:700px)]:px-18px [@media(max-width:700px)]:py-22px [@media(max-width:700px)]:[&_h1]:text-19px" p="30px" mt="20px" mb="29px" border="1px solid $border" rounded="12px" bg="$surface" flex="~ items-center gap-17px">
         <span
           class="public-overall-icon"
           size="40px"
@@ -159,8 +160,8 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
             {{ group.name }}
           </h2>
           <Card>
-            <article v-for="monitor in group.monitors" :key="monitor.id" class="public-monitor" py="22px" px="25px" border="b-1px b-solid b-$border last:b-0">
-              <div class="public-monitor-head" flex="~ items-center justify-between gap-12px" mb="15px">
+            <article v-for="monitor in group.monitors" :key="monitor.id" class="public-monitor [@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-19px" py="22px" px="25px" border="b-1px b-solid b-$border last:b-0">
+              <div class="public-monitor-head [@media(max-width:700px)]:flex-wrap" flex="~ items-center justify-between gap-12px" mb="15px">
                 <h3 un-text="13px" font="600" break="anywhere">
                   {{ monitor.name }}
                 </h3>
@@ -173,7 +174,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
                 />
               </div>
               <template v-if="monitor.certificate">
-                <div class="metric-row tabular-nums" flex="~ items-center justify-between wrap" un-text="12px $muted" mt="9px">
+                <div class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap" un-text="12px $muted" mt="9px">
                   <span>{{ t('statusPage.timeRemaining') }}
                     {{
                       monitor.certificate.expiresAt
@@ -194,7 +195,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
                   :height="30"
                   :color="page.config.brandColor"
                 />
-                <div v-if="showMetric(monitor.id, 'showUptime')" class="metric-row tabular-nums" flex="~ items-center justify-between wrap" un-text="12px $muted" mt="9px">
+                <div v-if="showMetric(monitor.id, 'showUptime')" class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap" un-text="12px $muted" mt="9px">
                   <span>{{ t('common.uptime') }}
                     <strong>{{ formatPercent(monitor.availability?.uptime) }}</strong><span ml="3">{{ t('statusPage.coverage') }}
                       {{ formatPercent(monitor.availability?.coverage) }}</span></span><span>{{ t('statusPage.effectiveDuration') }}
@@ -244,7 +245,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
             {{ incident.body }}
           </p>
           <small un-text="12px $muted">{{ formatDate(incident.createdAt) }}</small>
-          <div v-if="incident.updates?.length" class="timeline" mt="6">
+          <div v-if="incident.updates?.length" mt="6" ml="5px" pl="21px" border="l-1 solid $border" class="[&_.timeline-entry]:relative [&_.timeline-entry]:pb-24px [&_.timeline-entry]:before:content-empty [&_.timeline-entry]:before:absolute [&_.timeline-entry]:before:left-[-26px] [&_.timeline-entry]:before:top-5px [&_.timeline-entry]:before:size-9px [&_.timeline-entry]:before:rounded-full [&_.timeline-entry]:before:border-2 [&_.timeline-entry]:before:border-solid [&_.timeline-entry]:before:border-$surface [&_.timeline-entry]:before:bg-$accent [&_.timeline-entry_h3]:text-12px [&_.timeline-entry_p]:mt-6px [&_.timeline-entry_p]:whitespace-pre-wrap [&_.timeline-entry_p]:text-12px [&_.timeline-entry_p]:text-$muted [&_.timeline-entry_small]:text-12px [&_.timeline-entry_small]:text-$muted">
             <div
               v-for="update in [...incident.updates].reverse()"
               :key="update.id"
@@ -264,7 +265,7 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
           }}
         </RouterLink>
       </Button>
-      <footer class="public-footer" flex="~ items-center justify-between" border="t-1px t-solid t-$border" mt="34px" pt="20px" un-text="12px $muted">
+      <footer class="public-footer [@media(max-width:700px)]:gap-15px" flex="~ items-center justify-between" border="t-1px t-solid t-$border" mt="34px" pt="20px" un-text="12px $muted">
         <span flex="~ items-center gap-1.5"><span class="i-lucide-activity" w="13px" h="13px" aria-hidden="true" />{{ t('publicPage.poweredBy') }}</span>
       </footer>
     </div>

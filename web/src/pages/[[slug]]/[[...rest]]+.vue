@@ -57,7 +57,7 @@ useHead(() => {
 
 <template>
   <StatusPage v-if="query.data.value" :page="query.data.value" :incident-id="incidentId" :stale="!!query.error.value" :path-base="isDomain ? '' : `/${route.params.slug}`" />
-  <div v-else class="public-page" bg="$bg" un-text="$text" min-h="screen" py="48px" px="24px" font="sans">
+  <div v-else data-theme-boundary bg="$bg" un-text="$text" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
     <div class="public-inner" max-w="870px" mx="auto">
       <AsyncState :pending="query.isPending.value">
         <Empty>
