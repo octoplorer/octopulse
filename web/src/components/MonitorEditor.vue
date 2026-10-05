@@ -39,6 +39,7 @@ import { Alert } from './ui/alert'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { FieldActions, FieldDescription, FieldGroup, FieldLabel, FieldSection } from './ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Separator } from './ui/separator'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from './ui/tabs'
 
@@ -264,11 +265,16 @@ const charsetOptions = [
                 editing ? t('monitorEditor.theMonitorTypeIsFixedAfterCreationCreate') : undefined
               "
             >
-              <select v-model="form.type" :disabled="editing">
-                <option v-for="type in monitorTypes" :key="type.value" :value="type.value">
-                  {{ t(type.label) }}
-                </option>
-              </select>
+              <Select v-model="form.type" :disabled="editing">
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem v-for="type in monitorTypes" :key="type.value" :value="type.value">
+                      {{ t(type.label) }}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </Field><Field :label="t('common.group')">
               <input v-model="form.group" :placeholder="t('monitorEditor.eGProduction')">
             </Field><Field :label="t('monitorEditor.tags')" :hint="t('monitorEditor.separateWithCommas')">
@@ -360,24 +366,34 @@ const charsetOptions = [
                 </p>
                 <FieldGroup>
                   <Field :label="t('monitorEditor.bodyFormat')">
-                    <select v-model="form.http.body.format">
-                      <option
-                        v-for="format in ['none', 'json', 'form', 'multipart', 'text', 'raw']"
-                        :key="format"
-                        :value="format"
-                      >
-                        {{ format }}
-                      </option>
-                    </select>
+                    <Select v-model="form.http.body.format">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem
+                            v-for="format in ['none', 'json', 'form', 'multipart', 'text', 'raw']"
+                            :key="format"
+                            :value="format"
+                          >
+                            {{ format }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field
                     v-if="!['none', 'json'].includes(form.http.body.format)"
                     :label="t('common.characterEncoding')"
                   >
-                    <select v-model="form.http.body.charset">
-                      <option v-for="charset in charsetOptions" :key="charset">
-                        {{ charset }}
-                      </option>
-                    </select>
+                    <Select v-model="form.http.body.charset">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem v-for="charset in charsetOptions" :key="charset" :value="charset">
+                            {{ charset }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field
                     v-if="['json', 'text', 'raw'].includes(form.http.body.format)"
                     :label="t('monitorEditor.bodySecretReference')"
@@ -462,20 +478,25 @@ const charsetOptions = [
                 </p>
                 <FieldGroup>
                   <Field :label="t('monitorEditor.authenticationType')">
-                    <select v-model="form.http.auth.type">
-                      <option value="none">
-                        {{ t('monitorEditor.none') }}
-                      </option>
-                      <option value="basic">
-                        Basic
-                      </option>
-                      <option value="bearer">
-                        Bearer
-                      </option>
-                      <option value="header">
-                        {{ t('monitorEditor.apiKeyHeader') }}
-                      </option>
-                    </select>
+                    <Select v-model="form.http.auth.type">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="none">
+                            {{ t('monitorEditor.none') }}
+                          </SelectItem>
+                          <SelectItem value="basic">
+                            Basic
+                          </SelectItem>
+                          <SelectItem value="bearer">
+                            Bearer
+                          </SelectItem>
+                          <SelectItem value="header">
+                            {{ t('monitorEditor.apiKeyHeader') }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field
                     v-if="form.http.auth.type !== 'none'"
                     :label="t('monitorEditor.passwordTokenSecret')"
@@ -577,35 +598,50 @@ const charsetOptions = [
                       max="20"
                     >
                   </Field><Field :label="t('monitorEditor.redirectScope')">
-                    <select v-model="form.http.redirects.scope">
-                      <option value="same-origin">
-                        {{ t('monitorEditor.sameOrigin') }}
-                      </option>
-                      <option value="same-host">
-                        {{ t('monitorEditor.sameHost') }}
-                      </option>
-                      <option value="any">
-                        {{ t('monitorEditor.anyTarget') }}
-                      </option>
-                    </select>
+                    <Select v-model="form.http.redirects.scope">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="same-origin">
+                            {{ t('monitorEditor.sameOrigin') }}
+                          </SelectItem>
+                          <SelectItem value="same-host">
+                            {{ t('monitorEditor.sameHost') }}
+                          </SelectItem>
+                          <SelectItem value="any">
+                            {{ t('monitorEditor.anyTarget') }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.acceptEncoding')">
-                    <select v-model="form.http.acceptEncoding">
-                      <option value="gzip">
-                        gzip
-                      </option>
-                      <option value="identity">
-                        identity
-                      </option>
-                    </select>
+                    <Select v-model="form.http.acceptEncoding">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="gzip">
+                            gzip
+                          </SelectItem>
+                          <SelectItem value="identity">
+                            identity
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.responseCharset')">
-                    <select v-model="form.http.responseCharset">
-                      <option value="">
-                        {{ t('monitorEditor.detectFromResponse') }}
-                      </option>
-                      <option v-for="charset in charsetOptions" :key="charset">
-                        {{ charset }}
-                      </option>
-                    </select>
+                    <Select v-model="form.http.responseCharset">
+                      <SelectTrigger><SelectValue :placeholder="t('monitorEditor.detectFromResponse')" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="">
+                            {{ t('monitorEditor.detectFromResponse') }}
+                          </SelectItem>
+                          <SelectItem v-for="charset in charsetOptions" :key="charset" :value="charset">
+                            {{ charset }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.decompressedResponseLimitBytes')">
                     <input
                       v-model.number="form.http.maxResponseBytes"
@@ -650,11 +686,16 @@ const charsetOptions = [
                       optional
                     />
                   </Field><Field :label="t('common.characterEncoding')">
-                    <select v-model="form.tcp.charset">
-                      <option v-for="charset in charsetOptions" :key="charset">
-                        {{ charset }}
-                      </option>
-                    </select>
+                    <Select v-model="form.tcp.charset">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem v-for="charset in charsetOptions" :key="charset" :value="charset">
+                            {{ charset }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.responseContains')">
                     <input v-model="form.tcp.receiveContains">
                   </Field><Field :label="t('monitorEditor.responseRegex')">
@@ -690,64 +731,86 @@ const charsetOptions = [
                   <Field :label="t('monitorEditor.queryName')">
                     <input v-model="form.dns.name" required placeholder="example.com">
                   </Field><Field :label="t('monitorEditor.recordType')">
-                    <select v-model="form.dns.recordType">
-                      <option
-                        v-for="record in [
-                          'A',
-                          'AAAA',
-                          'CNAME',
-                          'MX',
-                          'TXT',
-                          'NS',
-                          'SRV',
-                          'PTR',
-                          'SOA',
-                          'CAA',
-                        ]"
-                        :key="record"
-                      >
-                        {{ record }}
-                      </option>
-                    </select>
+                    <Select v-model="form.dns.recordType">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem
+                            v-for="record in [
+                              'A',
+                              'AAAA',
+                              'CNAME',
+                              'MX',
+                              'TXT',
+                              'NS',
+                              'SRV',
+                              'PTR',
+                              'SOA',
+                              'CAA',
+                            ]"
+                            :key="record"
+                            :value="record"
+                          >
+                            {{ record }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field
                     :label="t('monitorEditor.dnsServer')"
                     :hint="t('monitorEditor.leaveEmptyForSystemResolverOrEnterHost')"
                   >
                     <input v-model="form.dns.server" placeholder="1.1.1.1:53">
                   </Field><Field :label="t('monitorEditor.protocol')">
-                    <select v-model="form.dns.protocol">
-                      <option value="udp">
-                        UDP
-                      </option>
-                      <option value="tcp">
-                        TCP
-                      </option>
-                    </select>
+                    <Select v-model="form.dns.protocol">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="udp">
+                            UDP
+                          </SelectItem>
+                          <SelectItem value="tcp">
+                            TCP
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.expectedResponseCode')">
-                    <select v-model="form.dns.expectedRCode">
-                      <option
-                        v-for="code in [
-                          'NOERROR',
-                          'FORMERR',
-                          'SERVFAIL',
-                          'NXDOMAIN',
-                          'NOTIMP',
-                          'REFUSED',
-                        ]"
-                        :key="code"
-                      >
-                        {{ code }}
-                      </option>
-                    </select>
+                    <Select v-model="form.dns.expectedRCode">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem
+                            v-for="code in [
+                              'NOERROR',
+                              'FORMERR',
+                              'SERVFAIL',
+                              'NXDOMAIN',
+                              'NOTIMP',
+                              'REFUSED',
+                            ]"
+                            :key="code"
+                            :value="code"
+                          >
+                            {{ code }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field :label="t('monitorEditor.recordMatching')">
-                    <select v-model="form.dns.matchMode">
-                      <option value="contains">
-                        {{ t('monitorEditor.containsExpectedRecords') }}
-                      </option>
-                      <option value="exact">
-                        {{ t('monitorEditor.exactSet') }}
-                      </option>
-                    </select>
+                    <Select v-model="form.dns.matchMode">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="contains">
+                            {{ t('monitorEditor.containsExpectedRecords') }}
+                          </SelectItem>
+                          <SelectItem value="exact">
+                            {{ t('monitorEditor.exactSet') }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field><Field class="span-full" :label="t('monitorEditor.expectedValuesOnePerLine')">
                     <textarea v-model="dnsValues" />
                   </Field>

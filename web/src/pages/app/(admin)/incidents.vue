@@ -21,6 +21,7 @@ import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
 import { FieldError, FieldGroup, FieldLabel } from '../../../components/ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Separator } from '../../../components/ui/separator'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, TableToolbar } from '../../../components/ui/table'
 import { canEdit } from '../../../composables/api'
@@ -143,17 +144,24 @@ async function update() {
       <h2 un-text="sm">
         {{ t('incidents.incidentAnnouncements') }}
       </h2>
-      <select v-model="filter" w="auto!" :aria-label="t('incidents.incidentFilter')">
-        <option value="active">
-          {{ t('incidents.active') }}
-        </option>
-        <option value="resolved">
-          {{ t('incidents.resolved') }}
-        </option>
-        <option value="all">
-          {{ t('incidents.all') }}
-        </option>
-      </select>
+      <Select v-model="filter">
+        <SelectTrigger w="auto!" :aria-label="t('incidents.incidentFilter')">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="active">
+              {{ t('incidents.active') }}
+            </SelectItem>
+            <SelectItem value="resolved">
+              {{ t('incidents.resolved') }}
+            </SelectItem>
+            <SelectItem value="all">
+              {{ t('incidents.all') }}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </TableToolbar>
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
       <EmptyState v-if="!items.length" :title="t('incidents.noIncidentsHere')" :description="t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')" />
@@ -206,23 +214,37 @@ async function update() {
         </Field><Field :label="t('incidents.description')" class="span-full">
           <textarea v-model="form.body" rows="5" required />
         </Field><Field :label="t('incidents.progressStatus')">
-          <select v-model="form.status">
-            <option v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']" :key="state" :value="state">
-              {{ statusLabel(state) }}
-            </option>
-          </select>
+          <Select v-model="form.status">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
+                  :key="state"
+                  :value="state"
+                >
+                  {{ statusLabel(state) }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field><Field :label="t('incidents.impactLevel')">
-          <select v-model="form.impact">
-            <option value="none">
-              {{ t('incidents.informational') }}
-            </option>
-            <option value="partial">
-              {{ t('incidents.partialOutage') }}
-            </option>
-            <option value="outage">
-              {{ t('incidents.majorOutage') }}
-            </option>
-          </select>
+          <Select v-model="form.impact">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="none">
+                  {{ t('incidents.informational') }}
+                </SelectItem>
+                <SelectItem value="partial">
+                  {{ t('incidents.partialOutage') }}
+                </SelectItem>
+                <SelectItem value="outage">
+                  {{ t('incidents.majorOutage') }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field>
         <div class="span-full">
           <FieldLabel as="label">
@@ -283,11 +305,20 @@ async function update() {
           {{ t('incidents.publishAnUpdate') }}
         </h3>
         <Field :label="t('incidents.progress2')">
-          <select v-model="updateStatus">
-            <option v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']" :key="state" :value="state">
-              {{ statusLabel(state) }}
-            </option>
-          </select>
+          <Select v-model="updateStatus">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="state in ['investigating', 'identified', 'monitoring', 'resolved']"
+                  :key="state"
+                  :value="state"
+                >
+                  {{ statusLabel(state) }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field><Field :label="t('incidents.update')" mt="4">
           <textarea v-model="updateBody" required rows="4" />
         </Field><Button :disabled="saving" mt="4" variant="primary">

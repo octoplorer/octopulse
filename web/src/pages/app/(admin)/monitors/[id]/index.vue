@@ -25,6 +25,7 @@ import { Badge } from '../../../../../components/ui/badge'
 import { Button } from '../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../components/ui/card'
 import { FieldDescription, FieldError } from '../../../../../components/ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../../../components/ui/select'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../../../components/ui/tabs'
 import { canEdit } from '../../../../../composables/api'
@@ -302,17 +303,24 @@ function viewRound(round: Round) {
                 }}
               </TabsTrigger>
               <div ml="auto" class="historical-period" flex="~ items-center" gap="9px" un-text="12px $muted">
-                <select v-model="period" w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
-                  <option value="24h">
-                    {{ t('counts.hours', { count: 24 }, 24) }}
-                  </option>
-                  <option value="7d">
-                    {{ t('counts.days', { count: 7 }, 7) }}
-                  </option>
-                  <option value="30d">
-                    {{ t('counts.days', { count: 30 }, 30) }}
-                  </option>
-                </select>
+                <Select v-model="period">
+                  <SelectTrigger w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="24h">
+                        {{ t('counts.hours', { count: 24 }, 24) }}
+                      </SelectItem>
+                      <SelectItem value="7d">
+                        {{ t('counts.days', { count: 7 }, 7) }}
+                      </SelectItem>
+                      <SelectItem value="30d">
+                        {{ t('counts.days', { count: 30 }, 30) }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
             </TabsList><TabsContent value="history">
               <CardContent>

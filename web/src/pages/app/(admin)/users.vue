@@ -21,6 +21,7 @@ import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
 import { FieldError, FieldGroup } from '../../../components/ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { currentUser, isAdmin } from '../../../composables/api'
 import { languageOptions } from '../../../composables/i18n'
@@ -182,23 +183,33 @@ function cancel() {
         </Field><Field :label="t('common.displayName')">
           <input v-model="form.name">
         </Field><Field :label="t('common.role')">
-          <select v-model="form.role">
-            <option value="admin">
-              {{ t('users.administrator') }}
-            </option>
-            <option value="operator">
-              {{ t('users.operator') }}
-            </option>
-            <option value="viewer">
-              {{ t('users.viewer') }}
-            </option>
-          </select>
+          <Select v-model="form.role">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="admin">
+                  {{ t('users.administrator') }}
+                </SelectItem>
+                <SelectItem value="operator">
+                  {{ t('users.operator') }}
+                </SelectItem>
+                <SelectItem value="viewer">
+                  {{ t('users.viewer') }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field><Field :label="t('common.language')">
-          <select v-model="form.locale">
-            <option v-for="language in languageOptions" :key="language.value" :value="language.value">
-              {{ language.label }}
-            </option>
-          </select>
+          <Select v-model="form.locale">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                  {{ language.label }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field><Field :label="t('common.displayTimeZone')" class="span-full">
           <input v-model="form.timezone" required>
         </Field><Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :hint="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">

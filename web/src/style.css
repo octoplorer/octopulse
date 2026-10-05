@@ -22,7 +22,6 @@ body {
 
 button,
 input,
-select,
 textarea {
   font: inherit;
 }
@@ -30,7 +29,6 @@ textarea {
 button,
 a,
 input,
-select,
 textarea {
   -webkit-tap-highlight-color: transparent;
 }
@@ -53,7 +51,6 @@ button:focus-visible,
 a:focus-visible,
 summary:focus-visible,
 input:focus-visible,
-select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--focus, #2563eb);
   outline-offset: 3px;
@@ -163,7 +160,6 @@ code {
 }
 
 input:not([type='checkbox']):not([type='radio']):not([type='color']),
-select,
 textarea {
   width: 100%;
   min-width: 0;
@@ -211,7 +207,6 @@ textarea::placeholder {
 
 @media (max-width: 700px) {
   input:not([type='checkbox']):not([type='radio']):not([type='color']),
-  select,
   textarea {
     min-height: 40px;
     font-size: 16px;

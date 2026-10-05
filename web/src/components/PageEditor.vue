@@ -30,6 +30,7 @@ import { Alert } from './ui/alert'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { FieldActions, FieldDescription, FieldGroup, FieldLabel, FieldSection } from './ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 const { t } = useI18n({ useScope: 'global' })
 const queryCache = useQueryCache()
@@ -361,14 +362,19 @@ async function remove() {
                 :label="t('pageEditor.customDomain')"
                 :hint="t('pageEditor.selectAnAdministratorConfiguredDomainDnsAndHttps')"
               >
-                <select v-model="form.domain" :disabled="!canEdit()">
-                  <option value="">
-                    {{ t('pageEditor.pathAccessOnly') }}
-                  </option>
-                  <option v-for="domain in allowedDomains" :key="domain">
-                    {{ domain }}
-                  </option>
-                </select>
+                <Select v-model="form.domain" :disabled="!canEdit()">
+                  <SelectTrigger><SelectValue :placeholder="t('pageEditor.pathAccessOnly')" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="">
+                        {{ t('pageEditor.pathAccessOnly') }}
+                      </SelectItem>
+                      <SelectItem v-for="domain in allowedDomains" :key="domain" :value="domain">
+                        {{ domain }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
             </FieldGroup>
             <Alert v-if="form.publishedAt" mt="5" as="p">
@@ -423,17 +429,22 @@ async function remove() {
                   >
                 </div>
               </Field><Field :label="t('pageEditor.colorScheme')">
-                <select v-model="form.draft.colorScheme" :disabled="!canEdit()">
-                  <option value="system">
-                    {{ t('common.system') }}
-                  </option>
-                  <option value="light">
-                    {{ t('common.light') }}
-                  </option>
-                  <option value="dark">
-                    {{ t('common.dark') }}
-                  </option>
-                </select>
+                <Select v-model="form.draft.colorScheme" :disabled="!canEdit()">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="system">
+                        {{ t('common.system') }}
+                      </SelectItem>
+                      <SelectItem value="light">
+                        {{ t('common.light') }}
+                      </SelectItem>
+                      <SelectItem value="dark">
+                        {{ t('common.dark') }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
               <div class="span-full">
                 <FieldLabel as="label">
@@ -561,14 +572,21 @@ async function remove() {
                 </template>
               </div>
               <div v-if="canEdit()" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0" class="[@media(max-width:700px)]:flex-wrap">
-                <select v-model="newMonitorIds[group.id]" :aria-label="t('common.selectAMonitor')">
-                  <option value="">
-                    {{ t('common.selectAMonitor') }}
-                  </option>
-                  <option v-for="monitor in monitors" :key="monitor.id" :value="monitor.id">
-                    {{ monitor.name }} · {{ monitor.type }}
-                  </option>
-                </select><Button size="sm" @click="addMonitor(group.id)">
+                <Select v-model="newMonitorIds[group.id]">
+                  <SelectTrigger :aria-label="t('common.selectAMonitor')">
+                    <SelectValue :placeholder="t('common.selectAMonitor')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="">
+                        {{ t('common.selectAMonitor') }}
+                      </SelectItem>
+                      <SelectItem v-for="monitor in monitors" :key="monitor.id" :value="monitor.id">
+                        {{ monitor.name }} · {{ monitor.type }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select><Button size="sm" @click="addMonitor(group.id)">
                   <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.add') }}
                 </Button>
               </div>

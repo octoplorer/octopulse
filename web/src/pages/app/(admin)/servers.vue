@@ -32,6 +32,7 @@ import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
 import { FieldError } from '../../../components/ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Separator } from '../../../components/ui/separator'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
@@ -310,11 +311,18 @@ function percentage(value: number | undefined) {
               {{ formatDate(historyMeta?.syncedAt)
               }}<span v-if="historyMeta?.stale"> · {{ t('common.staleData') }}</span>
             </Alert>
-            <select v-model="historyRange" :aria-label="t('servers.historyRange')" @change="selected && detail(selected)">
-              <option v-for="range in ['1h', '12h', '24h', '1w', '30d']" :key="range">
-                {{ range }}
-              </option>
-            </select>
+            <Select v-model="historyRange" @change="selected && detail(selected)">
+              <SelectTrigger :aria-label="t('servers.historyRange')">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem v-for="range in ['1h', '12h', '24h', '1w', '30d']" :key="range" :value="range">
+                    {{ range }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
           <FieldError v-if="historyMeta?.error" as="p" py="10px" px="0">
             {{ historyMeta.error }}

@@ -15,6 +15,7 @@ import { Alert } from '../../../components/ui/alert'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
 import { FieldActions, FieldGroup, FieldSection } from '../../../components/ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { currentUser, isAdmin } from '../../../composables/api'
 import { languageOptions } from '../../../composables/i18n'
@@ -144,25 +145,35 @@ async function saveProfile() {
                 <Field :label="t('common.displayName')">
                   <input v-model="profile.name">
                 </Field><Field :label="t('common.language')">
-                  <select v-model="profile.locale">
-                    <option v-for="language in languageOptions" :key="language.value" :value="language.value">
-                      {{ language.label }}
-                    </option>
-                  </select>
+                  <Select v-model="profile.locale">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                          {{ language.label }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </Field><Field :label="t('common.displayTimeZone')">
                   <input v-model="profile.timezone" placeholder="Asia/Shanghai" required>
                 </Field><Field :label="t('settings.adminColorScheme')">
-                  <select v-model="theme">
-                    <option value="system">
-                      {{ t('common.system') }}
-                    </option>
-                    <option value="light">
-                      {{ t('common.light') }}
-                    </option>
-                    <option value="dark">
-                      {{ t('common.dark') }}
-                    </option>
-                  </select>
+                  <Select v-model="theme">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="system">
+                          {{ t('common.system') }}
+                        </SelectItem>
+                        <SelectItem value="light">
+                          {{ t('common.light') }}
+                        </SelectItem>
+                        <SelectItem value="dark">
+                          {{ t('common.dark') }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </Field>
               </FieldGroup>
             </FieldSection>
@@ -198,11 +209,16 @@ async function saveProfile() {
                 </Field><Field :label="t('common.organizationTimeZone')">
                   <input v-model="form.timezone" :disabled="!isAdmin()" required>
                 </Field><Field :label="t('settings.defaultLanguage')">
-                  <select v-model="form.locale" :disabled="!isAdmin()">
-                    <option v-for="language in languageOptions" :key="language.value" :value="language.value">
-                      {{ language.label }}
-                    </option>
-                  </select>
+                  <Select v-model="form.locale" :disabled="!isAdmin()">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                          {{ language.label }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </Field><Field :label="t('settings.allowedStatusPageDomainsOnePerLine')" :hint="t('settings.hostnamesOnlyWithoutSchemeOrPathConfigureDns')" class="span-full">
                   <textarea v-model="domains" :disabled="!isAdmin()" placeholder="status.example.com" />
                 </Field>

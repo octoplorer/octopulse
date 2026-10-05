@@ -9,6 +9,7 @@ import PageHeader from '../../../../components/PageHeader.vue'
 import StateBadge from '../../../../components/StateBadge.vue'
 import { Button } from '../../../../components/ui/button'
 import { Card } from '../../../../components/ui/card'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select'
 import { Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableHeader, TableRow, TableToolbar } from '../../../../components/ui/table'
 import { canEdit } from '../../../../composables/api'
 import { usePollingEnabled } from '../../../../composables/polling'
@@ -65,30 +66,44 @@ const filtered = computed(() =>
         <span w="16px" h="16px" aria-hidden="true" class="i-lucide-search" /><input v-model="search" w="full" min-w="0" border="0!" bg="transparent!" shadow="none!" p="y-7px! r-10px! l-0!" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')">
       </div>
       <div flex="~ items-center gap-2">
-        <select v-model="state" w="auto!" :aria-label="t('monitors.filterStatus')">
-          <option value="all">
-            {{ t('monitors.allStates') }}
-          </option>
-          <option value="up">
-            {{ t('monitors.up') }}
-          </option>
-          <option value="down">
-            {{ t('monitors.down') }}
-          </option>
-          <option value="unknown">
-            {{ t('monitors.unknown') }}
-          </option>
-          <option value="paused">
-            {{ t('common.paused') }}
-          </option>
-        </select><select v-model="type" w="auto!" :aria-label="t('monitors.filterType')">
-          <option value="all">
-            {{ t('monitors.allTypes') }}
-          </option>
-          <option v-for="item in monitorTypes" :key="item.value" :value="item.value">
-            {{ t(item.label) }}
-          </option>
-        </select>
+        <Select v-model="state">
+          <SelectTrigger w="auto!" :aria-label="t('monitors.filterStatus')">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">
+                {{ t('monitors.allStates') }}
+              </SelectItem>
+              <SelectItem value="up">
+                {{ t('monitors.up') }}
+              </SelectItem>
+              <SelectItem value="down">
+                {{ t('monitors.down') }}
+              </SelectItem>
+              <SelectItem value="unknown">
+                {{ t('monitors.unknown') }}
+              </SelectItem>
+              <SelectItem value="paused">
+                {{ t('common.paused') }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select><Select v-model="type">
+          <SelectTrigger w="auto!" :aria-label="t('monitors.filterType')">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">
+                {{ t('monitors.allTypes') }}
+              </SelectItem>
+              <SelectItem v-for="item in monitorTypes" :key="item.value" :value="item.value">
+                {{ t(item.label) }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     </TableToolbar>
     <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">

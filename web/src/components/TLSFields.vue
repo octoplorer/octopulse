@@ -7,6 +7,7 @@ import Field from './Field.vue'
 import SecretSelect from './SecretSelect.vue'
 import Toggle from './Toggle.vue'
 import { FieldGroup } from './ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 defineProps<{ secrets: Secret[], allowToggle?: boolean }>()
 
@@ -37,21 +38,39 @@ const model = defineModel<TLSConfigForm>({ required: true })
       </Field><Field :label="t('tLSFields.clientPrivateKey')">
         <SecretSelect v-model="model.clientKeySecretRef" :secrets="secrets" optional />
       </Field><Field :label="t('tLSFields.minimumTlsVersion')">
-        <select v-model="model.minVersion">
-          <option value="">
-            {{ t('common.default') }}
-          </option>
-          <option>1.2</option>
-          <option>1.3</option>
-        </select>
+        <Select v-model="model.minVersion">
+          <SelectTrigger><SelectValue :placeholder="t('common.default')" /></SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="">
+                {{ t('common.default') }}
+              </SelectItem>
+              <SelectItem value="1.2">
+                1.2
+              </SelectItem>
+              <SelectItem value="1.3">
+                1.3
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field><Field :label="t('tLSFields.maximumTlsVersion')">
-        <select v-model="model.maxVersion">
-          <option value="">
-            {{ t('common.default') }}
-          </option>
-          <option>1.2</option>
-          <option>1.3</option>
-        </select>
+        <Select v-model="model.maxVersion">
+          <SelectTrigger><SelectValue :placeholder="t('common.default')" /></SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="">
+                {{ t('common.default') }}
+              </SelectItem>
+              <SelectItem value="1.2">
+                1.2
+              </SelectItem>
+              <SelectItem value="1.3">
+                1.3
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field>
       <div class="span-full">
         <Toggle
