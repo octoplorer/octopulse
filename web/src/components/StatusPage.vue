@@ -118,10 +118,12 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
           >{{ link.label }}<span ml="1" class="i-lucide-arrow-up-right" w="11px" h="11px" aria-hidden="true" /></a><Button
             v-if="!preview"
             :aria-label="t('common.switchLanguage')"
-            shape="square"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
-            <span class="i-lucide-languages" w="16px" h="16px" aria-hidden="true" /><span un-text="xs" ml="1">{{
+            <template #icon>
+              <span class="i-lucide-languages" size="16px" shrink="0" aria-hidden="true" />
+            </template>
+            <span un-text="xs">{{
               locale === 'zh-CN' ? 'EN' : '中'
             }}</span>
           </Button>
