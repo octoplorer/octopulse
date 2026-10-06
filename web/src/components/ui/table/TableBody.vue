@@ -1,5 +1,5 @@
 <template>
-  <tbody class="[&_tr:hover]:bg-$surface-soft">
+  <tbody class="[&_tr:hover]:bg-fill-hover">
     <slot />
   </tbody>
 </template>

@@ -17,6 +17,6 @@ defineProps<{ placeholder?: string }>()
 }
 
 .select-value[data-placeholder] {
-  color: var(--muted);
+  color: var(--text-color-placeholder);
 }
 </style>

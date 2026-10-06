@@ -12,7 +12,10 @@ import { dark } from './composables/preferences'
 const { t, locale } = useI18n({ useScope: 'global' })
 useHead({
   title: () => `Octopulse · ${t('app.serviceMonitoring')}`,
-  htmlAttrs: { lang: locale },
+  htmlAttrs: {
+    'lang': locale,
+    'data-mode': () => dark.value ? 'dark' : 'light',
+  },
   meta: [
     { name: 'color-scheme', content: 'light dark' },
     { name: 'theme-color', content: () => dark.value ? '#0a0a0a' : '#fafafa' },
@@ -34,7 +37,7 @@ watch(
 
 <template>
   <RouterView />
-  <ToastViewport :data-theme="dark ? 'dark' : 'light'">
+  <ToastViewport>
     <Toast v-for="item in notices" :key="item.id" :variant="item.kind">
       <span>{{ item.message }}</span><ToastClose :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
         ×

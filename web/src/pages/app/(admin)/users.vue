@@ -146,7 +146,7 @@ function cancel() {
             <TableRow v-for="user in query.data.value.items" :key="user.id">
               <TableCell>
                 <div flex="~ items-center gap-3">
-                  <Avatar>{{ user.name?.[0] || user.username[0] }}</Avatar><span><span class="monitor-name block" font="600" un-text="13px">{{ user.name || user.username }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ user.username
+                  <Avatar>{{ user.name?.[0] || user.username[0] }}</Avatar><span><span class="monitor-name block" font="600" un-text="13px">{{ user.name || user.username }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ user.username
                   }}{{ user.id === currentUser?.id ? ` · ${t('users.you')}` : '' }}</span></span>
                 </div>
               </TableCell>
@@ -154,14 +154,14 @@ function cancel() {
                 <Badge>{{ statusLabel(user.role) }}</Badge>
               </TableCell>
               <TableCell>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ formatDate(user.createdAt) }}
               </TableCell>
               <TableCell>
                 <div v-if="isAdmin()" flex="~ gap-2">
-                  <Button :aria-label="t('common.edit')" size="icon" @click="edit(user)">
+                  <Button :aria-label="t('common.edit')" shape="square" @click="edit(user)">
                     <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
-                  </Button><Button :disabled="user.id === currentUser?.id" :aria-label="t('common.delete')" size="icon" @click="confirmDelete(user)">
+                  </Button><Button :disabled="user.id === currentUser?.id" :aria-label="t('common.delete')" shape="square" @click="confirmDelete(user)">
                     <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
                   </Button>
                 </div>
@@ -235,7 +235,7 @@ function cancel() {
     <template #footer>
       <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="danger" @click="remove">
+      </Button><Button variant="destructive" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>

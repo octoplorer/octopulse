@@ -52,7 +52,7 @@ const segments = computed(() => {
     class="block sparkline"
     w="full"
     overflow="visible"
-    :style="{ height: `${height || 60}px`, color: color || 'var(--accent)' }"
+    :style="{ height: `${height || 60}px`, color: color || 'var(--color-brand)' }"
     viewBox="0 0 300 60"
     preserveAspectRatio="none"
     role="img"
@@ -67,8 +67,8 @@ const segments = computed(() => {
       }}
     </title>
     <template v-if="showScale">
-      <text x="2" y="9" fill="var(--muted)" font-size="8">{{ metric(scale.max) }}</text>
-      <text x="2" y="59" fill="var(--muted)" font-size="8">{{ metric(scale.min) }}</text>
+      <text x="2" y="9" fill="var(--text-color-subtle)" font-size="8">{{ metric(scale.max) }}</text>
+      <text x="2" y="59" fill="var(--text-color-subtle)" font-size="8">{{ metric(scale.min) }}</text>
     </template>
     <circle
       v-for="(points, index) in segments.filter((segment) => !segment.includes(' '))"
@@ -89,7 +89,7 @@ const segments = computed(() => {
       vector-effect="non-scaling-stroke"
     />
   </svg>
-  <div v-else class="chart-empty" h="60px" flex="~ items-center justify-center" un-text="$muted">
+  <div v-else class="chart-empty" h="60px" flex="~ items-center justify-center" un-text="subtle">
     —
   </div>
 </template>

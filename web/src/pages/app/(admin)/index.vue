@@ -86,7 +86,7 @@ const nextMaintenance = computed(
       </RouterLink>
     </Button>
   </PageHeader>
-  <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-$muted [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-$muted [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-$muted [&_.positive]:text-$success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
+  <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-subtle [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-subtle [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-subtle [&_.positive]:text-fg-success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
     <Card class="stat-card">
       <div class="stat-label">
         {{ t('overview.totalMonitors') }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" /></span>
@@ -103,7 +103,7 @@ const nextMaintenance = computed(
       <div class="stat-label">
         {{ t('overview.operational') }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-circle-check" /></span>
       </div>
-      <div un-text="[var(--success)]" class="stat-value">
+      <div un-text="fg-success" class="stat-value">
         {{ up.length }}
       </div>
       <div class="stat-meta">
@@ -115,7 +115,7 @@ const nextMaintenance = computed(
         {{ t('overview.needsAttention')
         }}<span class="stat-icon"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-triangle-alert" /></span>
       </div>
-      <div :style="{ color: down.length ? 'var(--danger)' : undefined }" class="stat-value">
+      <div :un-text="down.length ? 'fg-danger' : undefined" class="stat-value">
         {{ down.length }}
       </div>
       <div class="stat-meta">
@@ -172,7 +172,7 @@ const nextMaintenance = computed(
                 <TableRow v-for="monitor in ordered" :key="monitor.id">
                   <TableCell>
                     <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
-                      <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
+                      <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span v-if="monitor.type === 'http'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                     </RouterLink>
                   </TableCell>
                   <TableCell>
@@ -190,7 +190,7 @@ const nextMaintenance = computed(
                     }}
                     s
                   </TableCell>
-                  <TableCell class="muted" un-text="13px $muted">
+                  <TableCell class="muted" un-text="13px subtle">
                     {{ formatDate(monitor.lastCheckedAt) }}
                   </TableCell>
                 </TableRow>
@@ -217,12 +217,12 @@ const nextMaintenance = computed(
           <EmptyState v-if="!pages.data.value?.items.length" :title="t('overview.keepEveryoneInformed')" :description="t('overview.publishAStatusPageWithYourOwnBrand')" />
           <div v-for="page in pages.data.value?.items.slice(0, 3)" :key="page.id" flex="~ items-center justify-between gap-4" py="3">
             <div flex="~ items-center gap-3">
-              <span un-text="[var(--accent)]" w="18px" h="18px" aria-hidden="true" class="i-lucide-globe" />
+              <span un-text="fg-brand" w="18px" h="18px" aria-hidden="true" class="i-lucide-globe" />
               <div>
                 <h3 un-text="xs">
                   {{ page.name }}
                 </h3>
-                <p class="muted" un-text="13px $muted">
+                <p class="muted" un-text="13px subtle">
                   /{{ page.publishedAt ? publishedEntry(page).slug : page.slug
                   }}{{
                     (page.publishedAt ? publishedEntry(page).domain : page.domain)
@@ -248,11 +248,11 @@ const nextMaintenance = computed(
           <Badge>{{ recentIncidents.length }}</Badge>
         </CardHeader>
         <CardContent>
-          <p v-if="!recentIncidents.length" py="4" class="muted" un-text="13px $muted">
+          <p v-if="!recentIncidents.length" py="4" class="muted" un-text="13px subtle">
             {{ t('overview.noIncidentAnnouncementsUpdatesWillAppearHere') }}
           </p>
-          <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
-            <i :style="{ background: incident.status === 'resolved' ? 'var(--success)' : 'var(--warning)' }" mt="6px" size="7px" shrink="0" rounded="full" />
+          <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-subtle">
+            <i :style="{ background: incident.status === 'resolved' ? 'var(--color-success)' : 'var(--color-warning)' }" mt="6px" size="7px" shrink="0" rounded="full" />
             <div>
               <h3>{{ incident.title }}</h3>
               <p>{{ statusLabel(incident.status) }} · {{ formatDate(incident.updatedAt) }}</p>
@@ -265,11 +265,11 @@ const nextMaintenance = computed(
           <CardTitle>{{ t('overview.upcomingMaintenance') }}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p v-if="!nextMaintenance.length" py="4" class="muted" un-text="13px $muted">
+          <p v-if="!nextMaintenance.length" py="4" class="muted" un-text="13px subtle">
             {{ t('overview.noScheduledMaintenance') }}
           </p>
-          <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
-            <span un-text="[var(--muted)]" mt="1" w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
+          <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-subtle">
+            <span un-text="subtle" mt="1" w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
             <div>
               <h3>{{ window.name }}</h3>
               <p>{{ formatDate(window.startsAt) }}</p>
@@ -278,7 +278,7 @@ const nextMaintenance = computed(
         </CardContent>
       </Card>
       <Alert mt="6" variant="default">
-        <p mb="8px 2" class="eyebrow" un-text="12px $muted" font="500">
+        <p mb="8px 2" class="eyebrow" un-text="12px subtle" font="500">
           OCTOPULSE
         </p>
         {{ t('overview.uptimeReflectsConfirmedDurationPausedMaintenanceAndMissing') }}

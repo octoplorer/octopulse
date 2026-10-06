@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Select as ArkSelect } from '@ark-ui/vue/select'
-import { dark } from '../../../composables/preferences'
 
 defineOptions({ inheritAttrs: false })
 </script>
@@ -10,9 +9,7 @@ defineOptions({ inheritAttrs: false })
     <ArkSelect.Positioner class="select-positioner">
       <ArkSelect.Content
         v-bind="$attrs"
-        data-theme-boundary
         class="select-content"
-        :data-theme="dark ? 'dark' : 'light'"
       >
         <ArkSelect.List class="select-list">
           <slot />
@@ -29,13 +26,13 @@ defineOptions({ inheritAttrs: false })
   max-height: var(--available-height);
   overflow: hidden;
   z-index: 200;
-  color: var(--text);
-  background: var(--surface);
+  color: var(--text-color-default);
+  background: var(--color-base);
   border-radius: 8px;
   outline: none;
   box-shadow:
-    0 8px 24px #0002,
-    0 0 0 1px var(--border);
+    var(--shadow-panel),
+    0 0 0 1px var(--color-shadow-edge);
 }
 
 .select-list {

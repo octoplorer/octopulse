@@ -92,7 +92,7 @@ function cancel() {
       <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addSecret') }}
     </Button>
   </PageHeader>
-  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
+  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-key-round" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
   <Card as="section">
@@ -114,16 +114,16 @@ function cancel() {
                 {{ secret.name }}
               </TableCell>
               <TableCell>
-                <code class="muted" un-text="13px $muted">{{ secret.id }}</code>
+                <code class="muted" un-text="13px subtle">{{ secret.id }}</code>
               </TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ formatDate(secret.updatedAt) }}
               </TableCell>
               <TableCell>
                 <div v-if="isAdmin()" flex="~ gap-2">
                   <Button size="sm" @click="edit(secret)">
                     <span w="12px" h="12px" aria-hidden="true" class="i-lucide-pencil" />{{ t('secrets.replace') }}
-                  </Button><Button :aria-label="t('common.delete')" size="icon" @click="confirmDelete(secret)">
+                  </Button><Button :aria-label="t('common.delete')" shape="square" @click="confirmDelete(secret)">
                     <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
                   </Button>
                 </div>
@@ -157,7 +157,7 @@ function cancel() {
     <template #footer>
       <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="danger" @click="remove">
+      </Button><Button variant="destructive" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>

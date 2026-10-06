@@ -248,7 +248,7 @@ const charsetOptions = [
       <Card mb="6" as="section">
         <FieldSection>
           <h2>{{ t('monitorEditor.basicInformation') }}</h2>
-          <p un-text="13px $muted">
+          <p un-text="13px subtle">
             {{ t('monitorEditor.useARecognizableNameAndGroupRelatedServices') }}
           </p>
           <FieldGroup>
@@ -312,7 +312,7 @@ const charsetOptions = [
             <template v-if="form.type === 'http' && form.http">
               <FieldSection>
                 <h2>{{ t('monitorEditor.httpRequest') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.allRequestMethodsUseTheSameRoundRetry') }}
                 </p>
                 <FieldGroup>
@@ -361,7 +361,7 @@ const charsetOptions = [
               </FieldSection>
               <FieldSection>
                 <h2>{{ t('monitorEditor.requestBody') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.configureFormatCharacterEncodingAndCompressionSeparately') }}
                 </p>
                 <FieldGroup>
@@ -453,7 +453,7 @@ const charsetOptions = [
                       ><span>{{ file.filename }}</span><Button
                         type="button"
                         :aria-label="t('monitorEditor.removeFile')"
-                        size="icon"
+                        shape="square"
                         @click="form.http.body.files.splice(index, 1)"
                       >
                         <span class="i-lucide-x" w="15px" h="15px" aria-hidden="true" />
@@ -473,7 +473,7 @@ const charsetOptions = [
               </FieldSection>
               <FieldSection>
                 <h2>{{ t('monitorEditor.authentication') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.credentialsUseExistingSecretReferences') }}
                 </p>
                 <FieldGroup>
@@ -528,7 +528,7 @@ const charsetOptions = [
               </FieldSection>
               <FieldSection>
                 <h2>{{ t('monitorEditor.successAssertions') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.everyConfiguredAssertionMustPassForASuccessful') }}
                 </p>
                 <FieldGroup>
@@ -570,7 +570,7 @@ const charsetOptions = [
                 </FieldGroup>
               </FieldSection>
               <FieldSection as="details">
-                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
+                <summary cursor="pointer" un-text="12px link" font="600" py="15px" px="0">
                   {{ t('monitorEditor.advancedTlsConnectionsTransport') }}
                 </summary>
                 <h3 mb="4">
@@ -661,7 +661,7 @@ const charsetOptions = [
             </template><template v-if="form.type === 'tcp' && form.tcp">
               <FieldSection>
                 <h2>{{ t('monitorTypes.tcpConnection') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.testAConnectionOrSendAPayloadAnd') }}
                 </p>
                 <FieldGroup>
@@ -711,7 +711,7 @@ const charsetOptions = [
                 </FieldGroup>
               </FieldSection>
               <FieldSection as="details">
-                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
+                <summary cursor="pointer" un-text="12px link" font="600" py="15px" px="0">
                   {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.tcp.tls" :secrets="secrets" allow-toggle />
@@ -724,7 +724,7 @@ const charsetOptions = [
             </template><template v-if="form.type === 'dns' && form.dns">
               <FieldSection>
                 <h2>{{ t('monitorEditor.dnsQuery') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.validateResponseCodesAndRecordValues') }}
                 </p>
                 <FieldGroup>
@@ -819,7 +819,7 @@ const charsetOptions = [
             </template><template v-if="form.type === 'heartbeat' && form.heartbeat">
               <FieldSection>
                 <h2>{{ t('monitorTypes.heartbeat') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.servicesReportPeriodicallyMissingAPeriodPlusGrace') }}
                 </p>
                 <FieldGroup>
@@ -846,7 +846,7 @@ const charsetOptions = [
             </template><template v-if="form.type === 'certificate' && form.certificate">
               <FieldSection>
                 <h2>{{ t('monitorEditor.certificateExpiry') }}</h2>
-                <p un-text="13px $muted">
+                <p un-text="13px subtle">
                   {{ t('monitorEditor.certificateRiskIsDisplayedSeparatelyAndExcludedFrom') }}
                 </p>
                 <FieldGroup>
@@ -869,7 +869,7 @@ const charsetOptions = [
                 </FieldGroup>
               </FieldSection>
               <FieldSection as="details">
-                <summary cursor="pointer" un-text="12px $link" font="600" py="15px" px="0">
+                <summary cursor="pointer" un-text="12px link" font="600" py="15px" px="0">
                   {{ t('common.tlsConnectionSettings') }}
                 </summary>
                 <TLSFields v-model="form.certificate.tls" :secrets="secrets" />
@@ -883,7 +883,7 @@ const charsetOptions = [
           </TabsContent><TabsContent v-if="form.type !== 'heartbeat'" value="schedule">
             <FieldSection>
               <h2>{{ t('monitorEditor.checkSchedule') }}</h2>
-              <p un-text="13px $muted">
+              <p un-text="13px subtle">
                 {{ t('monitorEditor.checksRunOnAFixedCadenceWithoutOverlap') }}
               </p>
               <FieldGroup>
@@ -947,7 +947,7 @@ const charsetOptions = [
           </TabsContent><TabsContent value="notifications">
             <FieldSection>
               <h2>{{ t('monitorEditor.notificationChannels') }}</h2>
-              <p un-text="13px $muted">
+              <p un-text="13px subtle">
                 {{
                   t(
                     'monitorEditor.selectAdministratorConfiguredChannelsConfirmedFailuresCreateDurable',
@@ -955,16 +955,16 @@ const charsetOptions = [
                 }}
               </p>
               <div flex="~ gap-12px wrap">
-                <label v-for="channel in channels" :key="channel.id" flex="~ items-center gap-8px" un-text="12px $text"><input
+                <label v-for="channel in channels" :key="channel.id" flex="~ items-center gap-8px" un-text="12px default"><input
                   v-model="form.notificationChannelIds"
                   type="checkbox"
                   :value="channel.id"
                 >{{ channel.name
-                }}<span v-if="!channel.enabled" un-text="13px $muted">{{
+                }}<span v-if="!channel.enabled" un-text="13px subtle">{{
                   t('monitorEditor.disabled')
                 }}</span></label>
               </div>
-              <p v-if="!channels.length" un-text="13px $muted">
+              <p v-if="!channels.length" un-text="13px subtle">
                 {{ t('monitorEditor.noChannelsYetAnAdministratorCanCreateOne') }}
               </p>
               <Separator />

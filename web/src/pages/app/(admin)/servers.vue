@@ -179,7 +179,7 @@ function percentage(value: number | undefined) {
       <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
     </Button>
   </PageHeader>
-  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
+  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
@@ -197,41 +197,41 @@ function percentage(value: number | undefined) {
       <Card v-for="server in query.data.value.items" :key="server.id" as="article" p="22px" class="[&_h2]:text-16px">
         <div flex="~ items-center justify-between gap-3">
           <div flex="~ items-center gap-3">
-            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
+            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
             <div>
               <h2>{{ server.name }}</h2>
-              <p class="muted" un-text="13px $muted">
+              <p class="muted" un-text="13px subtle">
                 {{ server.host || server.id }}
               </p>
             </div>
           </div>
           <Badge>{{ server.status }}</Badge>
         </div>
-        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-line [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-$accent">
+        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-line [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-brand">
           <div>
-            <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
+            <span class="mini-label" un-text="12px subtle" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.cpu || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
+            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.memory || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
+            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
             <div class="metric-progress">
               <span :style="{ width: `${Math.min(server.disk || 0, 100)}%` }" />
             </div>
           </div>
           <div>
-            <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.updated') }}</span>
-            <p mt="2" class="muted" un-text="13px $muted">
+            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.updated') }}</span>
+            <p mt="2" class="muted" un-text="13px subtle">
               {{ formatDate(server.updatedAt) }}
             </p>
-            <span v-if="server.stale" class="certificate-risk" un-text="12px $warning">{{ t('servers.staleData') }}</span>
+            <span v-if="server.stale" class="certificate-risk" un-text="12px fg-warning">{{ t('servers.staleData') }}</span>
           </div>
         </div>
         <Separator />
@@ -272,21 +272,21 @@ function percentage(value: number | undefined) {
   </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>
     <div v-if="selected?.info" mb="5" grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
       <div>
-        <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.hostname') }}</span>
+        <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
       </div>
       <div>
-        <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span>
+        <span class="mini-label" un-text="12px subtle" tracking="0.5px">CPU</span>
         <p>{{ selected.info.cpuModel || '—' }}</p>
-        <p class="muted" un-text="13px $muted">
+        <p class="muted" un-text="13px subtle">
           {{ selected.info.cores }} {{ t('servers.cores') }} / {{ selected.info.threads }}
           {{ t('servers.threads') }}
         </p>
       </div>
       <div>
-        <span class="mini-label" un-text="12px $muted" tracking="0.5px">{{ t('servers.systemAgent') }}</span>
+        <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.systemAgent') }}</span>
         <p>{{ selected.info.kernel || '—' }}</p>
-        <p class="muted" un-text="13px $muted">
+        <p class="muted" un-text="13px subtle">
           {{ selected.info.agentVersion || '—' }} ·
           {{ duration(selected.info.uptimeSeconds * 1000) }}
         </p>
@@ -351,7 +351,7 @@ function percentage(value: number | undefined) {
                 <Sparkline show-scale :values="history.map((x) => x.networkOut / 1048576)" :timestamps="history.map((x) => x.at)" :height="115" />
               </section>
             </div>
-            <p mt="5" class="muted" un-text="13px $muted">
+            <p mt="5" class="muted" un-text="13px subtle">
               {{ formatDate(history[0]?.at) }} — {{ formatDate(history.at(-1)?.at) }}
             </p>
           </div>
@@ -378,7 +378,7 @@ function percentage(value: number | undefined) {
               <TableBody>
                 <TableRow v-for="container in containers" :key="container.id || container.name">
                   <TableCell>
-                    <span class="monitor-name block" font="600" un-text="13px">{{ container.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ container.image }}</span>
+                    <span class="monitor-name block" font="600" un-text="13px">{{ container.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ container.image }}</span>
                   </TableCell>
                   <TableCell>{{ container.status }}</TableCell>
                   <TableCell>{{ percentage(container.cpu) }}</TableCell>

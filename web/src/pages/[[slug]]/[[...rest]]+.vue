@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
 import { useHead } from '@unhead/vue'
+import { usePreferredDark } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -14,6 +15,7 @@ import { usePollingEnabled } from '../../composables/polling'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute('/[[slug]]/[[...rest]]+')
+const prefersDark = usePreferredDark()
 const pollingEnabled = usePollingEnabled()
 const isDomain = computed(() => !route.params.slug || route.params.slug === 'incidents')
 const query = useQuery(
@@ -41,6 +43,11 @@ useHead(() => {
   const config = query.data.value?.config
   return {
     title: `${config?.title || 'Octopulse'} · ${t('publicPage.serviceStatus')}`,
+    htmlAttrs: config
+      ? {
+          'data-mode': config.colorScheme === 'dark' || (config.colorScheme === 'system' && prefersDark.value) ? 'dark' : 'light',
+        }
+      : undefined,
     meta: config
       ? [
           { name: 'description', content: config.description || undefined },
@@ -57,7 +64,7 @@ useHead(() => {
 
 <template>
   <StatusPage v-if="query.data.value" :page="query.data.value" :incident-id="incidentId" :stale="!!query.error.value" :path-base="isDomain ? '' : `/${route.params.slug}`" />
-  <div v-else data-theme-boundary bg="$bg" un-text="$text" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
+  <div v-else bg="canvas" un-text="default" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
     <div class="public-inner" max-w="870px" mx="auto">
       <AsyncState :pending="query.isPending.value">
         <Empty>

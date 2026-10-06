@@ -83,11 +83,11 @@ const title = computed(() => {
       <header
         flex="~ justify-between items-center gap-12px"
         min-h="58px" px="32px"
-        border="b-1 solid line" bg="$bg"
+        border="b-1 solid line" bg="canvas"
         class="[@media(max-width:1200px)]:px-25px [@media(max-width:700px)]:h-62px [@media(max-width:380px)]:[&>div]:gap-4px [@media(max-width:700px)]:px-17px [@media(max-width:380px)]:px-12px [@container_workspace_(max-width:_700px)]:px-16px!"
       >
         <div flex="~ items-center gap-3" min-w="0">
-          <Button size="icon" as-child>
+          <Button shape="square" as-child>
             <SidebarTrigger
               aria-controls="workspace-navigation"
               class="hidden [@media(max-width:700px)]:inline-flex"
@@ -97,7 +97,7 @@ const title = computed(() => {
           </Button>
           <span
             flex="~ items-center" min-w="0"
-            un-text="13px $muted"
+            un-text="13px subtle"
             whitespace="nowrap" class="[@media(max-width:700px)]:text-12px"
           >
             <span
@@ -110,7 +110,7 @@ const title = computed(() => {
               w="11px" h="11px" aria-hidden="true"
               class="i-lucide-chevron-right [@media(max-width:700px)]:hidden [@container_workspace_(max-width:_700px)]:hidden"
             />
-            <strong un-text="$text ellipsis" font="500" overflow="hidden">
+            <strong un-text="default ellipsis" font="500" overflow="hidden">
               {{ title }}
             </strong>
           </span>
@@ -119,7 +119,7 @@ const title = computed(() => {
           flex="~ items-center shrink-0 gap-6px" min-w="0"
         >
           <Button
-            :aria-label="t('navigation.toggleColorScheme')" size="icon"
+            :aria-label="t('navigation.toggleColorScheme')" shape="square"
             @click="theme = dark ? 'light' : 'dark'"
           >
             <span v-if="dark" w="17px" h="17px" aria-hidden="true" class="i-lucide-sun" />

@@ -9,9 +9,9 @@ withDefaults(defineProps<{ as?: keyof HTMLElementTagNameMap }>(), { as: 'span' }
     flex="~ items-center justify-center shrink-0"
     size="32px"
     rounded="full"
-    bg="$surface-soft"
+    bg="tint"
     border="1 solid line"
-    un-text="12px $text"
+    un-text="12px default"
     font="600"
   >
     <slot />

@@ -68,8 +68,7 @@ const [DefineLineTemplate, LineTemplate] = createReusableTemplate()
     border-radius: 2px;
     height: 0.5rem;
     width: var(--skeleton-width);
-    background-color: #f3f4f6;
-    /* neutral-100 for light mode */
+    background-color: var(--color-fill);
   }
 
   .skeleton-line::after {
@@ -82,22 +81,9 @@ const [DefineLineTemplate, LineTemplate] = createReusableTemplate()
     content: '';
     background: linear-gradient(
       90deg,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.08) 50%,
-      rgba(0, 0, 0, 0) 100%
-    );
-  }
-
-  [data-mode='dark'] .skeleton-line {
-    background-color: rgba(255, 255, 255, 0.06);
-  }
-
-  [data-mode='dark'] .skeleton-line::after {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.05) 50%,
-      rgba(255, 255, 255, 0) 100%
+      transparent 0%,
+      var(--color-fill-hover) 50%,
+      transparent 100%
     );
   }
 }

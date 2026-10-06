@@ -74,11 +74,11 @@ onBeforeUnmount(() => context.unregisterItem(id))
 }
 
 .select-item[data-highlighted] {
-  background: var(--surface-soft);
+  background: var(--color-fill-hover);
 }
 
 .select-item:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--focus);
+  box-shadow: inset 0 0 0 2px var(--color-focus);
 }
 
 .select-item[data-disabled] {
@@ -98,7 +98,7 @@ onBeforeUnmount(() => context.unregisterItem(id))
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  color: var(--muted);
+  color: var(--text-color-subtle);
 }
 
 .select-item-indicator span {

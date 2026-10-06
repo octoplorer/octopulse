@@ -4,16 +4,16 @@ withDefaults(defineProps<{ variant?: 'success' | 'error' }>(), { variant: 'succe
 
 <template>
   <div
-    class="toast [&[data-variant=error]]:border-l-$danger"
+    class="toast [&[data-variant=error]]:border-l-danger"
     :data-variant="variant"
     flex="~ items-center gap-20px"
-    bg="$surface"
-    un-text="14px $text"
-    border="1 solid line l-3 l-$success"
+    bg="base"
+    un-text="14px default"
+    border="1 solid line l-3 l-success"
     py="12px"
     px="16px"
     rounded="8px"
-    shadow="[0_4px_16px_#00000014]"
+    shadow="panel"
   >
     <slot />
   </div>

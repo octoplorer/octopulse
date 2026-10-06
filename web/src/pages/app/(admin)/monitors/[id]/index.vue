@@ -159,7 +159,7 @@ function viewRound(round: Round) {
           </Button>
         </template>
       </PageHeader>
-      <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-$muted [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-$muted [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-$muted [&_.positive]:text-$success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
+      <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-subtle [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-subtle [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-subtle [&_.positive]:text-fg-success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
         <Card class="stat-card">
           <div class="stat-label">
             {{ t('monitorDetails.currentState') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
@@ -253,7 +253,7 @@ function viewRound(round: Round) {
           <div flex="~ items-center justify-between gap-4">
             <div>
               <h2>{{ t('monitorDetails.heartbeatReporting') }}</h2>
-              <p mt="2" class="muted" un-text="13px $muted">
+              <p mt="2" class="muted" un-text="13px subtle">
                 {{ t('monitorDetails.tokensCannotBeReadBackRotationInvalidatesThe') }}
               </p>
             </div>
@@ -268,17 +268,17 @@ function viewRound(round: Round) {
               {{ monitor.heartbeat.description }}
             </p>
           </Alert>
-          <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid line" bg="$surface-soft" rounded="8px" un-text="12px" mt="15px">
+          <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid line" bg="tint" rounded="8px" un-text="12px" mt="15px">
             <code>{{ heartbeatUrl }}</code><Button variant="ghost" size="sm" @click="copy(heartbeatUrl)">
               <span w="13px" h="13px" aria-hidden="true" class="i-lucide-copy" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
             </Button>
-            <p mt="3" class="muted" un-text="13px $muted">
+            <p mt="3" class="muted" un-text="13px subtle">
               {{ t('monitorDetails.postReportsStatusUpOrStatusDownWith') }}
             </p>
           </div>
         </CardContent>
       </Card>
-      <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
+      <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
         <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
@@ -302,7 +302,7 @@ function viewRound(round: Round) {
                   t('monitorDetails.configuration')
                 }}
               </TabsTrigger>
-              <div ml="auto" class="historical-period" flex="~ items-center" gap="9px" un-text="12px $muted">
+              <div ml="auto" class="historical-period" flex="~ items-center" gap="9px" un-text="12px subtle">
                 <Select v-model="period">
                   <SelectTrigger w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
                     <SelectValue />
@@ -326,7 +326,7 @@ function viewRound(round: Round) {
               <CardContent>
                 <div flex="~ justify-between items-center" mb="4">
                   <h3>{{ t('monitorDetails.responseLatency') }}</h3>
-                  <span class="mini-label" un-text="12px $muted" tracking="0.5px">ms</span>
+                  <span class="mini-label" un-text="12px subtle" tracking="0.5px">ms</span>
                 </div>
                 <Sparkline show-scale :values="history.data.value?.latency?.map((p) => p.latencyMs) || []" :timestamps="history.data.value?.latency?.map((p) => p.at) || []" :height="125" />
                 <FieldDescription as="p" mt="2">
@@ -348,7 +348,7 @@ function viewRound(round: Round) {
                     </TableHeader>
                     <TableBody>
                       <TableRow v-for="round in history.data.value.rounds" :key="round.id">
-                        <TableCell class="muted" un-text="13px $muted">
+                        <TableCell class="muted" un-text="13px subtle">
                           {{ formatDate(round.startedAt) }}
                         </TableCell>
                         <TableCell><StateBadge :state="round.success ? 'up' : 'down'" /></TableCell>
@@ -366,7 +366,7 @@ function viewRound(round: Round) {
               </AsyncState>
             </TabsContent><TabsContent value="configuration">
               <CardContent>
-                <pre class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(monitor, null, 2) }}</pre>
+                <pre class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="tint" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(monitor, null, 2) }}</pre>
               </CardContent>
             </TabsContent>
           </TabsRoot>
@@ -377,7 +377,7 @@ function viewRound(round: Round) {
               <h2 mb="6">
                 {{ t('monitorDetails.monitorInformation') }}
               </h2>
-              <dl class="definition-list tabular-nums [&_div]:flex [&_div]:justify-between [&_div]:gap-15px [&_div]:text-12px [&_dt]:text-$muted [&_dd]:m-0 [&_dd]:text-right [&_dd]:[overflow-wrap:anywhere]" grid="~" gap="16px">
+              <dl class="definition-list tabular-nums [&_div]:flex [&_div]:justify-between [&_div]:gap-15px [&_div]:text-12px [&_dt]:text-subtle [&_dd]:m-0 [&_dd]:text-right [&_dd]:[overflow-wrap:anywhere]" grid="~" gap="16px">
                 <div>
                   <dt>{{ t('monitorDetails.type') }}</dt>
                   <dd>{{ monitor.type.toUpperCase() }}</dd>
@@ -430,7 +430,7 @@ function viewRound(round: Round) {
           <Alert mt="5" as="p" variant="default">
             {{ t('monitorDetails.uptimeUsesConfirmedStateDurationUnknownPausedAnd') }}
           </Alert>
-          <Button v-if="canEdit()" mt="5" variant="danger" @click="confirmDelete = true">
+          <Button v-if="canEdit()" mt="5" variant="destructive" @click="confirmDelete = true">
             <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />{{ t('common.deleteMonitor') }}
           </Button>
         </aside>
@@ -440,13 +440,13 @@ function viewRound(round: Round) {
     <template #footer>
       <Button @click="confirmDelete = false">
         {{ t('common.cancel') }}
-      </Button><Button :disabled="busy" variant="danger" @click="act('delete')">
+      </Button><Button :disabled="busy" variant="destructive" @click="act('delete')">
         {{ t('monitorDetails.delete') }}
       </Button>
     </template>
   </Modal><Modal v-model:open="diagnosticsOpen" :title="t('monitorDetails.roundDiagnostics')" wide>
     <template v-if="selectedRound">
-      <p mb="4" class="muted" un-text="13px $muted">
+      <p mb="4" class="muted" un-text="13px subtle">
         {{ formatDate(selectedRound.startedAt) }} · {{ duration(selectedRound.latencyMs) }}
       </p>
       <Card v-for="attempt in selectedRound.attempts" :key="attempt.number" mb="4">
@@ -458,7 +458,7 @@ function viewRound(round: Round) {
           <FieldError v-if="attempt.error" as="p" py="10px" px="0">
             {{ attempt.error }}
           </FieldError>
-          <pre mt="4" class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
+          <pre mt="4" class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="tint" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
         </CardContent>
       </Card>
     </template>

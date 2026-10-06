@@ -5,9 +5,9 @@ withDefaults(defineProps<{
 }>(), { as: 'div', variant: 'default' })
 
 const variants = {
-  default: 'note py-13px px-16px border-line bg-$surface-soft text-$muted text-12px leading-[1.7]',
-  destructive: 'error-banner flex items-center justify-between gap-14px bg-$danger-soft text-$danger py-14px px-16px [border-color:color-mix(in_srgb,var(--danger)_25%,var(--border))] text-13px mb-18px',
-  validation: 'validation-error [border-color:color-mix(in_srgb,var(--danger)_25%,var(--border))] bg-$danger-soft text-$danger py-12px px-15px text-13px my-15px mx-0',
+  default: 'note py-13px px-16px border-line bg-recessed text-subtle text-12px leading-[1.7]',
+  destructive: 'error-banner flex items-center justify-between gap-14px border-danger/25 bg-danger-tint text-fg-danger py-14px px-16px text-13px mb-18px',
+  validation: 'validation-error border-danger/25 bg-danger-tint text-fg-danger py-12px px-15px text-13px my-15px mx-0',
 }
 </script>
 

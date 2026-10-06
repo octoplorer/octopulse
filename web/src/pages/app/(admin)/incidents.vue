@@ -181,7 +181,7 @@ async function update() {
               <TableCell>
                 <Button p="0!" variant="ghost" @click="detail(incident)">
                   <span w="15px" h="15px" aria-hidden="true" class="i-lucide-message-square" />{{ incident.title }}
-                </Button><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{
+                </Button><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{
                   t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
                 }}</span>
               </TableCell>
@@ -189,7 +189,7 @@ async function update() {
                 <Badge>{{ statusLabel(incident.status) }}</Badge>
               </TableCell>
               <TableCell>{{ statusLabel(incident.impact) }}</TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ formatDate(incident.updatedAt) }}
               </TableCell>
               <TableCell>
@@ -251,7 +251,7 @@ async function update() {
             {{ t('incidents.publishToStatusPages') }}
           </FieldLabel>
           <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
+            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
               page.name
             }}</label>
           </div>
@@ -261,7 +261,7 @@ async function update() {
             {{ t('incidents.relatedMonitors') }}
           </FieldLabel>
           <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
+            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
               monitor.name
             }}</label>
           </div>
@@ -281,14 +281,14 @@ async function update() {
   </Modal><Modal v-model:open="detailOpen" :title="selected?.title || ''" wide>
     <template v-if="selected">
       <div flex="~ items-start justify-between gap-4" mb="5">
-        <p class="muted" un-text="13px $muted">
+        <p class="muted" un-text="13px subtle">
           {{ selected.body }}
         </p>
         <Button v-if="canEdit()" size="sm" @click="edit(selected)">
           {{ t('incidents.editIncident2') }}
         </Button>
       </div>
-      <div ml="5px" pl="21px" border="l-1 solid line" class="[&_.timeline-entry]:relative [&_.timeline-entry]:pb-24px [&_.timeline-entry]:before:content-empty [&_.timeline-entry]:before:absolute [&_.timeline-entry]:before:left-[-26px] [&_.timeline-entry]:before:top-5px [&_.timeline-entry]:before:size-9px [&_.timeline-entry]:before:rounded-full [&_.timeline-entry]:before:border-2 [&_.timeline-entry]:before:border-solid [&_.timeline-entry]:before:border-$surface [&_.timeline-entry]:before:bg-$accent [&_.timeline-entry_h3]:text-12px [&_.timeline-entry_p]:mt-6px [&_.timeline-entry_p]:whitespace-pre-wrap [&_.timeline-entry_p]:text-12px [&_.timeline-entry_p]:text-$muted [&_.timeline-entry_small]:text-12px [&_.timeline-entry_small]:text-$muted">
+      <div ml="5px" pl="21px" border="l-1 solid line" class="[&_.timeline-entry]:relative [&_.timeline-entry]:pb-24px [&_.timeline-entry]:before:content-empty [&_.timeline-entry]:before:absolute [&_.timeline-entry]:before:left-[-26px] [&_.timeline-entry]:before:top-5px [&_.timeline-entry]:before:size-9px [&_.timeline-entry]:before:rounded-full [&_.timeline-entry]:before:border-2 [&_.timeline-entry]:before:border-solid [&_.timeline-entry]:before:border-base [&_.timeline-entry]:before:bg-brand [&_.timeline-entry_h3]:text-12px [&_.timeline-entry_p]:mt-6px [&_.timeline-entry_p]:whitespace-pre-wrap [&_.timeline-entry_p]:text-12px [&_.timeline-entry_p]:text-subtle [&_.timeline-entry_small]:text-12px [&_.timeline-entry_small]:text-subtle">
         <div class="timeline-entry">
           <h3>{{ t('incidents.initialAnnouncement') }}</h3>
           <small>{{ formatDate(selected.createdAt) }}</small>

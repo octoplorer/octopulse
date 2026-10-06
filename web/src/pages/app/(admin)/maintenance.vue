@@ -144,9 +144,9 @@ function confirmDelete(value: Maintenance) {
           <TableBody>
             <TableRow v-for="window in query.data.value.items" :key="window.id">
               <TableCell>
-                <span flex="~ items-center gap-2" class="monitor-name block" font="600" un-text="13px"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-calendar-clock" />{{ window.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ window.description }}</span>
+                <span flex="~ items-center gap-2" class="monitor-name block" font="600" un-text="13px"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-calendar-clock" />{{ window.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ window.description }}</span>
               </TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ formatDate(window.startsAt) }}<br>{{ formatDate(window.endsAt) }}
               </TableCell>
               <TableCell>
@@ -163,9 +163,9 @@ function confirmDelete(value: Maintenance) {
               </TableCell>
               <TableCell>
                 <div v-if="canEdit()" flex="~ gap-1">
-                  <Button :aria-label="t('common.edit')" size="icon" @click="edit(window)">
+                  <Button :aria-label="t('common.edit')" shape="square" @click="edit(window)">
                     <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
-                  </Button><Button :aria-label="t('common.delete')" size="icon" @click="confirmDelete(window)">
+                  </Button><Button :aria-label="t('common.delete')" shape="square" @click="confirmDelete(window)">
                     <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
                   </Button>
                 </div>
@@ -195,7 +195,7 @@ function confirmDelete(value: Maintenance) {
             {{ t('maintenance.affectedMonitors') }}
           </FieldLabel>
           <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
+            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
               monitor.name
             }}</label>
           </div>
@@ -205,7 +205,7 @@ function confirmDelete(value: Maintenance) {
             {{ t('maintenance.showOnStatusPages') }}
           </FieldLabel>
           <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px $text"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
+            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
               page.name
             }}</label>
           </div>
@@ -227,7 +227,7 @@ function confirmDelete(value: Maintenance) {
     <template #footer>
       <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="danger" @click="remove">
+      </Button><Button variant="destructive" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>

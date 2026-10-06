@@ -62,7 +62,7 @@ const filtered = computed(() =>
   </PageHeader>
   <Card as="section">
     <TableToolbar>
-      <div class="search-box relative [box-shadow:var(--control-shadow)] [@media(max-width:700px)]:basis-full [@media(max-width:700px)]:max-w-none [@container_workspace_(max-width:_700px)]:basis-full [@container_workspace_(max-width:_700px)]:max-w-none" flex="~ items-center 1" gap="8px" un-text="$muted" max-w="340px" min-w="180px" border="1 solid $control-border" rounded="8px" pl="10px" bg="$surface">
+      <div class="search-box relative [@media(max-width:700px)]:basis-full [@media(max-width:700px)]:max-w-none [@container_workspace_(max-width:_700px)]:basis-full [@container_workspace_(max-width:_700px)]:max-w-none" flex="~ items-center 1" gap="8px" un-text="subtle" max-w="340px" min-w="180px" border="1 solid line" rounded="8px" pl="10px" bg="base" shadow="control">
         <span w="16px" h="16px" aria-hidden="true" class="i-lucide-search" /><input v-model="search" w="full" min-w="0" border="0!" bg="transparent!" shadow="none!" p="y-7px! r-10px! l-0!" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')">
       </div>
       <div flex="~ items-center gap-2">
@@ -138,7 +138,7 @@ const filtered = computed(() =>
             <TableRow v-for="monitor in filtered" :key="monitor.id">
               <TableCell>
                 <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
-                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
+                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                 </RouterLink>
               </TableCell>
               <TableCell>
@@ -148,7 +148,7 @@ const filtered = computed(() =>
                   " :paused="!monitor.enabled"
                 />
               </TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ monitor.group || '—' }}
               </TableCell>
               <TableCell>
@@ -158,13 +158,13 @@ const filtered = computed(() =>
                     : monitor.intervalSeconds
                 }}
                 s
-                <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted" un-text="13px $muted">/ {{ monitor.retries }}</span>
+                <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted" un-text="13px subtle">/ {{ monitor.retries }}</span>
               </TableCell>
-              <TableCell class="muted" un-text="13px $muted">
+              <TableCell class="muted" un-text="13px subtle">
                 {{ formatDate(monitor.lastCheckedAt) }}
               </TableCell>
               <TableCell>
-                <Button size="icon" as-child>
+                <Button shape="square" as-child>
                   <RouterLink :to="`/app/monitors/${monitor.id}`" :aria-label="t('monitors.viewDetails')">
                     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-chevron-right" />
                   </RouterLink>

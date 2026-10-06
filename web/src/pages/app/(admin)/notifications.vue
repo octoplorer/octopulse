@@ -171,7 +171,7 @@ function refresh() {
                   <TableCell>
                     <span flex="~ items-center gap-2" class="monitor-name block" font="600" un-text="13px"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-bell" />{{ channel.name }}</span>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px $muted">
+                  <TableCell class="muted" un-text="13px subtle">
                     {{
                       secrets.data.value?.items.find((x) => x.id === channel.serviceUrlSecretId)
                         ?.name || '—'
@@ -184,16 +184,16 @@ function refresh() {
                       }}
                     </Badge>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px $muted">
+                  <TableCell class="muted" un-text="13px subtle">
                     {{ formatDate(channel.updatedAt) }}
                   </TableCell>
                   <TableCell>
                     <div v-if="isAdmin()" flex="~ items-center gap-2">
                       <Button :disabled="testing === channel.id || !channel.enabled" size="sm" @click="test(channel)">
                         <span w="12px" h="12px" aria-hidden="true" class="i-lucide-send" />{{ t('notifications.test') }}
-                      </Button><Button :aria-label="t('common.edit')" size="icon" @click="edit(channel)">
+                      </Button><Button :aria-label="t('common.edit')" shape="square" @click="edit(channel)">
                         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
-                      </Button><Button :aria-label="t('common.delete')" size="icon" @click="confirmDelete(channel)">
+                      </Button><Button :aria-label="t('common.delete')" shape="square" @click="confirmDelete(channel)">
                         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
                       </Button>
                     </div>
@@ -220,7 +220,7 @@ function refresh() {
               <TableBody>
                 <TableRow v-for="delivery in deliveries.data.value.items" :key="delivery.id">
                   <TableCell>
-                    <span class="monitor-name block" font="600" un-text="13px">{{ statusLabel(delivery.kind) }}</span><RouterLink v-if="delivery.monitorId" :to="`/app/monitors/${delivery.monitorId}`" class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">
+                    <span class="monitor-name block" font="600" un-text="13px">{{ statusLabel(delivery.kind) }}</span><RouterLink v-if="delivery.monitorId" :to="`/app/monitors/${delivery.monitorId}`" class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">
                       {{
                         monitors.data.value?.items.find((x) => x.id === delivery.monitorId)?.name
                           || delivery.monitorId
@@ -234,12 +234,12 @@ function refresh() {
                     }}
                   </TableCell>
                   <TableCell>
-                    <Badge>{{ statusLabel(delivery.status) }}</Badge><span ml="2" class="muted" un-text="13px $muted">{{ delivery.attempts }}</span>
+                    <Badge>{{ statusLabel(delivery.status) }}</Badge><span ml="2" class="muted" un-text="13px subtle">{{ delivery.attempts }}</span>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px $muted">
+                  <TableCell class="muted" un-text="13px subtle">
                     {{ formatDate(delivery.createdAt) }}
                   </TableCell>
-                  <TableCell class="muted" un-text="13px $muted">
+                  <TableCell class="muted" un-text="13px subtle">
                     {{ delivery.lastError || '—' }}
                   </TableCell>
                 </TableRow>
@@ -280,7 +280,7 @@ function refresh() {
     <template #footer>
       <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="danger" @click="remove">
+      </Button><Button variant="destructive" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>

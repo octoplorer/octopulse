@@ -6,6 +6,6 @@
 .select-separator {
   height: 1px;
   margin: 4px 0;
-  background: var(--border);
+  background: var(--color-line);
 }
 </style>

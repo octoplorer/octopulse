@@ -38,39 +38,39 @@ const triggerProps = computed(() => mergeProps(forwarded.value, attrs))
   justify-content: space-between;
   gap: 6px;
   padding: 0 12px;
-  color: var(--text);
+  color: var(--text-color-default);
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
-  background: var(--surface);
+  background: var(--color-control);
   border: 0;
   border-radius: 8px;
   outline: none;
   box-shadow:
-    0 0 0 1px var(--control-border),
-    var(--control-shadow);
+    0 0 0 1px var(--color-line),
+    var(--shadow-control);
   user-select: none;
 }
 
 .select-trigger:hover:not(:disabled),
 .select-trigger[data-state='open'] {
-  background: var(--surface-soft);
+  background: var(--color-fill-hover);
 }
 
 .select-trigger:focus,
 .select-trigger:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--focus) 50%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-focus) 50%, transparent);
 }
 
 .select-trigger:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--focus);
+  box-shadow: inset 0 0 0 2px var(--color-focus);
 }
 
 .select-trigger:disabled {
   cursor: not-allowed;
-  color: var(--muted);
+  color: var(--text-color-inactive);
   opacity: 0.5;
 }
 
@@ -78,7 +78,7 @@ const triggerProps = computed(() => mergeProps(forwarded.value, attrs))
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  color: var(--muted);
+  color: var(--text-color-subtle);
 }
 
 .select-indicator span {

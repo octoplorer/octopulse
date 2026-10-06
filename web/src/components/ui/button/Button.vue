@@ -52,13 +52,14 @@ const emphasisStyle = computed<StyleValue>(() => {
       'disabled:50': isEmphasis,
     })"
     :un-text="normalize([
-      'disabled:$text-color-subtle',
+      'disabled:subtle',
       {
-        '!white': isEmphasis,
-        '!$text-color-default disabled:!$text-color-default/70': variant === 'secondary',
-        '$text-color-default': ['ghost', 'outline'].includes(variant),
-        '!$text-color-danger not-disabled:hover:!$text-color-danger disabled:!$text-color-danger/70': variant === 'secondary-destructive',
-        'not-disabled:hover:$text-color-strong': variant === 'outline',
+        '!on-brand': variant === 'primary',
+        '!on-danger': variant === 'destructive',
+        '!default disabled:!default/70': variant === 'secondary',
+        'default': ['ghost', 'outline'].includes(variant),
+        '!fg-danger not-disabled:hover:!fg-danger disabled:!fg-danger/70': variant === 'secondary-destructive',
+        'not-disabled:hover:strong': variant === 'outline',
       },
     ])"
     :flex="normalize([
@@ -80,7 +81,7 @@ const emphasisStyle = computed<StyleValue>(() => {
     :ring="normalize([
       'focus:focus/50 focus-visible:2 focus-visible:brand',
       {
-        '~ $button-emphasis-ring focus:$button-emphasis-ring focus-visible:$button-emphasis-ring active:$button-emphasis-ring': isEmphasis,
+        '~': isEmphasis,
         '~ line': ['secondary', 'secondary-destructive', 'outline'].includes(variant),
         'not-disabled:hover:danger/30': variant === 'secondary-destructive',
         'not-disabled:hover:focus/25': variant === 'outline',
@@ -107,17 +108,16 @@ const emphasisStyle = computed<StyleValue>(() => {
     :bg="normalize({
       'base disabled:base/50 data-[state=open]:base': ['secondary', 'secondary-destructive'].includes(variant),
       'not-disabled:hover:tint': variant === 'secondary',
-      '$button-emphasis-bg': isEmphasis,
       'inherit hover:tint': variant === 'ghost',
       'transparent': variant === 'outline',
     })"
     :class="normalize([
       ['xs', 'sm'].includes(size) ? 'text-size-xs' : 'text-size-base',
-      isEmphasis && 'relative isolate overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:bg-linear-to-b before:from-$button-emphasis-gradient-start before:to-$button-emphasis-gradient-end before:shadow-[inset_0_1px_0_0_var(--button-emphasis-bg)] before:content-empty hover:before:from-$button-emphasis-bg',
+      isEmphasis && 'button-emphasis',
       variant === 'outline' && 'transition-colors',
     ])"
     :style="emphasisStyle"
-    :shadow="variant === 'ghost' ? 'none' : 'xs'"
+    :shadow="variant === 'ghost' ? 'none' : 'control'"
     :as-child
     v-bind="restProps"
   >
@@ -136,3 +136,42 @@ const emphasisStyle = computed<StyleValue>(() => {
     </template>
   </ark.button>
 </template>
+
+<style scoped>
+.button-emphasis,
+.button-emphasis:focus,
+.button-emphasis:focus-visible,
+.button-emphasis:active {
+  --un-ring-color: var(--button-emphasis-ring);
+}
+
+.button-emphasis {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--button-emphasis-bg);
+}
+
+.button-emphasis::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    var(--button-emphasis-gradient-start),
+    var(--button-emphasis-gradient-end)
+  );
+  box-shadow: inset 0 1px 0 0 var(--button-emphasis-bg);
+  content: '';
+}
+
+.button-emphasis:hover::before {
+  background: linear-gradient(
+    to bottom,
+    var(--button-emphasis-bg),
+    var(--button-emphasis-gradient-end)
+  );
+}
+</style>

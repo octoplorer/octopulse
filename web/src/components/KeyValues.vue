@@ -37,7 +37,7 @@ const values = defineModel<NameValueForm[]>({ required: true })
       </Alert><SecretSelect v-model="item.secretRef" class="[@media(max-width:700px)]:col-start-1" :secrets="secrets" optional /><Button
         type="button"
         :aria-label="t('keyValues.removeField')"
-        size="icon"
+        shape="square"
         @click="values.splice(index, 1)"
       >
         <span class="i-lucide-x" w="15px" h="15px" aria-hidden="true" />

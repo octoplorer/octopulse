@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { dark } from '../composables/preferences'
 import { Dialog } from './ui/dialog'
 
 defineProps<{ title: string, description?: string, wide?: boolean }>()
@@ -9,7 +8,7 @@ const { t } = useI18n({ useScope: 'global' })
 </script>
 
 <template>
-  <Dialog v-model:open="open" :title="title" :description="description" :wide="wide" :theme="dark ? 'dark' : 'light'" :close-label="t('modal.closeDialog')">
+  <Dialog v-model:open="open" :title="title" :description="description" :wide="wide" :close-label="t('modal.closeDialog')">
     <slot />
     <template v-if="$slots.footer" #footer>
       <slot name="footer" />

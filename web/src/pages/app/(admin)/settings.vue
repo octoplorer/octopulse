@@ -138,7 +138,7 @@ async function saveProfile() {
           <form @submit.prevent="saveProfile">
             <FieldSection>
               <h2>{{ t('settings.displayPreferences') }}</h2>
-              <p class="muted" un-text="13px $muted">
+              <p class="muted" un-text="13px subtle">
                 {{ t('settings.yourDisplayTimeZoneDoesNotChangeUtc') }}
               </p>
               <FieldGroup>
@@ -179,7 +179,7 @@ async function saveProfile() {
             </FieldSection>
             <FieldSection>
               <h2>{{ t('settings.changePassword') }}</h2>
-              <p class="muted" un-text="13px $muted">
+              <p class="muted" un-text="13px subtle">
                 {{ t('settings.leaveEmptyToKeepYourPassword') }}
               </p>
               <FieldGroup>
@@ -200,7 +200,7 @@ async function saveProfile() {
           <form @submit.prevent="saveOrganization">
             <FieldSection>
               <h2>{{ t('settings.organization') }}</h2>
-              <p class="muted" un-text="13px $muted">
+              <p class="muted" un-text="13px subtle">
                 {{ t('settings.organizationSettingsProvideDefaultsForAccountsAndMaintenance') }}
               </p>
               <FieldGroup>
@@ -234,7 +234,7 @@ async function saveProfile() {
           <form @submit.prevent="saveOrganization">
             <FieldSection>
               <h2>{{ t('settings.historyRetention') }}</h2>
-              <p class="muted" un-text="13px $muted">
+              <p class="muted" un-text="13px subtle">
                 {{ t('settings.configureRawAndAggregatedHistoryWindowsCleanupRuns') }}
               </p>
               <FieldGroup>

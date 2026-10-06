@@ -16,7 +16,7 @@ const forwarded = useForwardProps(props)
 <style scoped>
 .select-label {
   padding: 6px 14px;
-  color: var(--muted);
+  color: var(--text-color-subtle);
   font-size: 14px;
   font-weight: 600;
 }

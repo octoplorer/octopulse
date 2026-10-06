@@ -10,11 +10,11 @@ const forwarded = useForwardProps(props)
 <template>
   <TabTrigger
     v-bind="forwarded"
-    class="[@media(max-width:700px)]:whitespace-nowrap [&[data-selected]]:text-$text [&[data-selected]]:border-b-$text [&[aria-selected=true]]:text-$text [&[aria-selected=true]]:border-b-$text"
+    class="[@media(max-width:700px)]:whitespace-nowrap [&[data-selected]]:text-strong [&[data-selected]]:border-b-current [&[aria-selected=true]]:text-strong [&[aria-selected=true]]:border-b-current"
     p="y-14px x-0"
     border="0 b-2 solid b-transparent"
     bg="transparent"
-    un-text="14px $muted"
+    un-text="14px subtle"
     font="500"
   >
     <slot />

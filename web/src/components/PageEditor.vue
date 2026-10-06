@@ -340,7 +340,7 @@ async function remove() {
         <Card as="section">
           <FieldSection>
             <h2>{{ t('pageEditor.pageAccess') }}</h2>
-            <p un-text="13px $muted">
+            <p un-text="13px subtle">
               {{ t('pageEditor.pathAndCustomDomainServeTheSamePublished') }}
             </p>
             <FieldGroup>
@@ -392,7 +392,7 @@ async function remove() {
           </FieldSection>
           <FieldSection>
             <h2>{{ t('pageEditor.brandAppearance') }}</h2>
-            <p un-text="13px $muted">
+            <p un-text="13px subtle">
               {{ t('pageEditor.theseSettingsApplyOnlyToThisStatusPage') }}
             </p>
             <FieldGroup>
@@ -468,7 +468,7 @@ async function remove() {
                   ><Button
                     v-if="canEdit()"
                     :aria-label="t('pageEditor.removeLink')"
-                    size="icon"
+                    shape="square"
                     @click="form.draft.links.splice(index, 1)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
@@ -488,11 +488,11 @@ async function remove() {
           </FieldSection>
           <FieldSection>
             <h2>{{ t('pageEditor.servicesGroups') }}</h2>
-            <p un-text="13px $muted">
+            <p un-text="13px subtle">
               {{ t('pageEditor.publishOnlySelectedMonitorsPublicAliasesLeaveInternal') }}
             </p>
             <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor" border="1px solid line" rounded="9px" mt="15px" overflow="hidden">
-              <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="$surface-soft" border="b-1px b-solid b-line">
+              <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="tint" border="b-1px b-solid b-line">
                 <input
                   v-model="group.name"
                   :aria-label="t('common.groupName')"
@@ -502,20 +502,20 @@ async function remove() {
                   <Button
                     :disabled="index === 0"
                     :aria-label="t('pageEditor.moveGroupUp')"
-                    size="icon"
+                    shape="square"
                     @click="move(form.draft.groups, index, -1)"
                   >
                     <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :disabled="index === form.draft.groups.length - 1"
                     :aria-label="t('pageEditor.moveGroupDown')"
-                    size="icon"
+                    shape="square"
                     @click="move(form.draft.groups, index, 1)"
                   >
                     <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :aria-label="t('pageEditor.removeGroup')"
-                    size="icon"
+                    shape="square"
                     @click="form.draft.groups.splice(index, 1)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
@@ -528,7 +528,7 @@ async function remove() {
                 flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-line last:0" class="[@media(max-width:700px)]:flex-wrap"
               >
                 <div flex="1" min-w="0">
-                  <span un-text="12px $muted" tracking="0.5px">{{
+                  <span un-text="12px subtle" tracking="0.5px">{{
                     monitors.find((x) => x.id === item.monitorId)?.name
                   }}</span><input
                     v-model="item.alias"
@@ -540,9 +540,9 @@ async function remove() {
                     mt="1"
                   >
                   <div flex="~ gap-4" mt="2">
-                    <label flex="~ items-center gap-8px" un-text="12px $text"><input v-model="item.showUptime" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
+                    <label flex="~ items-center gap-8px" un-text="12px default"><input v-model="item.showUptime" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
                       t('common.uptime')
-                    }}</label><label flex="~ items-center gap-8px" un-text="12px $text"><input v-model="item.showLatency" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
+                    }}</label><label flex="~ items-center gap-8px" un-text="12px default"><input v-model="item.showLatency" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
                       t('pageEditor.latency')
                     }}</label>
                   </div>
@@ -551,20 +551,20 @@ async function remove() {
                   <Button
                     :disabled="mIndex === 0"
                     :aria-label="t('pageEditor.moveServiceUp')"
-                    size="icon"
+                    shape="square"
                     @click="move(group.monitors, mIndex, -1)"
                   >
                     <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :disabled="mIndex === group.monitors.length - 1"
                     :aria-label="t('pageEditor.moveServiceDown')"
-                    size="icon"
+                    shape="square"
                     @click="move(group.monitors, mIndex, 1)"
                   >
                     <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :aria-label="t('pageEditor.removeService')"
-                    size="icon"
+                    shape="square"
                     @click="group.monitors.splice(mIndex, 1)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
@@ -611,7 +611,7 @@ async function remove() {
           <Button
             v-if="editing && canEdit()"
             mr="auto"
-            variant="danger"
+            variant="destructive"
             @click="deleteOpen = true"
           >
             <span class="i-lucide-trash-2" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.deletePage') }}
@@ -621,7 +621,7 @@ async function remove() {
         </FieldActions>
       </div>
       <aside pos="sticky" top="20px" self="start" class="[@media(max-width:1200px)]:static [@media(max-width:700px)]:min-w-0">
-        <div class="preview-label" flex="~ items-center justify-between" un-text="12px $muted" mb="12px">
+        <div class="preview-label" flex="~ items-center justify-between" un-text="12px subtle" mb="12px">
           <strong>{{ t('pageEditor.liveDraftPreview') }}</strong><span>{{ t('pageEditor.responsivePreview') }}</span>
         </div>
         <StatusPage :page="preview" preview />
@@ -638,7 +638,7 @@ async function remove() {
     <template #footer>
       <Button @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="danger" @click="remove">
+      </Button><Button variant="destructive" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>
