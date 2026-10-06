@@ -9,4 +9,7 @@ export default antfu({
     html: true,
     prettierOptions: { printWidth: 100 },
   },
+  rules: {
+    'vue/quote-props': 'off',
+  },
 })

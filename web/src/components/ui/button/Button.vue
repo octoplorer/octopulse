@@ -1,46 +1,138 @@
 <script setup lang="ts">
+import type { ButtonHTMLAttributes, StyleValue, VNode } from 'vue'
 import { ark } from '@ark-ui/vue/factory'
+import { computed, normalizeClass as normalize } from 'vue'
 
-withDefaults(defineProps<{
-  variant?: 'default' | 'primary' | 'danger' | 'ghost'
-  size?: 'default' | 'sm' | 'icon'
+export interface ButtonProps extends /* @vue-ignore */ ButtonHTMLAttributes {
+  shape?: 'base' | 'square' | 'circle'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'secondary-destructive' | 'outline'
+  size?: 'xs' | 'sm' | 'base' | 'lg'
   asChild?: boolean
-}>(), { variant: 'default', size: 'default', asChild: false })
+}
 
-const variants = {
-  default: '',
-  primary: 'primary [&[data-variant=primary]]:[background:linear-gradient(#ffffff12,#ffffff00),var(--accent)] [&[data-variant=primary]]:[border-color:color-mix(in_srgb,var(--accent),#000_12%)] [&[data-variant=primary]]:text-white [&[data-variant=primary]]:[box-shadow:inset_0_1px_0_#ffffff26,0_1px_2px_#0000001a] [&[data-variant=primary]:hover]:[background:var(--accent-hover)]',
-  danger: 'danger [&[data-variant=danger]]:text-$danger [&[data-variant=danger]]:[border-color:color-mix(in_srgb,var(--danger)_25%,var(--border))]',
-  ghost: 'ghost [&[data-variant=ghost]]:bg-transparent [&[data-variant=ghost]]:border-transparent [&[data-variant=ghost]]:shadow-none [&[data-variant=ghost]:hover]:bg-transparent',
-}
-const sizes = {
-  default: '',
-  sm: 'small [&[data-size=sm]]:min-h-28px [&[data-size=sm]]:py-4px [&[data-size=sm]]:px-8px [&[data-size=sm]]:rounded-6px [&[data-size=sm]]:text-12px',
-  icon: '[&[data-size=icon]]:gap-0 [@media(max-width:700px)]:[&[data-size=icon]]:min-h-36px [&[data-size=icon]]:[font-size:inherit] [&[data-size=icon]]:[font-weight:inherit] [&[data-size=icon]]:[line-height:inherit] [&[data-size=icon]]:[white-space:inherit] [&[data-size=icon]]:shrink-0 [&[data-size=icon]]:min-w-32px [&[data-size=icon]]:min-h-32px [&[data-size=icon]]:p-7px [&[data-size=icon]]:rounded-6px [&[data-size=icon]]:border-transparent [&[data-size=icon]]:bg-transparent [&[data-size=icon]]:text-$muted [&[data-size=icon]]:shadow-none [&[data-size=icon]:hover]:bg-$surface-soft [&[data-size=icon]:hover]:text-$text',
-}
+const {
+  shape = 'base',
+  variant = 'secondary',
+  size = 'base',
+  asChild = false,
+  ...restProps
+} = defineProps<ButtonProps>()
+
+defineSlots<{
+  default: () => VNode[]
+  icon: () => VNode[]
+}>()
+
+const isCompactShape = computed(() => shape === 'square' || shape === 'circle')
+
+const isEmphasis = computed(() => variant === 'primary' || variant === 'destructive')
+
+const emphasisStyle = computed<StyleValue>(() => {
+  if (!isEmphasis.value)
+    return undefined
+  const token = (variant === 'primary') ? 'var(--color-brand)' : 'var(--color-danger)'
+  return {
+    '--button-emphasis-ring': `color-mix(in oklch, ${token}, black 10%)`,
+    '--button-emphasis-bg': `color-mix(in oklch, ${token}, white 30%)`,
+    '--button-emphasis-gradient-start': `color-mix(in oklch, ${token}, white 15%)`,
+    '--button-emphasis-gradient-end': token,
+  }
+})
 </script>
 
 <template>
   <ark.button
-    class="inline-flex button hover:bg-$surface-soft [&:active:not(:disabled)]:shadow-none"
-    :class="[variants[variant], sizes[size]]"
-    :as-child="asChild"
-    :data-variant="variant"
-    :data-size="size"
-    items="center"
-    justify="center"
-    gap="6px"
-    min-h="36px"
-    p="x-12px y-7px"
-    border="1 solid $control-border"
-    rounded="8px"
-    bg="$surface"
-    un-text="14px $text"
-    font="500"
-    leading="[1.4]"
-    whitespace="nowrap"
-    shadow="$control-shadow"
+    class="group"
+    cursor="pointer disabled:not-allowed"
+    border="0"
+    outline="focus:none!"
+    font="medium"
+    select-none
+    :opacity="normalize({
+      'disabled:50': isEmphasis,
+    })"
+    :un-text="normalize([
+      'disabled:$text-color-subtle',
+      {
+        '!white': isEmphasis,
+        '!$text-color-default disabled:!$text-color-default/70': variant === 'secondary',
+        '$text-color-default': ['ghost', 'outline'].includes(variant),
+        '!$text-color-danger not-disabled:hover:!$text-color-danger disabled:!$text-color-danger/70': variant === 'secondary-destructive',
+        'not-disabled:hover:$text-color-strong': variant === 'outline',
+      },
+    ])"
+    :flex="normalize([
+      '~ shrink-0 items-center',
+      isCompactShape && 'justify-center',
+    ])"
+    :p="isCompactShape ? '0' : normalize({
+      'x-1.5': size === 'xs',
+      'x-2': size === 'sm',
+      'x-3': size === 'base',
+      'x-4': size === 'lg',
+    })"
+    :rounded="normalize([
+      shape !== 'circle' && size === 'xs' && 'sm',
+      shape !== 'circle' && size === 'sm' && 'md',
+      shape !== 'circle' && ['base', 'lg'].includes(size) && 'lg',
+      shape === 'circle' && 'full',
+    ])"
+    :ring="normalize([
+      'focus:focus/50 focus-visible:2 focus-visible:brand',
+      {
+        '~ $button-emphasis-ring focus:$button-emphasis-ring focus-visible:$button-emphasis-ring active:$button-emphasis-ring': isEmphasis,
+        '~ line': ['secondary', 'secondary-destructive', 'outline'].includes(variant),
+        'not-disabled:hover:danger/30': variant === 'secondary-destructive',
+        'not-disabled:hover:focus/25': variant === 'outline',
+      },
+    ])"
+    :gap="asChild && isEmphasis ? '1.5' : normalize({
+      '1': ['xs', 'sm'].includes(size),
+      '1.5': size === 'base',
+      '2': size === 'lg',
+    })"
+    :h="normalize({
+      '3.5': isCompactShape && size === 'xs',
+      '5': !isCompactShape && size === 'xs',
+      '6.5': size === 'sm',
+      '9': size === 'base',
+      '10': size === 'lg',
+    })"
+    :w="isCompactShape ? normalize({
+      '3.5': size === 'xs',
+      '6.5': size === 'sm',
+      '9': size === 'base',
+      '10': size === 'lg',
+    }) : 'max'"
+    :bg="normalize({
+      'base disabled:base/50 data-[state=open]:base': ['secondary', 'secondary-destructive'].includes(variant),
+      'not-disabled:hover:tint': variant === 'secondary',
+      '$button-emphasis-bg': isEmphasis,
+      'inherit hover:tint': variant === 'ghost',
+      'transparent': variant === 'outline',
+    })"
+    :class="normalize([
+      ['xs', 'sm'].includes(size) ? 'text-size-xs' : 'text-size-base',
+      isEmphasis && 'relative isolate overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:bg-linear-to-b before:from-$button-emphasis-gradient-start before:to-$button-emphasis-gradient-end before:shadow-[inset_0_1px_0_0_var(--button-emphasis-bg)] before:content-empty hover:before:from-$button-emphasis-bg',
+      variant === 'outline' && 'transition-colors',
+    ])"
+    :style="emphasisStyle"
+    :shadow="variant === 'ghost' ? 'none' : 'xs'"
+    :as-child
+    v-bind="restProps"
   >
-    <slot />
+    <template v-if="asChild">
+      <slot />
+    </template>
+    <template v-else-if="isEmphasis">
+      <span relative flex="~ items-center gap-1.5">
+        <slot name="icon" />
+        <span contents><slot /></span>
+      </span>
+    </template>
+    <template v-else>
+      <slot name="icon" />
+      <span contents><slot /></span>
+    </template>
   </ark.button>
 </template>
