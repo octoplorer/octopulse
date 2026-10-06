@@ -183,15 +183,16 @@ type LatencyPoint struct {
 	Success   bool    `json:"success"`
 }
 type PublicMonitor struct {
-	ID           string             `json:"id" readOnly:"true"`
-	Name         string             `json:"name"`
-	Type         string             `json:"type"`
-	State        string             `json:"state"`
-	Paused       bool               `json:"paused"`
-	Maintenance  bool               `json:"maintenance"`
-	Availability Availability       `json:"availability"`
-	Latency      []LatencyPoint     `json:"latency"`
-	Certificate  *PublicCertificate `json:"certificate,omitempty"`
+	ID                string             `json:"id" readOnly:"true"`
+	Name              string             `json:"name"`
+	Type              string             `json:"type"`
+	State             string             `json:"state"`
+	Paused            bool               `json:"paused"`
+	Maintenance       bool               `json:"maintenance"`
+	Availability      Availability       `json:"availability"`
+	DailyAvailability []Availability     `json:"dailyAvailability" doc:"Daily availability for the last 90 UTC calendar days, including today. Public responses include history when showUptime is enabled; authenticated draft previews always include it."`
+	Latency           []LatencyPoint     `json:"latency"`
+	Certificate       *PublicCertificate `json:"certificate,omitempty"`
 }
 type PublicCertificate struct {
 	State         string  `json:"state"`

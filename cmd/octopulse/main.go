@@ -126,6 +126,7 @@ func run() error {
 	s.Heartbeat = scheduler.Heartbeat
 	s.Stats = stats.Availability
 	s.StatsBatch = stats.AvailabilityBatch
+	s.DailyStatsBatch = stats.DailyAvailabilityBatch
 	s.LatencyBatch = stats.LatencyBatch
 	s.Latency = stats.Latency
 	s.TestChannel = deliveries.TestChannel

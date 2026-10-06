@@ -10,7 +10,7 @@ import type {
 } from '../../../client/types.gen'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { useForm } from '@tanstack/vue-form'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getBeszelConfigQuery,
@@ -21,12 +21,12 @@ import {
   updateBeszelConfigMutation,
 } from '../../../client/@pinia/colada.gen'
 import AsyncState from '../../../components/AsyncState.vue'
+import EChart from '../../../components/EChart.vue'
 import EmptyState from '../../../components/EmptyState.vue'
 import Field from '../../../components/Field.vue'
 import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
 import SecretSelect from '../../../components/SecretSelect.vue'
-import Sparkline from '../../../components/Sparkline.vue'
 import Toggle from '../../../components/Toggle.vue'
 import { Alert } from '../../../components/ui/alert'
 import { Badge } from '../../../components/ui/badge'
@@ -40,10 +40,11 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../component
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import { usePollingEnabled } from '../../../composables/polling'
-import { duration, formatDate } from '../../../composables/preferences'
+import { duration, formatDate, timezone } from '../../../composables/preferences'
+import { normalizeTimeSeries, timeSeriesOption } from '../../../lib/chart'
 import { errorText } from '../../../lib/errors'
 
-const { t, n } = useI18n({ useScope: 'global' })
+const { t, n, d } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.servers' } })
 
@@ -75,6 +76,38 @@ const tab = ref('history')
 const historyRange = ref<NonNullable<GetBeszelHistoryData['query']>['range']>('24h')
 const historyMeta = ref<BeszelHistory | null>(null)
 const containersMeta = ref<BeszelContainers | null>(null)
+const historyCharts = computed(() => {
+  const timeZone = timezone.value
+  return ([
+    { key: 'cpu', name: 'CPU', unit: '%', divisor: 1 },
+    { key: 'memory', name: t('common.memory'), unit: '%', divisor: 1 },
+    { key: 'disk', name: t('servers.disk2'), unit: '%', divisor: 1 },
+    { key: 'networkIn', name: t('servers.networkReceived'), unit: 'MiB/s', divisor: 1048576 },
+    { key: 'networkOut', name: t('servers.networkSent'), unit: 'MiB/s', divisor: 1048576 },
+  ] as const).map((metric) => {
+    const points = normalizeTimeSeries(history.value.map(point => ({
+      at: point.at,
+      value: point[metric.key] / metric.divisor,
+    })))
+    return {
+      ...metric,
+      hasData: points.length > 0,
+      option: timeSeriesOption({
+        points,
+        name: metric.name,
+        unit: metric.unit,
+        valueFormatter: value => n(value, { maximumFractionDigits: 2 }),
+        timeFormatter: at => d(at, { key: 'short', timeZone }),
+      }),
+      label: t('chart.summary', {
+        name: metric.name,
+        count: points.length,
+        value: points.length ? n(points.at(-1)!.value, { maximumFractionDigits: 2 }) : '—',
+        unit: metric.unit,
+      }),
+    }
+  })
+})
 const configForm = useForm({
   defaultValues: {
     url: '',
@@ -344,25 +377,12 @@ function percentage(value: number | undefined) {
           <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
           <div v-else py="6">
             <div grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
-              <section>
-                <h3>CPU (%)</h3>
-                <Sparkline show-scale :values="history.map((x) => x.cpu)" :timestamps="history.map((x) => x.at)" :height="115" />
-              </section>
-              <section>
-                <h3>{{ t('common.memory') }} (%)</h3>
-                <Sparkline show-scale :values="history.map((x) => x.memory)" :timestamps="history.map((x) => x.at)" :height="115" />
-              </section>
-              <section>
-                <h3>{{ t('servers.disk2') }} (%)</h3>
-                <Sparkline show-scale :values="history.map((x) => x.disk)" :timestamps="history.map((x) => x.at)" :height="115" />
-              </section>
-              <section>
-                <h3>{{ t('servers.networkReceived') }} (MiB/s)</h3>
-                <Sparkline show-scale :values="history.map((x) => x.networkIn / 1048576)" :timestamps="history.map((x) => x.at)" :height="115" />
-              </section>
-              <section>
-                <h3>{{ t('servers.networkSent') }} (MiB/s)</h3>
-                <Sparkline show-scale :values="history.map((x) => x.networkOut / 1048576)" :timestamps="history.map((x) => x.at)" :height="115" />
+              <section v-for="chart in historyCharts" :key="chart.key">
+                <h3>{{ chart.name }} ({{ chart.unit }})</h3>
+                <EChart v-if="chart.hasData" :option="chart.option" :height="160" :aria-label="chart.label" />
+                <div v-else h="160px" flex="~ items-center justify-center" un-text="subtle" role="status">
+                  {{ t('chart.noObservations') }}
+                </div>
               </section>
             </div>
             <p mt="5" class="muted" un-text="13px subtle">

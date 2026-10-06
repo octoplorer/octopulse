@@ -149,7 +149,7 @@ func (s *Server) registerPages() {
 		if e := s.Store.Get(ctx, "pages", in.ID, &p); e != nil {
 			return nil, apiError(ctx, e)
 		}
-		v, e := s.projectPage(ctx, p, p.Draft)
+		v, e := s.projectPageWithHistory(ctx, p, p.Draft, true)
 		return &Output[domain.PublicPage]{Body: v}, apiError(ctx, e)
 	})
 	huma.Register(s.API, huma.Operation{OperationID: "getPublicPage", Method: "GET", Path: "/api/public/pages/{slug}"}, func(ctx context.Context, in *struct {
@@ -233,7 +233,10 @@ func hasID(ids []string, id string) bool {
 	return false
 }
 func (s *Server) projectPage(ctx context.Context, p domain.Page, c domain.PageConfig) (domain.PublicPage, error) {
-	reader := statuspage.Reader{Store: s.Store, Monitors: s.Monitors, Stats: s.Stats, Latency: s.Latency, StatsBatch: s.StatsBatch, LatencyBatch: s.LatencyBatch}
+	return s.projectPageWithHistory(ctx, p, c, false)
+}
+func (s *Server) projectPageWithHistory(ctx context.Context, p domain.Page, c domain.PageConfig, includeHidden bool) (domain.PublicPage, error) {
+	reader := statuspage.Reader{IncludeHiddenDaily: includeHidden, Store: s.Store, Monitors: s.Monitors, Stats: s.Stats, Latency: s.Latency, StatsBatch: s.StatsBatch, LatencyBatch: s.LatencyBatch, DailyStatsBatch: s.DailyStatsBatch}
 	return reader.Project(ctx, p, c)
 }
 func pageState(items []domain.PublicMonitor) string { return statuspage.State(items) }

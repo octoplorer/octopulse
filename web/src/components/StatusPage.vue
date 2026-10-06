@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { PublicPage } from '../client/types.gen'
+import type { PublicMonitor, PublicPage } from '../client/types.gen'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { duration, formatDate, formatPercent, statusLabel } from '../composables/preferences'
-import Sparkline from './Sparkline.vue'
+import { duration, formatDate, statusLabel } from '../composables/preferences'
+import { dailyAvailabilityOption } from '../lib/chart'
+import EChart from './EChart.vue'
 import StateBadge from './StateBadge.vue'
 import { Alert } from './ui/alert'
 import { Badge } from './ui/badge'
@@ -17,7 +18,7 @@ const props = defineProps<{
   pathBase?: string
   stale?: boolean
 }>()
-const { t, n, locale } = useI18n({ useScope: 'global' })
+const { t, n, d, locale } = useI18n({ useScope: 'global' })
 const stateLabels: Record<string, string> = {
   operational: 'publicState.operational',
   normal: 'publicState.normal',
@@ -42,9 +43,9 @@ const incidents = computed(() =>
 const activeMaintenance = computed(() =>
   props.page.maintenance.filter(x => x.endsAt > Date.now()),
 )
-function showMetric(id: string, field: 'showUptime' | 'showLatency') {
+function showMetric(groupId: string, id: string, field: 'showUptime' | 'showLatency') {
   return (
-    props.page.config.groups.flatMap(g => g.monitors).find(m => m.monitorId === id)?.[field]
+    props.page.config.groups.find(g => g.id === groupId)?.monitors.find(m => m.monitorId === id)?.[field]
     ?? true
   )
 }
@@ -58,6 +59,38 @@ function safeLink(value: string) {
   return undefined
 }
 const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
+function availabilityPercent(value: number | null | undefined) {
+  return value == null ? '—' : n(value / 100, { style: 'percent', maximumFractionDigits: 2 })
+}
+function utcDay(at: number) {
+  return d(at, { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' })
+}
+function latencyText(monitor: PublicMonitor) {
+  const point = (monitor.latency ?? []).filter(p => Number.isFinite(p.latencyMs)).sort((a, b) => a.at - b.at).at(-1)
+  return point ? `${n(point.latencyMs, { maximumFractionDigits: 2 })} ms` : '—'
+}
+const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => group.monitors.map((monitor) => {
+  const points = monitor.dailyAvailability ?? []
+  return [`${group.id}:${monitor.id}`, {
+    hasData: points.length > 0,
+    option: dailyAvailabilityOption({
+      points,
+      name: t('common.uptime'),
+      color: props.page.config.brandColor || 'var(--color-brand)',
+      valueFormatter: availabilityPercent,
+      dayFormatter: at => `${utcDay(at)} UTC`,
+      noDataLabel: t('statusPage.noEffectiveObservations'),
+      coverageLabel: t('statusPage.coverage'),
+    }),
+    label: t('statusPage.dailyChartSummary', {
+      name: monitor.name,
+      days: points.length,
+      observed: points.filter(point => point.uptime != null).length,
+      from: points.length ? utcDay(points[0]!.from) : '—',
+      to: points.length ? utcDay(points.at(-1)!.from) : '—',
+    }),
+  }] as const
+}))))
 </script>
 
 <template>
@@ -173,19 +206,30 @@ const base = computed(() => props.pathBase ?? `/${props.page.slug}`)
                     {{ formatDate(monitor.certificate.expiresAt) }}</span>
                 </div>
               </template><template v-else>
-                <Sparkline
-                  v-if="showMetric(monitor.id, 'showLatency') && monitor.latency?.length"
-                  :values="monitor.latency.map((x) => x.latencyMs)"
-                  :timestamps="monitor.latency.map((x) => x.at)"
-                  :height="30"
-                  :color="page.config.brandColor"
-                />
-                <div v-if="showMetric(monitor.id, 'showUptime')" class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap" un-text="12px subtle" mt="9px">
-                  <span>{{ t('common.uptime') }}
-                    <strong>{{ formatPercent(monitor.availability?.uptime) }}</strong><span ml="3">{{ t('statusPage.coverage') }}
-                      {{ formatPercent(monitor.availability?.coverage) }}</span></span><span>{{ t('statusPage.effectiveDuration') }}
-                    {{ duration(monitor.availability?.effectiveMs) }}</span>
-                </div>
+                <template v-if="showMetric(group.id, monitor.id, 'showUptime')">
+                  <div flex="~ items-center justify-between wrap gap-2" un-text="11px subtle">
+                    <span>{{ t('statusPage.dailyAvailability') }} · {{ t('statusPage.last90Days') }} (UTC)</span>
+                    <span flex="~ items-center gap-1"><span size="2" rounded="full" bg="fill" border="1px solid line" />{{ t('statusPage.noEffectiveObservations') }}</span>
+                  </div>
+                  <EChart
+                    v-if="dailyCharts.get(`${group.id}:${monitor.id}`)?.hasData"
+                    :option="dailyCharts.get(`${group.id}:${monitor.id}`)!.option"
+                    :height="64"
+                    :aria-label="dailyCharts.get(`${group.id}:${monitor.id}`)!.label"
+                  />
+                  <p v-else un-text="11px subtle" my="3">
+                    {{ t('chart.noObservations') }}
+                  </p>
+                  <div class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap gap-2" un-text="12px subtle" mt="9px">
+                    <span>{{ t('statusPage.last24Hours') }} · {{ t('common.uptime') }}
+                      <strong>{{ availabilityPercent(monitor.availability?.uptime) }}</strong><span ml="3">{{ t('statusPage.coverage') }}
+                        {{ availabilityPercent(monitor.availability?.coverage) }}</span></span><span>{{ t('statusPage.effectiveDuration') }}
+                      {{ duration(monitor.availability?.effectiveMs) }}</span>
+                  </div>
+                </template>
+                <p v-if="showMetric(group.id, monitor.id, 'showLatency')" class="tabular-nums" un-text="12px subtle" mt="9px">
+                  {{ t('statusPage.recentLatency') }} {{ latencyText(monitor) }}
+                </p>
               </template>
             </article>
             <p v-if="!group.monitors.length" p="5" un-text="13px subtle">

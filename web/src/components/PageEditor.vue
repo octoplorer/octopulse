@@ -194,7 +194,7 @@ const preview = computed<PublicPage>(() => {
     monitors: group.monitors.map((pm) => {
       const live = existing.find(x => x.id === pm.monitorId)
       if (live)
-        return { ...live, name: pm.alias || live.name, latency: pm.showLatency ? live.latency : [] }
+        return { ...live, name: pm.alias || live.name, dailyAvailability: pm.showUptime ? live.dailyAvailability : [], latency: pm.showLatency ? live.latency : [] }
       const monitor = monitors.value.find(x => x.id === pm.monitorId)
       return {
         id: pm.monitorId,
@@ -214,6 +214,7 @@ const preview = computed<PublicPage>(() => {
           uptime: null,
           coverage: null,
         },
+        dailyAvailability: [],
         latency: [],
         ...(monitor?.certificate
           ? {

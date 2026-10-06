@@ -630,6 +630,10 @@ export type PublicMaintenance = {
 export type PublicMonitor = {
     availability: Availability;
     certificate?: PublicCertificate;
+    /**
+     * Daily availability for the last 90 UTC calendar days, including today. Public responses include history when showUptime is enabled; authenticated draft previews always include it.
+     */
+    dailyAvailability: Array<Availability>;
     readonly id: string;
     latency: Array<LatencyPoint>;
     maintenance: boolean;
@@ -1100,6 +1104,10 @@ export type PublicMaintenanceWritable = {
 export type PublicMonitorWritable = {
     availability: Availability;
     certificate?: PublicCertificate;
+    /**
+     * Daily availability for the last 90 UTC calendar days, including today. Public responses include history when showUptime is enabled; authenticated draft previews always include it.
+     */
+    dailyAvailability: Array<Availability>;
     latency: Array<LatencyPoint>;
     maintenance: boolean;
     name: string;

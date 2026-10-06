@@ -95,6 +95,49 @@ func (s *Service) AvailabilityBatch(ctx context.Context, ids []string, from, to 
 	return results, nil
 }
 
+// DailyAvailabilityBatch partitions a common window at UTC midnight boundaries.
+// Each monitor's days use one immutable snapshot, including maintenance policies.
+// Unknown IDs are omitted; certificate monitors have unknown-only daily buckets.
+func (s *Service) DailyAvailabilityBatch(ctx context.Context, ids []string, from, to int64) (map[string][]domain.Availability, error) {
+	from, to, err := s.window(from, to)
+	if err != nil {
+		return nil, err
+	}
+	results := map[string][]domain.Availability{}
+	if len(ids) == 0 {
+		return results, nil
+	}
+	snapshots, err := s.Store.ReadStatisticsBatch(ctx, ids, from, to, 0)
+	if err != nil {
+		return nil, err
+	}
+	days := make([]span, 0, (to-from)/dayMS+2)
+	for start := from; start < to; {
+		end := min(floor(start, dayMS)+dayMS, to)
+		days = append(days, span{start, end})
+		start = end
+	}
+	var maintenance map[string][]span
+	for id, snapshot := range snapshots {
+		buckets := make([]domain.Availability, 0, len(days))
+		if snapshot.Monitor.Kind == domain.MonitorCertificate {
+			for _, day := range days {
+				buckets = append(buckets, domain.Availability{From: day.from, To: day.to, UnknownMs: day.to - day.from})
+			}
+		} else {
+			if maintenance == nil {
+				maintenance = maintenanceSpans(snapshot.Maintenance)
+			}
+			input := prepareAvailability(snapshot, maintenance[id])
+			for _, day := range days {
+				buckets = append(buckets, input.calculate(day.from, day.to))
+			}
+		}
+		results[id] = buckets
+	}
+	return results, nil
+}
+
 func (s *Service) retention(ctx context.Context) (domain.Retention, error) {
 	settings := domain.DefaultSettings()
 	err := s.Store.Get(ctx, "settings", "organization", &settings)

@@ -652,9 +652,9 @@
     "completeRequestResponseBodiesAndSecretHeadersAre": "Complete request/response bodies and secret headers are not stored by default. Aggregates retain time weights and coverage instead of substituting sample counts for duration.",
     "saveRetention": "Save retention"
   },
-  "sparkline": {
-    "observedMetricTrend": "Observed metric trend",
-    "summary": "Observed points: {count} · Latest value: {value}"
+  "chart": {
+    "summary": "{name} · Observed points: {count} · Latest value: {value} {unit}",
+    "noObservations": "No observations in this time range"
   },
   "states": {
     "up": "Operational",
@@ -698,6 +698,12 @@
     "certificate_renewed": "Certificate renewed"
   },
   "statusPage": {
+    "dailyAvailability": "Daily availability",
+    "last90Days": "Last 90 days",
+    "last24Hours": "Last 24 hours",
+    "noEffectiveObservations": "No effective observations",
+    "recentLatency": "Recent latency",
+    "dailyChartSummary": "{name} · Daily availability from {from} to {to} UTC · {days} days, {observed} days with effective observations",
     "statusDataCouldNotBeRefreshedTheLast": "Status data could not be refreshed. The last received data is shown below; check its update time.",
     "lastUpdated": "Last updated",
     "draftPreview": "Draft preview",

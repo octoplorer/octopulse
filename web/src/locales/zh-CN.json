@@ -652,9 +652,9 @@
     "completeRequestResponseBodiesAndSecretHeadersAre": "默认不保存完整请求/响应正文或秘密头。聚合保留时间权重与覆盖信息，统计不能用样本数替代状态时长。",
     "saveRetention": "保存留存策略"
   },
-  "sparkline": {
-    "observedMetricTrend": "实测指标趋势",
-    "summary": "实测数据点：{count} · 最近值：{value}"
+  "chart": {
+    "summary": "{name} · 实测数据点：{count} · 最近值：{value} {unit}",
+    "noObservations": "此时间范围内暂无观测数据"
   },
   "states": {
     "up": "正常",
@@ -698,6 +698,12 @@
     "certificate_renewed": "证书续期"
   },
   "statusPage": {
+    "dailyAvailability": "每日可用率",
+    "last90Days": "最近 90 天",
+    "last24Hours": "最近 24 小时",
+    "noEffectiveObservations": "无有效观测",
+    "recentLatency": "最近延迟",
+    "dailyChartSummary": "{name} · {from} 至 {to} UTC 的每日可用率 · 共 {days} 天，其中 {observed} 天有有效观测",
     "statusDataCouldNotBeRefreshedTheLast": "状态信息暂时无法刷新，以下为上次收到的数据。请留意最近更新时间。",
     "lastUpdated": "最近更新",
     "draftPreview": "草稿预览",

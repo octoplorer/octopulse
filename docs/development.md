@@ -25,6 +25,8 @@ mise run dev
 
 `mise run dev` 并行执行 `dev:api` 与 `dev:web`；也可用两个终端分别执行 `mise run dev:api` 和 `mise run dev:web`。依赖安装也可用 `mise run install`，使用根锁文件的 frozen 模式。
 
+前端由 Vite 自动更新。Go API 不监听源码变化；修改 Go 代码或 API 契约后，停止并重新执行 `mise run dev:api`，让运行中的接口与前端契约一致。
+
 整项目任务和 Node 脚本的作用不同：
 
 | 任务 | 整项目 | 仅 Node/前端 |
@@ -64,6 +66,16 @@ mise exec -- aube --filter @octopulse/web run <script>
 编辑表单由 `@tanstack/vue-form` 的 `useForm` 管理，字段通过 `form.Field` 的 `handleChange` / `handleBlur` 更新，显示值和提交状态使用 `form.useSelector` 订阅。打开编辑或加载服务端数据时使用 `reset(values)`；保存后的重置需等异步提交步骤完成，避免提前清空 `isSubmitting`。列表筛选、标签页、弹窗开关和立即生效的主题偏好保留为界面状态。
 
 字段的标签、提示与错误关联使用 Ark UI Field，文本控件通过 `FieldInput` / `FieldTextarea` 绑定 `modelValue`。标签使用 Ark UI TagsInput 直接绑定字符串数组，保存时提交尚未确认的标签。嵌套编辑组件需发出新的对象或数组，不能直接修改表单 store 中的引用。数组操作使用表单 API；动态数组字段以完整字段路径作为 key，确保重排后字段实例绑定正确的位置。列表和 JSON 输入组件直接接收结构化值，在组件内维护文本编辑状态；表单使用 API 所需的数据类型，提交监控时移除非当前监控类型的配置。
+
+### 图表
+
+图表直接使用 `components/EChart.vue` 的 ECharts 原生 `option` 接口。组件基于 Vue ECharts，负责 Canvas 渲染、响应式更新、容器缩放和实例清理，提供 `height`、`ariaLabel`、`loading`、`theme`、`initOptions` 和 `updateOptions`，渲染器固定为 Canvas；通过组件 ref 可调用 `getEchartsInstance()`、`resize()` 和 `dispatchAction()`。图表事件如 `@click` 直接传给 Vue ECharts。
+
+`lib/echarts.ts` 按需注册折线、柱状图及必要组件，添加其他图表类型时也在这里注册。默认配色读取图表所在位置的 CSS 变量，包括状态页的局部品牌色，并跟随实际 HTML 配色模式及减少动态效果偏好。提示框使用 Canvas 富文本；formatter 返回文本，避免将用户填写的监控名称作为 HTML 渲染。
+
+监控延迟和服务器历史生成响应式配置，复用 `lib/chart.ts` 的 `timeSeriesOption()`。输入为 `{ at, value }` 观测点以及指标名称、单位和格式化函数，时间为 Unix 毫秒；无效观测被过滤。默认折线图在长时间采样缺口处断开，孤立观测保留圆点。调用处负责无数据提示与可访问名称，格式化函数随语言和显示时区更新。
+
+公开状态页及草稿预览使用 `dailyAvailabilityOption()` 展示最近 90 个 UTC 自然日（含今天）的每日可用率，一天一根轻微圆角的柱子。后端以状态区间的持续时长计算可用率，维护与暂停时间排除，Unknown 不算成功或故障；今天统计到当前时间。`dailyAvailability` 仅在对应服务启用 `showUptime` 时公开，证书监控为空数组；认证草稿预览预加载历史数据，以便本地开关立即生效。百分数使用 0–100，空可用率保持 `null` 并呈现灰色背景柱，真实 0% 以最小高度的故障色柱显示。图表日期及提示框明确使用 UTC；24 小时摘要和最近延迟独立展示。
 
 ### 文档 head
 

@@ -27,27 +27,28 @@ import (
 )
 
 type Server struct {
-	Store         *store.Store
-	Vault         *security.Vault
-	Secrets       *secrets.Resolver
-	Monitors      *monitoring.Service
-	Config        config.Config
-	API           huma.API
-	Metrics       *telemetry.Metrics
-	Mux           *http.ServeMux
-	mu            sync.Mutex
-	dummyPassword string
-	Check         func(context.Context, string) error
-	NextCheck     func(string) int64
-	Stats         func(context.Context, string, int64, int64) (domain.Availability, error)
-	Latency       func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error)
-	StatsBatch    func(context.Context, []string, int64, int64) (map[string]domain.Availability, error)
-	LatencyBatch  func(context.Context, []string, int64, int64) (map[string][]domain.LatencyPoint, error)
-	Changed       func(context.Context, string) error
-	Heartbeat     func(context.Context, string, bool, string) error
-	Wake          func()
-	TestChannel   func(context.Context, string) error
-	Beszel        *beszel.Client
+	Store           *store.Store
+	Vault           *security.Vault
+	Secrets         *secrets.Resolver
+	Monitors        *monitoring.Service
+	Config          config.Config
+	API             huma.API
+	Metrics         *telemetry.Metrics
+	Mux             *http.ServeMux
+	mu              sync.Mutex
+	dummyPassword   string
+	Check           func(context.Context, string) error
+	NextCheck       func(string) int64
+	Stats           func(context.Context, string, int64, int64) (domain.Availability, error)
+	Latency         func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error)
+	StatsBatch      func(context.Context, []string, int64, int64) (map[string]domain.Availability, error)
+	LatencyBatch    func(context.Context, []string, int64, int64) (map[string][]domain.LatencyPoint, error)
+	DailyStatsBatch func(context.Context, []string, int64, int64) (map[string][]domain.Availability, error)
+	Changed         func(context.Context, string) error
+	Heartbeat       func(context.Context, string, bool, string) error
+	Wake            func()
+	TestChannel     func(context.Context, string) error
+	Beszel          *beszel.Client
 }
 type contextKey struct{}
 type hostContextKey struct{}

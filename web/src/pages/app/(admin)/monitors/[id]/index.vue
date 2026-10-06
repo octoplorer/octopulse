@@ -15,10 +15,10 @@ import {
   updateMonitorMutation,
 } from '../../../../../client/@pinia/colada.gen'
 import AsyncState from '../../../../../components/AsyncState.vue'
+import EChart from '../../../../../components/EChart.vue'
 import EmptyState from '../../../../../components/EmptyState.vue'
 import Modal from '../../../../../components/Modal.vue'
 import PageHeader from '../../../../../components/PageHeader.vue'
-import Sparkline from '../../../../../components/Sparkline.vue'
 import StateBadge from '../../../../../components/StateBadge.vue'
 import { Alert } from '../../../../../components/ui/alert'
 import { Badge } from '../../../../../components/ui/badge'
@@ -31,11 +31,12 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../../../com
 import { canEdit } from '../../../../../composables/api'
 import { notify } from '../../../../../composables/notices'
 import { usePollingEnabled } from '../../../../../composables/polling'
-import { duration, formatDate, formatPercent } from '../../../../../composables/preferences'
+import { duration, formatDate, formatPercent, timezone } from '../../../../../composables/preferences'
+import { normalizeTimeSeries, timeSeriesOption } from '../../../../../lib/chart'
 import { errorText } from '../../../../../lib/errors'
 import { targetOf } from '../../../../../lib/monitor'
 
-const { t, n } = useI18n({ useScope: 'global' })
+const { t, n, d } = useI18n({ useScope: 'global' })
 
 definePage({ meta: { title: 'navigation.monitorDetails' } })
 
@@ -87,6 +88,25 @@ const tab = ref('history')
 const { copy, copied } = useClipboard()
 const monitor = computed(() => query.data.value)
 const availability = computed(() => history.data.value?.availability)
+const latencyPoints = computed(() => normalizeTimeSeries(
+  (history.data.value?.latency ?? []).map(point => ({ at: point.at, value: point.latencyMs })),
+))
+const latencyOption = computed(() => {
+  const timeZone = timezone.value
+  return timeSeriesOption({
+    points: latencyPoints.value,
+    name: t('monitorDetails.responseLatency'),
+    unit: 'ms',
+    valueFormatter: value => n(value, { maximumFractionDigits: 2 }),
+    timeFormatter: at => d(at, { key: 'short', timeZone }),
+  })
+})
+const latencyLabel = computed(() => t('chart.summary', {
+  name: t('monitorDetails.responseLatency'),
+  count: latencyPoints.value.length,
+  value: latencyPoints.value.length ? n(latencyPoints.value.at(-1)!.value, { maximumFractionDigits: 2 }) : '—',
+  unit: 'ms',
+}))
 function refreshHistory() {
   return history.refetch()
 }
@@ -328,7 +348,16 @@ function viewRound(round: Round) {
                   <h3>{{ t('monitorDetails.responseLatency') }}</h3>
                   <span class="mini-label" un-text="12px subtle" tracking="0.5px">ms</span>
                 </div>
-                <Sparkline show-scale :values="history.data.value?.latency?.map((p) => p.latencyMs) || []" :timestamps="history.data.value?.latency?.map((p) => p.at) || []" :height="125" />
+                <EChart
+                  v-if="latencyPoints.length"
+                  :option="latencyOption"
+                  :height="180"
+                  :aria-label="latencyLabel"
+                  :loading="history.isPending.value"
+                />
+                <div v-else h="180px" flex="~ items-center justify-center" un-text="subtle" role="status">
+                  {{ t('chart.noObservations') }}
+                </div>
                 <FieldDescription as="p" mt="2">
                   {{ t('monitorDetails.sourceActualCheckRoundsMissingObservationsAreNot') }}
                 </FieldDescription>

@@ -2197,6 +2197,13 @@
           "certificate": {
             "$ref": "#/components/schemas/PublicCertificate"
           },
+          "dailyAvailability": {
+            "description": "Daily availability for the last 90 UTC calendar days, including today. Public responses include history when showUptime is enabled; authenticated draft previews always include it.",
+            "items": {
+              "$ref": "#/components/schemas/Availability"
+            },
+            "type": "array"
+          },
           "id": {
             "readOnly": true,
             "type": "string"
@@ -2231,6 +2238,7 @@
           "paused",
           "maintenance",
           "availability",
+          "dailyAvailability",
           "latency"
         ],
         "type": "object"

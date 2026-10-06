@@ -9,16 +9,20 @@ import (
 
 	"github.com/octoplorer/octopulse/internal/domain"
 	"github.com/octoplorer/octopulse/internal/monitoring"
+	"github.com/octoplorer/octopulse/internal/statistics"
 	"github.com/octoplorer/octopulse/internal/store"
 )
 
 type Reader struct {
-	Store        *store.Store
-	Monitors     *monitoring.Service
-	Stats        func(context.Context, string, int64, int64) (domain.Availability, error)
-	Latency      func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error)
-	StatsBatch   func(context.Context, []string, int64, int64) (map[string]domain.Availability, error)
-	LatencyBatch func(context.Context, []string, int64, int64) (map[string][]domain.LatencyPoint, error)
+	// Authenticated draft previews preload hidden history for local display toggles.
+	IncludeHiddenDaily bool
+	Store              *store.Store
+	Monitors           *monitoring.Service
+	Stats              func(context.Context, string, int64, int64) (domain.Availability, error)
+	Latency            func(context.Context, string, int64, int64) ([]domain.LatencyPoint, error)
+	StatsBatch         func(context.Context, []string, int64, int64) (map[string]domain.Availability, error)
+	LatencyBatch       func(context.Context, []string, int64, int64) (map[string][]domain.LatencyPoint, error)
+	DailyStatsBatch    func(context.Context, []string, int64, int64) (map[string][]domain.Availability, error)
 }
 
 func hasID(ids []string, id string) bool {
@@ -52,9 +56,10 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 	if e != nil {
 		return result, e
 	}
-	var monitorIDs, availabilityIDs, latencyIDs []string
+	var monitorIDs, availabilityIDs, latencyIDs, dailyIDs []string
 	seen := map[string]bool{}
 	needsLatency := map[string]bool{}
+	needsUptime := map[string]bool{}
 	for _, group := range c.Groups {
 		for _, ref := range group.Monitors {
 			if !seen[ref.MonitorID] {
@@ -62,6 +67,7 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 				seen[ref.MonitorID] = true
 			}
 			needsLatency[ref.MonitorID] = needsLatency[ref.MonitorID] || ref.ShowLatency
+			needsUptime[ref.MonitorID] = needsUptime[ref.MonitorID] || ref.ShowUptime
 		}
 	}
 	monitors, e := s.Monitors.Read(ctx, monitorIDs)
@@ -75,6 +81,9 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 		}
 		if m.IsAvailability() {
 			availabilityIDs = append(availabilityIDs, id)
+			if needsUptime[id] || s.IncludeHiddenDaily {
+				dailyIDs = append(dailyIDs, id)
+			}
 			if needsLatency[id] {
 				latencyIDs = append(latencyIDs, id)
 			}
@@ -94,6 +103,23 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			return result, e
 		}
 	}
+	var daily map[string][]domain.Availability
+	if len(dailyIDs) > 0 {
+		readDaily := s.DailyStatsBatch
+		if readDaily == nil {
+			readDaily = statistics.New(s.Store).DailyAvailabilityBatch
+		}
+		daily, e = readDaily(ctx, dailyIDs, dailyHistoryStart(now), now)
+		if e != nil {
+			return result, e
+		}
+		// At midnight today is a zero-duration, unobserved day, still one of the 90 slots.
+		if now%publicDayMS == 0 {
+			for id, days := range daily {
+				daily[id] = append(days, domain.Availability{From: now, To: now})
+			}
+		}
+	}
 	ids := map[string]bool{}
 	states := []domain.PublicMonitor{}
 	for _, g := range c.Groups {
@@ -108,7 +134,7 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			if strings.TrimSpace(name) == "" {
 				name = m.Name
 			}
-			item := domain.PublicMonitor{ID: m.ID, Name: name, Type: m.Type, State: m.State, Paused: !m.Enabled, Availability: domain.Availability{From: from, To: now, UnknownMs: now - from}, Latency: []domain.LatencyPoint{}}
+			item := domain.PublicMonitor{ID: m.ID, Name: name, Type: m.Type, State: m.State, Paused: !m.Enabled, Availability: domain.Availability{From: from, To: now, UnknownMs: now - from}, Latency: []domain.LatencyPoint{}, DailyAvailability: []domain.Availability{}}
 			for _, w := range maintenance {
 				if hasID(w.MonitorIDs, m.ID) && w.StartsAt <= now && now < w.EndsAt {
 					item.Maintenance = true
@@ -131,6 +157,13 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 					item.Availability, e = s.Stats(ctx, m.ID, from, now)
 					if e != nil {
 						return result, e
+					}
+				}
+				if ref.ShowUptime || s.IncludeHiddenDaily {
+					var ok bool
+					item.DailyAvailability, ok = daily[m.ID]
+					if !ok {
+						return result, store.ErrNotFound
 					}
 				}
 				if ref.ShowLatency {
@@ -227,4 +260,11 @@ func State(items []domain.PublicMonitor) string {
 	default:
 		return "operational"
 	}
+}
+
+const publicDayMS int64 = 86400000
+const publicHistoryDays int64 = 90
+
+func dailyHistoryStart(now int64) int64 {
+	return now/publicDayMS*publicDayMS - (publicHistoryDays-1)*publicDayMS
 }
