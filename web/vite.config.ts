@@ -4,9 +4,13 @@ import { defineConfig } from 'vitest/config'
 import VueRouter from 'vue-router/vite'
 
 export default defineConfig({
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [UnoCSS(), VueRouter(), vue()],
   test: {
     environment: 'node',
+    maxWorkers: 4,
     include: ['src/**/*.{test,spec}.ts'],
   },
   server: {

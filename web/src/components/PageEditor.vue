@@ -491,8 +491,8 @@ async function remove() {
             <p un-text="13px $muted">
               {{ t('pageEditor.publishOnlySelectedMonitorsPublicAliasesLeaveInternal') }}
             </p>
-            <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor" border="1px solid $border" rounded="9px" mt="15px" overflow="hidden">
-              <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="$surface-soft" border="b-1px b-solid b-$border">
+            <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor" border="1px solid line" rounded="9px" mt="15px" overflow="hidden">
+              <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="$surface-soft" border="b-1px b-solid b-line">
                 <input
                   v-model="group.name"
                   :aria-label="t('common.groupName')"
@@ -525,7 +525,7 @@ async function remove() {
               <div
                 v-for="(item, mIndex) in group.monitors"
                 :key="item.monitorId"
-                flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0" class="[@media(max-width:700px)]:flex-wrap"
+                flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-line last:0" class="[@media(max-width:700px)]:flex-wrap"
               >
                 <div flex="1" min-w="0">
                   <span un-text="12px $muted" tracking="0.5px">{{
@@ -571,7 +571,7 @@ async function remove() {
                   </Button>
                 </template>
               </div>
-              <div v-if="canEdit()" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-$border last:0" class="[@media(max-width:700px)]:flex-wrap">
+              <div v-if="canEdit()" flex="~ items-center gap-9px" px="13px" py="11px" border="b-1px b-solid b-line last:0" class="[@media(max-width:700px)]:flex-wrap">
                 <Select v-model="newMonitorIds[group.id]">
                   <SelectTrigger :aria-label="t('common.selectAMonitor')">
                     <SelectValue :placeholder="t('common.selectAMonitor')" />

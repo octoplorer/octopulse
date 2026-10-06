@@ -268,7 +268,7 @@ function viewRound(round: Round) {
               {{ monitor.heartbeat.description }}
             </p>
           </Alert>
-          <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid $border" bg="$surface-soft" rounded="8px" un-text="12px" mt="15px">
+          <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid line" bg="$surface-soft" rounded="8px" un-text="12px" mt="15px">
             <code>{{ heartbeatUrl }}</code><Button variant="ghost" size="sm" @click="copy(heartbeatUrl)">
               <span w="13px" h="13px" aria-hidden="true" class="i-lucide-copy" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
             </Button>
@@ -278,7 +278,7 @@ function viewRound(round: Round) {
           </div>
         </CardContent>
       </Card>
-      <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid $border" rounded="8px" bg="$surface" un-text="12px $muted">
+      <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
         <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
@@ -366,7 +366,7 @@ function viewRound(round: Round) {
               </AsyncState>
             </TabsContent><TabsContent value="configuration">
               <CardContent>
-                <pre class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid $border" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(monitor, null, 2) }}</pre>
+                <pre class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(monitor, null, 2) }}</pre>
               </CardContent>
             </TabsContent>
           </TabsRoot>
@@ -458,7 +458,7 @@ function viewRound(round: Round) {
           <FieldError v-if="attempt.error" as="p" py="10px" px="0">
             {{ attempt.error }}
           </FieldError>
-          <pre mt="4" class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid $border" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
+          <pre mt="4" class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="$surface-soft" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
         </CardContent>
       </Card>
     </template>

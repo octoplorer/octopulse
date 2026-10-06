@@ -179,7 +179,7 @@ function percentage(value: number | undefined) {
       <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
     </Button>
   </PageHeader>
-  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid $border" rounded="8px" bg="$surface" un-text="12px $muted">
+  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
@@ -197,7 +197,7 @@ function percentage(value: number | undefined) {
       <Card v-for="server in query.data.value.items" :key="server.id" as="article" p="22px" class="[&_h2]:text-16px">
         <div flex="~ items-center justify-between gap-3">
           <div flex="~ items-center gap-3">
-            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
+            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
             <div>
               <h2>{{ server.name }}</h2>
               <p class="muted" un-text="13px $muted">
@@ -207,7 +207,7 @@ function percentage(value: number | undefined) {
           </div>
           <Badge>{{ server.status }}</Badge>
         </div>
-        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-$border [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-$accent">
+        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-line [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-$accent">
           <div>
             <span class="mini-label" un-text="12px $muted" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
             <div class="metric-progress">

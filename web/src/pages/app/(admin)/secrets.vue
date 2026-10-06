@@ -92,7 +92,7 @@ function cancel() {
       <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addSecret') }}
     </Button>
   </PageHeader>
-  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid $border" rounded="8px" bg="$surface" un-text="12px $muted">
+  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="$surface" un-text="12px $muted">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-key-round" />{{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
   </div>
   <Card as="section">

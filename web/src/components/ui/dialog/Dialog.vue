@@ -49,7 +49,7 @@ const open = defineModel<boolean>('open', { default: false })
           <div class="modal-body" mt="24px">
             <slot />
           </div>
-          <div v-if="$slots.footer" class="modal-footer" border="t-1px t-solid t-$border" pt="20px" mt="24px" flex="~ justify-end gap-9px">
+          <div v-if="$slots.footer" class="modal-footer" border="t-1px t-solid t-line" pt="20px" mt="24px" flex="~ justify-end gap-9px">
             <slot name="footer" />
           </div>
         </ArkDialog.Content>

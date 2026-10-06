@@ -9,7 +9,7 @@ withDefaults(defineProps<{ variant?: 'success' | 'error' }>(), { variant: 'succe
     flex="~ items-center gap-20px"
     bg="$surface"
     un-text="14px $text"
-    border="1 solid $border l-3 l-$success"
+    border="1 solid line l-3 l-$success"
     py="12px"
     px="16px"
     rounded="8px"

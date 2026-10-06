@@ -5,7 +5,7 @@ withDefaults(defineProps<{
 }>(), { variant: 'outline', dot: false })
 
 const variants = {
-  outline: 'pill inline-block border-$border py-3px px-7px rounded-5px text-$muted',
+  outline: 'pill inline-block border-line py-3px px-7px rounded-5px text-$muted',
   success: 'text-$success bg-$success-soft',
   danger: 'text-$danger bg-$danger-soft',
   info: 'text-$info bg-$info-soft',

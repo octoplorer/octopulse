@@ -10,7 +10,7 @@ withDefaults(defineProps<{ as?: keyof HTMLElementTagNameMap }>(), { as: 'span' }
     size="32px"
     rounded="full"
     bg="$surface-soft"
-    border="1 solid $border"
+    border="1 solid line"
     un-text="12px $text"
     font="600"
   >

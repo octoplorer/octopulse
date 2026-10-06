@@ -172,7 +172,7 @@ const nextMaintenance = computed(
                 <TableRow v-for="monitor in ordered" :key="monitor.id">
                   <TableCell>
                     <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
-                      <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
+                      <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                     </RouterLink>
                   </TableCell>
                   <TableCell>
@@ -251,7 +251,7 @@ const nextMaintenance = computed(
           <p v-if="!recentIncidents.length" py="4" class="muted" un-text="13px $muted">
             {{ t('overview.noIncidentAnnouncementsUpdatesWillAppearHere') }}
           </p>
-          <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="flex gap-11px border-b-1 border-b-solid border-b-$border py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
+          <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
             <i :style="{ background: incident.status === 'resolved' ? 'var(--success)' : 'var(--warning)' }" mt="6px" size="7px" shrink="0" rounded="full" />
             <div>
               <h3>{{ incident.title }}</h3>
@@ -268,7 +268,7 @@ const nextMaintenance = computed(
           <p v-if="!nextMaintenance.length" py="4" class="muted" un-text="13px $muted">
             {{ t('overview.noScheduledMaintenance') }}
           </p>
-          <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="flex gap-11px border-b-1 border-b-solid border-b-$border py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
+          <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="flex gap-11px border-b-1 border-b-solid border-b-line py-17px last:border-0 [&>div]:min-w-0 [&>div]:[overflow-wrap:anywhere] [&_h3]:text-12px [&_h3]:font-600 [&_p]:mt-4px [&_p]:text-12px [&_p]:text-$muted">
             <span un-text="[var(--muted)]" mt="1" w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
             <div>
               <h3>{{ window.name }}</h3>

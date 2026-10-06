@@ -138,7 +138,7 @@ const filtered = computed(() =>
             <TableRow v-for="monitor in filtered" :key="monitor.id">
               <TableCell>
                 <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
-                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid $border" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
+                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="$muted" bg="$surface"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px $muted" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
                 </RouterLink>
               </TableCell>
               <TableCell>

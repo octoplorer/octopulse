@@ -92,7 +92,7 @@ async function submit() {
 
 <template>
   <div data-theme-boundary :data-theme="dark ? 'dark' : 'light'" grid="~ cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" min-h="screen" bg="$bg" un-text="$text" class="[@media(max-width:900px)]:grid-cols-1">
-    <section flex="~ col" justify="between" min-h="screen" p="48px" bg="$surface-soft" border="r-1 solid $border" un-text="$text" class="[&_.brand-icon]:bg-$surface [&_.brand]:text-22px [@media(max-width:900px)]:hidden">
+    <section flex="~ col" justify="between" min-h="screen" p="48px" bg="$surface-soft" border="r-1 solid line" un-text="$text" class="[&_.brand-icon]:bg-$surface [&_.brand]:text-22px [@media(max-width:900px)]:hidden">
       <Brand />
       <div relative my="auto" max-w="460px" class="[&_h1]:text-[clamp(32px,3.2vw,46px)] [&_h1]:font-500 [&_h1]:leading-[1.2] [&_h1]:tracking-[-1.2px] [&>p]:mt-24px [&>p]:max-w-360px [&>p]:text-14px [&>p]:text-$muted">
         <p class="eyebrow" un-text="12px $muted" font="500" mb="8px">
