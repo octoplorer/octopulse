@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Channel } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
-import { reactive, ref } from 'vue'
+import { useForm } from '@tanstack/vue-form'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createChannelsMutation,
@@ -24,7 +25,7 @@ import { Alert } from '../../../components/ui/alert'
 import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
-import { FieldDescription, FieldError } from '../../../components/ui/field'
+import { FieldDescription, FieldError, FieldInput } from '../../../components/ui/field'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { isAdmin } from '../../../composables/api'
@@ -47,7 +48,6 @@ const secrets = useQuery({ ...listSecretsQuery(), staleTime: 10000 })
 const deliveries = useQuery({ ...listDeliveriesQuery(), staleTime: 10000 })
 const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 })
 const open = ref(false)
-const saving = ref(false)
 const error = ref('')
 const tab = ref('channels')
 const testing = ref('')
@@ -63,29 +63,31 @@ function empty(): Channel {
     updatedAt: 0,
   }
 }
-const form = reactive(empty())
+const formApi = useForm({
+  defaultValues: empty(),
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      if (value.id)
+        await updateChannel.mutateAsync({ path: { id: value.id }, body: value })
+      else await createChannel.mutateAsync({ body: value })
+      open.value = false
+      await query.refresh()
+      notify(t('notifications.channelSaved'))
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
+})
+const form = formApi.useSelector(state => state.values)
+const saving = formApi.useSelector(state => state.isSubmitting)
 function edit(channel?: Channel) {
-  Object.assign(form, channel ? clone(channel) : empty())
+  if (formApi.state.isSubmitting)
+    return
+  formApi.reset(channel ? clone(channel) : empty())
   error.value = ''
   open.value = true
-}
-async function save() {
-  saving.value = true
-  error.value = ''
-  try {
-    if (form.id)
-      await updateChannel.mutateAsync({ path: { id: form.id }, body: form })
-    else await createChannel.mutateAsync({ body: form })
-    open.value = false
-    await query.refresh()
-    notify(t('notifications.channelSaved'))
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
 }
 async function test(channel: Channel) {
   testing.value = channel.id
@@ -254,16 +256,23 @@ function refresh() {
     {{ t('notifications.failedJobsUseBoundedBackoffStaleOutageMessages') }}
   </Alert>
   <Modal v-model:open="open" :title="form.id ? t('notifications.editChannel') : t('notifications.addChannel2')">
-    <form id="channel-form" @submit.prevent="save">
-      <Field :label="t('common.displayName')">
-        <input v-model="form.name" required>
-      </Field><Field :label="t('notifications.shoutrrrServiceUrlSecret')" mt="5">
-        <SecretSelect v-model="form.serviceUrlSecretId" :secrets="secrets.data.value?.items || []" />
-      </Field>
+    <form id="channel-form" @submit.prevent="formApi.handleSubmit()">
+      <formApi.Field v-slot="{ field }" name="name">
+        <Field :label="t('common.displayName')">
+          <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+        </Field>
+      </formApi.Field>
+      <formApi.Field v-slot="{ field }" name="serviceUrlSecretId">
+        <Field :label="t('notifications.shoutrrrServiceUrlSecret')" mt="5">
+          <SecretSelect :model-value="field.state.value" :secrets="secrets.data.value?.items || []" @update:model-value="field.handleChange($event || '')" @focusout="field.handleBlur" />
+        </Field>
+      </formApi.Field>
       <FieldDescription as="p" mt="2">
         {{ t('notifications.forSmtpTelegramAndOtherServiceUrlsThe') }}
       </FieldDescription>
-      <Toggle v-model="form.enabled" :label="t('notifications.enableChannel')" mt="5" />
+      <formApi.Field v-slot="{ field }" name="enabled">
+        <Toggle :model-value="field.state.value" :label="t('notifications.enableChannel')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+      </formApi.Field>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
       </FieldError>

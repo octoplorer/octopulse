@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { User } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
-import { reactive, ref } from 'vue'
+import { useForm } from '@tanstack/vue-form'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createUserMutation,
@@ -20,7 +21,7 @@ import { Avatar } from '../../../components/ui/avatar'
 import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
-import { FieldError, FieldGroup } from '../../../components/ui/field'
+import { FieldError, FieldGroup, FieldInput } from '../../../components/ui/field'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { currentUser, isAdmin } from '../../../composables/api'
@@ -40,64 +41,54 @@ const deleteUser = useMutation(deleteUserMutation())
 
 const query = useQuery({ ...listUsersQuery(), staleTime: 10000 })
 const open = ref(false)
-const saving = ref(false)
 const error = ref('')
-const form = reactive({
-  id: '',
-  username: '',
-  name: '',
-  role: 'viewer' as User['role'],
-  locale: 'zh-CN' as User['locale'],
-  timezone: timezone.value,
-  enabled: true,
-  password: '',
+function empty() {
+  return {
+    id: '',
+    username: '',
+    name: '',
+    role: 'viewer' as User['role'],
+    locale: 'zh-CN' as User['locale'],
+    timezone: timezone.value,
+    enabled: true,
+    password: '',
+  }
+}
+const formApi = useForm({
+  defaultValues: empty(),
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      const { password, ...rest } = value
+      if (value.id) {
+        await updateUser.mutateAsync({
+          path: { id: value.id },
+          body: { ...rest, ...(password ? { password } : {}) },
+        })
+      }
+      else {
+        await createUser.mutateAsync({ body: { ...rest, password } })
+      }
+      formApi.setFieldValue('password', '')
+      open.value = false
+      await query.refresh()
+      notify(t('users.memberSaved'))
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
 })
+const form = formApi.useSelector(state => state.values)
+const saving = formApi.useSelector(state => state.isSubmitting)
 const deleteTarget = ref<User | null>(null)
 const deleteOpen = ref(false)
 function edit(user?: User) {
-  Object.assign(
-    form,
-    user
-      ? { ...clone(user), password: '' }
-      : {
-          id: '',
-          username: '',
-          name: '',
-          role: 'viewer',
-          locale: 'zh-CN',
-          timezone: timezone.value,
-          enabled: true,
-          password: '',
-        },
-  )
+  if (formApi.state.isSubmitting)
+    return
+  formApi.reset(user ? { ...clone(user), password: '' } : empty())
   error.value = ''
   open.value = true
-}
-async function save() {
-  saving.value = true
-  error.value = ''
-  try {
-    const { password, ...rest } = form
-    if (form.id) {
-      await updateUser.mutateAsync({
-        path: { id: form.id },
-        body: { ...rest, ...(password ? { password } : {}) },
-      })
-    }
-    else {
-      await createUser.mutateAsync({ body: { ...rest, password } })
-    }
-    form.password = ''
-    open.value = false
-    await query.refresh()
-    notify(t('users.memberSaved'))
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
 }
 async function remove() {
   if (!deleteTarget.value)
@@ -118,7 +109,7 @@ function confirmDelete(value: User) {
 }
 function cancel() {
   open.value = false
-  form.password = ''
+  formApi.setFieldValue('password', '')
 }
 </script>
 
@@ -176,48 +167,67 @@ function cancel() {
     {{ t('users.operatorsManageMonitorsMaintenanceAndPublicPagesAdministrators') }}
   </Alert>
   <Modal v-model:open="open" :title="form.id ? t('users.editMember') : t('common.addMember')">
-    <form id="user-form" @submit.prevent="save">
+    <form id="user-form" @submit.prevent="formApi.handleSubmit()">
       <FieldGroup>
-        <Field :label="t('common.username')">
-          <input v-model="form.username" required :disabled="!!form.id">
-        </Field><Field :label="t('common.displayName')">
-          <input v-model="form.name">
-        </Field><Field :label="t('common.role')">
-          <Select v-model="form.role">
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="admin">
-                  {{ t('users.administrator') }}
-                </SelectItem>
-                <SelectItem value="operator">
-                  {{ t('users.operator') }}
-                </SelectItem>
-                <SelectItem value="viewer">
-                  {{ t('users.viewer') }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field><Field :label="t('common.language')">
-          <Select v-model="form.locale">
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
-                  {{ language.label }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field><Field :label="t('common.displayTimeZone')" class="span-full">
-          <input v-model="form.timezone" required>
-        </Field><Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :hint="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
-          <input v-model="form.password" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password">
-        </Field>
-        <div class="span-full">
-          <Toggle v-model="form.enabled" :label="t('users.enableAccount')" />
-        </div>
+        <formApi.Field v-slot="{ field }" name="username">
+          <Field :label="t('common.username')">
+            <FieldInput :name="field.name" :model-value="field.state.value" required :disabled="!!form.id" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="name">
+          <Field :label="t('common.displayName')">
+            <FieldInput :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="role">
+          <Field :label="t('common.role')">
+            <Select :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="admin">
+                    {{ t('users.administrator') }}
+                  </SelectItem>
+                  <SelectItem value="operator">
+                    {{ t('users.operator') }}
+                  </SelectItem>
+                  <SelectItem value="viewer">
+                    {{ t('users.viewer') }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="locale">
+          <Field :label="t('common.language')">
+            <Select :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                    {{ language.label }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="timezone">
+          <Field :label="t('common.displayTimeZone')" class="span-full">
+            <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="password">
+          <Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :hint="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
+            <FieldInput :name="field.name" :model-value="field.state.value" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </formApi.Field>
+        <formApi.Field v-slot="{ field }" name="enabled">
+          <div class="span-full">
+            <Toggle :model-value="field.state.value" :label="t('users.enableAccount')" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+          </div>
+        </formApi.Field>
       </FieldGroup>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}

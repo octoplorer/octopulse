@@ -21,6 +21,7 @@
     "@ark-ui/vue": "5.39.2",
     "@pinia/colada": "1.4.6",
     "@pinia/colada-plugin-auto-refetch": "0.2.7",
+    "@tanstack/vue-form": "1.33.5",
     "@unhead/vue": "3.4.2",
     "@vueuse/core": "15.0.0",
     "pinia": "4.0.3",

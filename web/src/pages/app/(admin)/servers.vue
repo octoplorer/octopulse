@@ -9,7 +9,8 @@ import type {
   GetBeszelHistoryData,
 } from '../../../client/types.gen'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
-import { reactive, ref } from 'vue'
+import { useForm } from '@tanstack/vue-form'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getBeszelConfigQuery,
@@ -31,7 +32,7 @@ import { Alert } from '../../../components/ui/alert'
 import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
-import { FieldError } from '../../../components/ui/field'
+import { FieldError, FieldInput } from '../../../components/ui/field'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Separator } from '../../../components/ui/separator'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
@@ -65,7 +66,6 @@ const secrets = useQuery({
 const configOpen = ref(false)
 const detailOpen = ref(false)
 const selected = ref<BeszelSystem | null>(null)
-const saving = ref(false)
 const error = ref('')
 const history = ref<BeszelHistoryPoint[]>([])
 const containers = ref<BeszelContainer[]>([])
@@ -75,43 +75,47 @@ const tab = ref('history')
 const historyRange = ref<NonNullable<GetBeszelHistoryData['query']>['range']>('24h')
 const historyMeta = ref<BeszelHistory | null>(null)
 const containersMeta = ref<BeszelContainers | null>(null)
-const config = reactive<BeszelConfig>({
-  url: '',
-  email: '',
-  passwordSecretId: '',
-  enabled: false,
-  pollSeconds: 60,
+const configForm = useForm({
+  defaultValues: {
+    url: '',
+    email: '',
+    passwordSecretId: '',
+    enabled: false,
+    pollSeconds: 60,
+  } as BeszelConfig,
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      const result = await updateConfig.mutateAsync({ body: value })
+      configOpen.value = false
+      notify(t('servers.beszelConnectionSaved'))
+      await query.refresh()
+      configForm.reset(result)
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
 })
+const saving = configForm.useSelector(state => state.isSubmitting)
 let detailRequest = 0
 async function configure() {
+  if (configForm.state.isSubmitting)
+    return
   try {
     const state = await queryCache.refresh(
       queryCache.ensure({ ...getBeszelConfigQuery(), staleTime: 0 }),
     )
+    if (configForm.state.isSubmitting)
+      return
     if (state.status !== 'success')
       throw state.error || new Error(t('errors.requestFailed'))
-    Object.assign(config, structuredClone(state.data))
+    configForm.reset(structuredClone(state.data))
     error.value = ''
     configOpen.value = true
   }
   catch (e) {
     notify(errorText(e), 'error')
-  }
-}
-async function save() {
-  saving.value = true
-  error.value = ''
-  try {
-    Object.assign(config, await updateConfig.mutateAsync({ body: config }))
-    configOpen.value = false
-    notify(t('servers.beszelConnectionSaved'))
-    await query.refresh()
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
   }
 }
 async function detail(server: BeszelSystem) {
@@ -245,19 +249,29 @@ function percentage(value: number | undefined) {
     {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
   </Alert>
   <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')">
-    <form id="beszel-form" @submit.prevent="save">
+    <form id="beszel-form" @submit.prevent="configForm.handleSubmit">
       <Alert mb="5" as="p" variant="default">
         {{ t('servers.supportsBeszel020XUseADedicated') }}
       </Alert>
-      <Field :label="t('servers.hubUrl')">
-        <input v-model="config.url" type="url" placeholder="https://beszel.example.com" required>
-      </Field><Field :label="t('servers.dedicatedAccountEmail')" mt="4">
-        <input v-model="config.email" type="email" required>
-      </Field><Field :label="t('servers.passwordSecretReference')" mt="4">
-        <SecretSelect v-model="config.passwordSecretId" :secrets="secrets.data.value?.items || []" />
-      </Field><Field :label="t('servers.syncIntervalSeconds')" mt="4">
-        <input v-model.number="config.pollSeconds" type="number" min="30" required>
-      </Field><Toggle v-model="config.enabled" :label="t('servers.enableIntegration')" mt="5" />
+      <configForm.Field v-slot="{ field }" name="url">
+        <Field :label="t('servers.hubUrl')">
+          <FieldInput :model-value="field.state.value" type="url" placeholder="https://beszel.example.com" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+        </Field>
+      </configForm.Field><configForm.Field v-slot="{ field }" name="email">
+        <Field :label="t('servers.dedicatedAccountEmail')" mt="4">
+          <FieldInput :model-value="field.state.value" type="email" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+        </Field>
+      </configForm.Field><configForm.Field v-slot="{ field }" name="passwordSecretId">
+        <Field :label="t('servers.passwordSecretReference')" mt="4">
+          <SecretSelect :model-value="field.state.value" :secrets="secrets.data.value?.items || []" @update:model-value="field.handleChange($event || '')" @focusout="field.handleBlur" />
+        </Field>
+      </configForm.Field><configForm.Field v-slot="{ field }" name="pollSeconds">
+        <Field :label="t('servers.syncIntervalSeconds')" mt="4">
+          <FieldInput :model-value="field.state.value" type="number" min="30" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
+        </Field>
+      </configForm.Field><configForm.Field v-slot="{ field }" name="enabled">
+        <Toggle :model-value="field.state.value" :label="t('servers.enableIntegration')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+      </configForm.Field>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
       </FieldError>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Secret } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
-import { reactive, ref } from 'vue'
+import { useForm } from '@tanstack/vue-form'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createSecretMutation,
@@ -16,7 +17,7 @@ import Modal from '../../../components/Modal.vue'
 import PageHeader from '../../../components/PageHeader.vue'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
-import { FieldError } from '../../../components/ui/field'
+import { FieldError, FieldInput, FieldTextarea } from '../../../components/ui/field'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
@@ -33,35 +34,36 @@ const deleteSecret = useMutation(deleteSecretMutation())
 
 const query = useQuery({ ...listSecretsQuery(), staleTime: 10000 })
 const open = ref(false)
-const saving = ref(false)
 const error = ref('')
-const form = reactive({ id: '', name: '', value: '' })
+const formApi = useForm({
+  defaultValues: { id: '', name: '', value: '' },
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      const body = { name: value.name, value: value.value }
+      if (value.id)
+        await updateSecret.mutateAsync({ path: { id: value.id }, body })
+      else await createSecret.mutateAsync({ body })
+      formApi.setFieldValue('value', '')
+      open.value = false
+      await query.refresh()
+      notify(t('secrets.secretSaved'))
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
+})
+const form = formApi.useSelector(state => state.values)
+const saving = formApi.useSelector(state => state.isSubmitting)
 const deleteTarget = ref<Secret | null>(null)
 const deleteOpen = ref(false)
 function edit(secret?: Secret) {
-  Object.assign(form, { id: secret?.id || '', name: secret?.name || '', value: '' })
+  if (formApi.state.isSubmitting)
+    return
+  formApi.reset({ id: secret?.id || '', name: secret?.name || '', value: '' })
   error.value = ''
   open.value = true
-}
-async function save() {
-  saving.value = true
-  error.value = ''
-  try {
-    const body = { name: form.name, value: form.value }
-    if (form.id)
-      await updateSecret.mutateAsync({ path: { id: form.id }, body })
-    else await createSecret.mutateAsync({ body })
-    form.value = ''
-    open.value = false
-    await query.refresh()
-    notify(t('secrets.secretSaved'))
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
 }
 async function remove() {
   if (!deleteTarget.value)
@@ -82,7 +84,7 @@ function confirmDelete(value: Secret) {
 }
 function cancel() {
   open.value = false
-  form.value = ''
+  formApi.setFieldValue('value', '')
 }
 </script>
 
@@ -135,12 +137,17 @@ function cancel() {
     </AsyncState>
   </Card>
   <Modal v-model:open="open" :title="form.id ? t('secrets.updateSecret') : t('common.addSecret')">
-    <form id="secret-form" @submit.prevent="save">
-      <Field :label="t('common.name')">
-        <input v-model="form.name" required>
-      </Field><Field :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')" mt="5">
-        <textarea v-model="form.value" required rows="6" autocomplete="off" spellcheck="false" />
-      </Field>
+    <form id="secret-form" @submit.prevent="formApi.handleSubmit()">
+      <formApi.Field v-slot="{ field }" name="name">
+        <Field :label="t('common.name')">
+          <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+        </Field>
+      </formApi.Field>
+      <formApi.Field v-slot="{ field }" name="value">
+        <Field :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')" mt="5">
+          <FieldTextarea :name="field.name" :model-value="field.state.value" required rows="6" autocomplete="off" spellcheck="false" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+        </Field>
+      </formApi.Field>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
       </FieldError>

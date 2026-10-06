@@ -5,33 +5,36 @@ import { useI18n } from 'vue-i18n'
 
 import Field from './Field.vue'
 import SecretSelect from './SecretSelect.vue'
-import { FieldGroup } from './ui/field'
+import { FieldGroup, FieldInput } from './ui/field'
 
 defineProps<{ secrets: Secret[] }>()
 
 const { t } = useI18n({ useScope: 'global' })
 
 const model = defineModel<ConnectionConfigForm>({ required: true })
+function update<K extends keyof ConnectionConfigForm>(name: K, value: ConnectionConfigForm[K]) {
+  model.value = { ...model.value, [name]: value }
+}
 </script>
 
 <template>
   <FieldGroup>
     <Field :label="t('connectionFields.proxyUrl')" hint="HTTP(S), SOCKS5 / SOCKS5H">
-      <input v-model="model.proxyUrl" placeholder="socks5://127.0.0.1:1080">
+      <FieldInput :model-value="model.proxyUrl" placeholder="socks5://127.0.0.1:1080" @update:model-value="update('proxyUrl', $event)" />
     </Field><Field :label="t('connectionFields.proxyUsername')">
-      <input v-model="model.proxyUsername" autocomplete="off">
+      <FieldInput :model-value="model.proxyUsername" autocomplete="off" @update:model-value="update('proxyUsername', $event)" />
     </Field><Field :label="t('connectionFields.proxyPasswordSecret')">
-      <SecretSelect v-model="model.proxyPasswordSecretRef" :secrets="secrets" optional />
+      <SecretSelect :model-value="model.proxyPasswordSecretRef" :secrets="secrets" optional @update:model-value="update('proxyPasswordSecretRef', $event)" />
     </Field><Field
       :label="t('connectionFields.customDnsServer')"
       :hint="t('connectionFields.hostPortResolutionWithAProxyFollowsThe')"
     >
-      <input v-model="model.dnsServer" placeholder="1.1.1.1:53">
+      <FieldInput :model-value="model.dnsServer" placeholder="1.1.1.1:53" @update:model-value="update('dnsServer', $event)" />
     </Field><Field
       :label="t('connectionFields.fixedConnectionIp')"
       :hint="t('connectionFields.directConnectionsOnlyHostSniStayIntactCannot')"
     >
-      <input v-model="model.fixedIp" placeholder="192.0.2.1">
+      <FieldInput :model-value="model.fixedIp" placeholder="192.0.2.1" @update:model-value="update('fixedIp', $event)" />
     </Field>
   </FieldGroup>
 </template>

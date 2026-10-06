@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Maintenance } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
-import { reactive, ref } from 'vue'
+import { useForm } from '@tanstack/vue-form'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createMaintenanceMutation,
@@ -19,7 +20,7 @@ import PageHeader from '../../../components/PageHeader.vue'
 import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
-import { FieldError, FieldGroup, FieldLabel } from '../../../components/ui/field'
+import { FieldError, FieldGroup, FieldInput, FieldLabel, FieldTextarea } from '../../../components/ui/field'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { canEdit } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
@@ -44,10 +45,7 @@ const query = useQuery({ ...listMaintenanceQuery(), staleTime: 10000 })
 const monitors = useQuery({ ...listMonitorsQuery(), staleTime: 10000 })
 const pages = useQuery({ ...listPagesQuery(), staleTime: 10000 })
 const open = ref(false)
-const saving = ref(false)
 const error = ref('')
-const start = ref('')
-const end = ref('')
 const deleteTarget = ref<Maintenance | null>(null)
 const deleteOpen = ref(false)
 function empty(): Maintenance {
@@ -64,36 +62,44 @@ function empty(): Maintenance {
     updatedAt: 0,
   }
 }
-const form = reactive(empty())
+function formValues(value: Maintenance) {
+  return {
+    ...value,
+    start: datetimeInput(value.startsAt, value.timezone),
+    end: datetimeInput(value.endsAt, value.timezone),
+  }
+}
+const form = useForm({
+  defaultValues: formValues(empty()),
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      const { start, end, ...maintenance } = value
+      const body = {
+        ...maintenance,
+        startsAt: datetimeMilliseconds(start, value.timezone),
+        endsAt: datetimeMilliseconds(end, value.timezone),
+      }
+      if (value.id)
+        await updateMaintenance.mutateAsync({ path: { id: value.id }, body })
+      else await createMaintenance.mutateAsync({ body })
+      open.value = false
+      notify(t('maintenance.maintenanceSaved'))
+      await query.refresh()
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
+})
+const editingId = form.useSelector(state => state.values.id)
+const saving = form.useSelector(state => state.isSubmitting)
 function edit(value?: Maintenance) {
-  Object.assign(form, value ? clone(value) : empty())
-  start.value = datetimeInput(form.startsAt, form.timezone)
-  end.value = datetimeInput(form.endsAt, form.timezone)
+  if (form.state.isSubmitting)
+    return
+  form.reset(formValues(value ? clone(value) : empty()))
   error.value = ''
   open.value = true
-}
-async function save() {
-  saving.value = true
-  error.value = ''
-  try {
-    const body = {
-      ...form,
-      startsAt: datetimeMilliseconds(start.value, form.timezone),
-      endsAt: datetimeMilliseconds(end.value, form.timezone),
-    }
-    if (form.id)
-      await updateMaintenance.mutateAsync({ path: { id: form.id }, body })
-    else await createMaintenance.mutateAsync({ body })
-    open.value = false
-    notify(t('maintenance.maintenanceSaved'))
-    await query.refresh()
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
 }
 async function remove() {
   if (!deleteTarget.value)
@@ -176,40 +182,54 @@ function confirmDelete(value: Maintenance) {
       </TableContainer>
     </AsyncState>
   </Card>
-  <Modal v-model:open="open" :title="form.id ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')" wide>
-    <form id="maintenance-form" @submit.prevent="save">
+  <Modal v-model:open="open" :title="editingId ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')" wide>
+    <form id="maintenance-form" @submit.prevent="form.handleSubmit">
       <FieldGroup>
-        <Field :label="t('common.name')" class="span-full">
-          <input v-model="form.name" required>
-        </Field><Field :label="t('maintenance.description')" class="span-full">
-          <textarea v-model="form.description" />
-        </Field><Field :label="t('maintenance.startsAt')">
-          <input v-model="start" type="datetime-local" required>
-        </Field><Field :label="t('maintenance.endsAt')">
-          <input v-model="end" type="datetime-local" required>
-        </Field><Field :label="t('maintenance.windowTimeZone')" :hint="t('maintenance.theInputsAboveAreInterpretedAsWallClock')" class="span-full">
-          <input v-model="form.timezone" required placeholder="Asia/Shanghai">
-        </Field>
-        <div class="span-full">
-          <FieldLabel as="label">
-            {{ t('maintenance.affectedMonitors') }}
-          </FieldLabel>
-          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.monitorIds" type="checkbox" :value="monitor.id">{{
-              monitor.name
-            }}</label>
+        <form.Field v-slot="{ field }" name="name">
+          <Field :label="t('common.name')" class="span-full">
+            <FieldInput :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </form.Field><form.Field v-slot="{ field }" name="description">
+          <Field :label="t('maintenance.description')" class="span-full">
+            <FieldTextarea :model-value="field.state.value" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </form.Field><form.Field v-slot="{ field }" name="start">
+          <Field :label="t('maintenance.startsAt')">
+            <FieldInput :model-value="field.state.value" type="datetime-local" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </form.Field><form.Field v-slot="{ field }" name="end">
+          <Field :label="t('maintenance.endsAt')">
+            <FieldInput :model-value="field.state.value" type="datetime-local" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </form.Field><form.Field v-slot="{ field }" name="timezone">
+          <Field :label="t('maintenance.windowTimeZone')" :hint="t('maintenance.theInputsAboveAreInterpretedAsWallClock')" class="span-full">
+            <FieldInput :model-value="field.state.value" required placeholder="Asia/Shanghai" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          </Field>
+        </form.Field>
+        <form.Field v-slot="{ field }" name="monitorIds">
+          <div class="span-full">
+            <FieldLabel as="label">
+              {{ t('maintenance.affectedMonitors') }}
+            </FieldLabel>
+            <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+              <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input :checked="field.state.value.includes(monitor.id)" type="checkbox" :value="monitor.id" @change="field.handleChange(($event.target as HTMLInputElement).checked ? [...field.state.value, monitor.id] : field.state.value.filter(id => id !== monitor.id))" @blur="field.handleBlur">{{
+                monitor.name
+              }}</label>
+            </div>
           </div>
-        </div>
-        <div class="span-full">
-          <FieldLabel as="label">
-            {{ t('maintenance.showOnStatusPages') }}
-          </FieldLabel>
-          <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-            <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input v-model="form.pageIds" type="checkbox" :value="page.id">{{
-              page.name
-            }}</label>
+        </form.Field>
+        <form.Field v-slot="{ field }" name="pageIds">
+          <div class="span-full">
+            <FieldLabel as="label">
+              {{ t('maintenance.showOnStatusPages') }}
+            </FieldLabel>
+            <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
+              <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input :checked="field.state.value.includes(page.id)" type="checkbox" :value="page.id" @change="field.handleChange(($event.target as HTMLInputElement).checked ? [...field.state.value, page.id] : field.state.value.filter(id => id !== page.id))" @blur="field.handleBlur">{{
+                page.name
+              }}</label>
+            </div>
           </div>
-        </div>
+        </form.Field>
       </FieldGroup>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}

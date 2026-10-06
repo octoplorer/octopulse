@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQueryCache } from '@pinia/colada'
+import { useForm } from '@tanstack/vue-form'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,7 +13,7 @@ import {
 import Brand from '../../components/Brand.vue'
 import Field from '../../components/Field.vue'
 import { Button } from '../../components/ui/button'
-import { FieldError } from '../../components/ui/field'
+import { FieldError, FieldInput } from '../../components/ui/field'
 import { Spinner } from '../../components/ui/spinner'
 import { applySession } from '../../composables/api'
 import { errorText } from '../../lib/errors'
@@ -28,12 +29,32 @@ const route = useRoute()
 const router = useRouter()
 const required = ref(false)
 const loading = ref(true)
-const saving = ref(false)
 const error = ref('')
-const username = ref('')
-const password = ref('')
-const organizationName = ref('Octopulse')
-const timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
+const formApi = useForm({
+  defaultValues: {
+    username: '',
+    password: '',
+    organizationName: 'Octopulse',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  },
+  onSubmit: async ({ value }) => {
+    error.value = ''
+    try {
+      if (required.value)
+        await setup.mutateAsync({ body: value })
+      await createSession.mutateAsync({
+        body: { username: value.username, password: value.password },
+      })
+      formApi.setFieldValue('password', '')
+      const next = String(route.query.next || '/app')
+      await router.replace(next.startsWith('/app') ? next : '/app')
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+  },
+})
+const saving = formApi.useSelector(state => state.isSubmitting)
 onMounted(async () => {
   try {
     const setupState = await queryCache.refresh(
@@ -50,7 +71,7 @@ onMounted(async () => {
         throw sessionState.error || new Error(t('errors.requestFailed'))
       applySession(sessionState.data)
       if (sessionState.data.user)
-        router.replace('/app')
+        await router.replace('/app')
     }
   }
   catch (e) {
@@ -60,33 +81,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-async function submit() {
-  saving.value = true
-  error.value = ''
-  try {
-    if (required.value) {
-      await setup.mutateAsync({
-        body: {
-          username: username.value,
-          password: password.value,
-          organizationName: organizationName.value,
-          timezone: timezone.value,
-        },
-      })
-    }
-    await createSession.mutateAsync({
-      body: { username: username.value, password: password.value },
-    })
-    const next = String(route.query.next || '/app')
-    router.replace(next.startsWith('/app') ? next : '/app')
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
-}
 </script>
 
 <template>
@@ -127,17 +121,28 @@ async function submit() {
         <div v-if="loading" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle">
           <Spinner />
         </div>
-        <form v-else @submit.prevent="submit">
-          <Field :label="t('common.username')">
-            <input v-model="username" autocomplete="username" required maxlength="100">
-          </Field><Field :label="t('common.password')" :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
-            <input v-model="password" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72">
-          </Field><template v-if="required">
-            <Field :label="t('common.organizationName')">
-              <input v-model="organizationName" required>
-            </Field><Field :label="t('common.organizationTimeZone')">
-              <input v-model="timezone" placeholder="Asia/Shanghai" required>
+        <form v-else @submit.prevent="formApi.handleSubmit()">
+          <formApi.Field v-slot="{ field }" name="username">
+            <Field :label="t('common.username')">
+              <FieldInput :name="field.name" :model-value="field.state.value" autocomplete="username" required maxlength="100" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
             </Field>
+          </formApi.Field>
+          <formApi.Field v-slot="{ field }" name="password">
+            <Field :label="t('common.password')" :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
+              <FieldInput :name="field.name" :model-value="field.state.value" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            </Field>
+          </formApi.Field>
+          <template v-if="required">
+            <formApi.Field v-slot="{ field }" name="organizationName">
+              <Field :label="t('common.organizationName')">
+                <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+              </Field>
+            </formApi.Field>
+            <formApi.Field v-slot="{ field }" name="timezone">
+              <Field :label="t('common.organizationTimeZone')">
+                <FieldInput :name="field.name" :model-value="field.state.value" placeholder="Asia/Shanghai" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+              </Field>
+            </formApi.Field>
           </template>
           <FieldError v-if="error" as="p" role="alert" py="10px" px="0">
             {{ error }}

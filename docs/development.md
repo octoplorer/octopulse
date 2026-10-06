@@ -47,7 +47,7 @@ mise exec -- aube --filter @octopulse/web run <script>
 
 ## 前端约定
 
-前端使用 Vite、Vue Router、Vue I18n、VueUse、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。
+前端使用 Vite、Vue Router、Vue I18n、VueUse、TanStack Form、Pinia Colada 和 Ark UI；UnoCSS 配置 `preset-wind4` 与 `preset-attributify`，属性样式采用 `un-` 前缀。
 
 代码检查与格式化统一由 ESLint 和 `@antfu/eslint-config` 管理，配置位于根目录 `eslint.config.js`；CSS 和 HTML 通过 `eslint-plugin-format` 格式化。根脚本 `lint` 检查 `web/`、根 `package.json` 和 ESLint 配置；生成的 `web/src/client`、`web/typed-router.d.ts` 和构建产物 `web/dist` 不参与检查。执行 `mise exec -- aube run lint:fix` 自动修复。前端包的 `lint`、`lint:fix`、`format` 和 `format:check` 委托根 workspace 对应命令，统一使用根工具依赖。
 
@@ -60,6 +60,10 @@ mise exec -- aube --filter @octopulse/web run <script>
 前端共享响应式状态放在 `web/src/composables/`（会话、国际化、偏好和通知）；`web/src/lib/` 保留无状态工具和类型。依赖当前语言或时区的格式化函数随偏好模块放在 `composables/preferences.ts`。
 
 页面和展示组件直接引用 `web/src/client/types.gen.ts` 中生成的 API 类型。监控编辑器使用 `web/src/lib/monitor-form.ts` 中的表单类型，描述补齐默认值后的配置；API 数据通过 `toMonitorForm()` 转为表单状态。
+
+编辑表单由 `@tanstack/vue-form` 的 `useForm` 管理，字段通过 `form.Field` 的 `handleChange` / `handleBlur` 更新，显示值和提交状态使用 `form.useSelector` 订阅。打开编辑或加载服务端数据时使用 `reset(values)`；保存后的重置需等异步提交步骤完成，避免提前清空 `isSubmitting`。列表筛选、标签页、弹窗开关和立即生效的主题偏好保留为界面状态。
+
+字段的标签、提示与错误关联使用 Ark UI Field，文本控件通过 `FieldInput` / `FieldTextarea` 绑定 `modelValue`。标签使用 Ark UI TagsInput 直接绑定字符串数组，保存时提交尚未确认的标签。嵌套编辑组件需发出新的对象或数组，不能直接修改表单 store 中的引用。数组操作使用表单 API；动态数组字段以完整字段路径作为 key，确保重排后字段实例绑定正确的位置。列表和 JSON 输入组件直接接收结构化值，在组件内维护文本编辑状态；表单使用 API 所需的数据类型，提交监控时移除非当前监控类型的配置。
 
 ### 文档 head
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Monitor, Page, PublicPage } from '../client/types.gen'
 import { useMutation, useQueryCache } from '@pinia/colada'
+import { useForm } from '@tanstack/vue-form'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -29,7 +30,7 @@ import StatusPage from './StatusPage.vue'
 import { Alert } from './ui/alert'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
-import { FieldActions, FieldDescription, FieldGroup, FieldLabel, FieldSection } from './ui/field'
+import { FieldActions, FieldDescription, FieldGroup, FieldInput, FieldLabel, FieldSection, FieldTextarea } from './ui/field'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -48,14 +49,13 @@ const route = useRoute<'/app/(admin)/pages/new' | '/app/(admin)/pages/[id]'>()
 const router = useRouter()
 const id = computed(() => ('id' in route.params ? route.params.id : undefined))
 const loading = ref(true)
-const saving = ref(false)
 const error = ref('')
 const monitors = ref<Monitor[]>([])
 const allowedDomains = ref<string[]>([])
 const savedPreview = ref<PublicPage | null>(null)
 const deleteOpen = ref(false)
 const newMonitorIds = reactive<Record<string, string>>({})
-const form = reactive<Page>({
+const defaultValues: Page = {
   id: '',
   name: '',
   slug: '',
@@ -73,16 +73,82 @@ const form = reactive<Page>({
   version: 0,
   createdAt: 0,
   updatedAt: 0,
+}
+const formApi = useForm({
+  defaultValues,
+  onSubmitMeta: { publish: false },
+  validators: {
+    onSubmit: ({ value }) => {
+      if (!value.name.trim() || !value.draft.title.trim())
+        return t('pageEditor.pageNameAndTitleAreRequired')
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(value.slug))
+        return t('pageEditor.slugMayContainLowercaseLettersNumbersAndHyphens')
+      for (const link of value.draft.links) {
+        try {
+          const parsed = new URL(link.url)
+          if (!['https:', 'http:'].includes(parsed.protocol) || !link.label.trim())
+            return t('pageEditor.publicLinksNeedLabelsAndHttpSUrls')
+        }
+        catch {
+          return t('pageEditor.publicLinksNeedLabelsAndHttpSUrls')
+        }
+      }
+      if (
+        value.draft.logoUrl
+        && !/^https:\/\//.test(value.draft.logoUrl)
+        && !value.draft.logoUrl.startsWith('/assets/')
+      ) {
+        return t('pageEditor.logoMustUseHttpsOrAnUploadedAsset')
+      }
+    },
+  },
+  onSubmit: async ({ value, meta }) => {
+    let canonical: Page | undefined
+    try {
+      const body = clone(value)
+      canonical = await (id.value || value.id
+        ? updatePage.mutateAsync({ path: { id: value.id }, body })
+        : createPage.mutateAsync({ body }))
+      if (meta.publish) {
+        await publishPage.mutateAsync({ path: { id: canonical.id } })
+        const page = await queryCache.refresh(
+          queryCache.ensure({ ...getPagesQuery({ path: { id: canonical.id } }), staleTime: 0 }),
+        )
+        if (page.status !== 'success')
+          throw page.error || new Error(t('errors.requestFailed'))
+        canonical = page.data
+        notify(t('pageEditor.statusPagePublished'))
+      }
+      else {
+        notify(t('pageEditor.draftSaved'))
+      }
+      const preview = await queryCache.refresh(
+        queryCache.ensure({ ...previewPageQuery({ path: { id: canonical.id } }), staleTime: 0 }),
+      )
+      if (preview.status !== 'success')
+        throw preview.error || new Error(t('errors.requestFailed'))
+      savedPreview.value = clone(preview.data)
+      if (!id.value)
+        await router.replace(`/app/pages/${canonical.id}`)
+    }
+    catch (e) {
+      error.value = errorText(e)
+    }
+    finally {
+      // Reset after all asynchronous work so submission stays locked until done.
+      if (canonical)
+        replacePage(canonical)
+    }
+  },
 })
-const editing = computed(() => !!id.value || !!form.id)
+const form = formApi.useSelector(state => state.values)
+const saving = formApi.useSelector(state => state.isSubmitting)
+const validationError = formApi.useSelector(state => state.errors[0])
+const displayError = computed(() => error.value || validationError.value || '')
+const editing = computed(() => !!id.value || !!form.value.id)
 function replacePage(data: Page) {
-  // Empty optional publication fields are omitted by Go. Clear an earlier
-  // snapshot before applying the canonical response, including domain removal.
-  Object.assign(
-    form,
-    { publishedSlug: undefined, publishedDomain: undefined, published: undefined },
-    clone(data),
-  )
+  // Reset replaces optional publication fields omitted by the canonical response.
+  formApi.reset(clone(data))
 }
 async function load() {
   loading.value = true
@@ -122,7 +188,7 @@ async function load() {
 onMounted(load)
 const preview = computed<PublicPage>(() => {
   const existing = savedPreview.value?.groups.flatMap(g => g.monitors) || []
-  const groups = form.draft.groups.map(group => ({
+  const groups = form.value.draft.groups.map(group => ({
     id: group.id,
     name: group.name,
     monitors: group.monitors.map((pm) => {
@@ -187,93 +253,48 @@ const preview = computed<PublicPage>(() => {
     state = 'partial'
   }
   return {
-    id: form.id,
-    slug: form.slug,
-    config: clone(form.draft),
+    id: form.value.id,
+    slug: form.value.slug,
+    config: clone(form.value.draft),
     state,
     groups,
     incidents,
     maintenance: savedPreview.value?.maintenance || [],
-    updatedAt: savedPreview.value?.updatedAt || form.updatedAt,
+    updatedAt: savedPreview.value?.updatedAt || form.value.updatedAt,
   }
 })
-function move<T>(values: T[], index: number, delta: number) {
+function moveGroup(index: number, delta: number) {
   const target = index + delta
-  if (target < 0 || target >= values.length)
-    return
-  const [value] = values.splice(index, 1)
-  values.splice(target, 0, value!)
+  if (target >= 0 && target < form.value.draft.groups.length)
+    formApi.moveFieldValues('draft.groups', index, target)
+}
+function moveMonitor(groupIndex: number, index: number, delta: number) {
+  const target = index + delta
+  if (target >= 0 && target < form.value.draft.groups[groupIndex]!.monitors.length)
+    formApi.moveFieldValues(`draft.groups[${groupIndex}].monitors`, index, target)
 }
 function addMonitor(groupId: string) {
-  const group = form.draft.groups.find(x => x.id === groupId)
-  const id = newMonitorIds[groupId]
-  if (!group || !id)
+  const groupIndex = form.value.draft.groups.findIndex(x => x.id === groupId)
+  const monitorId = newMonitorIds[groupId]
+  if (groupIndex < 0 || !monitorId)
     return
-  if (form.draft.groups.some(g => g.monitors.some(m => m.monitorId === id))) {
+  if (form.value.draft.groups.some(g => g.monitors.some(m => m.monitorId === monitorId))) {
     notify(t('pageEditor.thisMonitorIsAlreadyOnThePage'), 'error')
     return
   }
-  group.monitors.push({
-    monitorId: id,
-    alias: monitors.value.find(m => m.id === id)?.name || '',
+  formApi.pushFieldValue(`draft.groups[${groupIndex}].monitors`, {
+    monitorId,
+    alias: monitors.value.find(m => m.id === monitorId)?.name || '',
     showUptime: true,
     showLatency: true,
   })
   newMonitorIds[groupId] = ''
 }
 async function save(publish = false) {
-  saving.value = true
+  if (saving.value)
+    return
   error.value = ''
-  try {
-    if (!form.name.trim() || !form.draft.title.trim())
-      throw new Error(t('pageEditor.pageNameAndTitleAreRequired'))
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(form.slug))
-      throw new Error(t('pageEditor.slugMayContainLowercaseLettersNumbersAndHyphens'))
-    for (const link of form.draft.links) {
-      const parsed = new URL(link.url)
-      if (!['https:', 'http:'].includes(parsed.protocol) || !link.label.trim())
-        throw new Error(t('pageEditor.publicLinksNeedLabelsAndHttpSUrls'))
-    }
-    if (
-      form.draft.logoUrl
-      && !/^https:\/\//.test(form.draft.logoUrl)
-      && !form.draft.logoUrl.startsWith('/assets/')
-    ) {
-      throw new Error(t('pageEditor.logoMustUseHttpsOrAnUploadedAsset'))
-    }
-    const body = clone(form)
-    const data = (await (editing.value
-      ? updatePage.mutateAsync({ path: { id: form.id }, body })
-      : createPage.mutateAsync({ body })))
-    replacePage(data)
-    if (publish) {
-      await publishPage.mutateAsync({ path: { id: form.id } })
-      const page = await queryCache.refresh(
-        queryCache.ensure({ ...getPagesQuery({ path: { id: form.id } }), staleTime: 0 }),
-      )
-      if (page.status !== 'success')
-        throw page.error || new Error(t('errors.requestFailed'))
-      replacePage(page.data)
-      notify(t('pageEditor.statusPagePublished'))
-    }
-    else {
-      notify(t('pageEditor.draftSaved'))
-    }
-    const preview = await queryCache.refresh(
-      queryCache.ensure({ ...previewPageQuery({ path: { id: form.id } }), staleTime: 0 }),
-    )
-    if (preview.status !== 'success')
-      throw preview.error || new Error(t('errors.requestFailed'))
-    savedPreview.value = clone(preview.data)
-    if (!id.value)
-      await router.replace(`/app/pages/${form.id}`)
-  }
-  catch (e) {
-    error.value = errorText(e)
-  }
-  finally {
-    saving.value = false
-  }
+  await formApi.handleSubmit({ publish })
 }
 async function uploadLogo(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
@@ -290,11 +311,10 @@ async function uploadLogo(event: Event) {
       reader.onerror = reject
       reader.readAsDataURL(file)
     })
-    form.draft.logoUrl = (
-      await uploadAsset.mutateAsync({
-        body: { filename: file.name, contentType: file.type, base64 },
-      })
-    ).url
+    const asset = await uploadAsset.mutateAsync({
+      body: { filename: file.name, contentType: file.type, base64 },
+    })
+    formApi.setFieldValue('draft.logoUrl', asset.url)
     notify(t('pageEditor.logoUploaded'))
   }
   catch (e) {
@@ -303,7 +323,7 @@ async function uploadLogo(event: Event) {
 }
 async function remove() {
   try {
-    await deletePage.mutateAsync({ path: { id: form.id } })
+    await deletePage.mutateAsync({ path: { id: form.value.id } })
     notify(t('pageEditor.statusPageDeleted'))
     router.push('/app/pages')
   }
@@ -332,8 +352,8 @@ async function remove() {
       </Button>
     </template>
   </PageHeader><AsyncState :pending="loading">
-    <Alert v-if="error" role="alert" variant="validation">
-      {{ error }}
+    <Alert v-if="displayError" role="alert" variant="validation">
+      {{ displayError }}
     </Alert>
     <div grid="~ cols-[minmax(0,1fr)_minmax(320px,0.8fr)]" gap="24px" class="[@media(max-width:1200px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1">
       <div>
@@ -345,36 +365,44 @@ async function remove() {
             </p>
             <FieldGroup>
               <Field :label="t('pageEditor.internalPageName')">
-                <input v-model="form.name" :disabled="!canEdit()" required>
+                <formApi.Field v-slot="{ field }" name="name">
+                  <FieldInput :model-value="field.state.value" :disabled="!canEdit()" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+                </formApi.Field>
               </Field><Field
                 :label="t('pageEditor.pageSlug')"
                 :hint="`${origin}/${form.slug || 'status1'}`"
               >
-                <input
-                  v-model="form.slug"
-                  :disabled="!canEdit()"
-                  placeholder="status1"
-                  pattern="[a-z0-9][a-z0-9-]*"
-                  required
-                >
+                <formApi.Field v-slot="{ field }" name="slug">
+                  <FieldInput
+                    :model-value="field.state.value" :disabled="!canEdit()" placeholder="status1"
+                    pattern="[a-z0-9][a-z0-9-]*"
+                    required
+                    @update:model-value="field.handleChange($event)"
+                    @blur="field.handleBlur"
+                  />
+                </formApi.Field>
               </Field><Field
                 class="span-full"
                 :label="t('pageEditor.customDomain')"
                 :hint="t('pageEditor.selectAnAdministratorConfiguredDomainDnsAndHttps')"
               >
-                <Select v-model="form.domain" :disabled="!canEdit()">
-                  <SelectTrigger><SelectValue :placeholder="t('pageEditor.pathAccessOnly')" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="">
-                        {{ t('pageEditor.pathAccessOnly') }}
-                      </SelectItem>
-                      <SelectItem v-for="domain in allowedDomains" :key="domain" :value="domain">
-                        {{ domain }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <formApi.Field v-slot="{ field }" name="domain">
+                  <Select :model-value="field.state.value" :disabled="!canEdit()" @focusout="field.handleBlur" @update:model-value="field.handleChange($event)">
+                    <SelectTrigger>
+                      <SelectValue :placeholder="t('pageEditor.pathAccessOnly')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="">
+                          {{ t('pageEditor.pathAccessOnly') }}
+                        </SelectItem>
+                        <SelectItem v-for="domain in allowedDomains" :key="domain" :value="domain">
+                          {{ domain }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </formApi.Field>
               </Field>
             </FieldGroup>
             <Alert v-if="form.publishedAt" mt="5" as="p">
@@ -397,19 +425,26 @@ async function remove() {
             </p>
             <FieldGroup>
               <Field class="span-full" :label="t('pageEditor.publicTitle')">
-                <input v-model="form.draft.title" :disabled="!canEdit()" required>
+                <formApi.Field v-slot="{ field }" name="draft.title">
+                  <FieldInput :model-value="field.state.value" :disabled="!canEdit()" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+                </formApi.Field>
               </Field><Field class="span-full" :label="t('pageEditor.pageDescription')">
-                <textarea v-model="form.draft.description" :disabled="!canEdit()" rows="3" />
+                <formApi.Field v-slot="{ field }" name="draft.description">
+                  <FieldTextarea :model-value="field.state.value" :disabled="!canEdit()" rows="3" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+                </formApi.Field>
               </Field><Field class="span-full" :label="t('pageEditor.logoUrl')">
                 <div flex="~ items-center gap-10px" class="[@media(max-width:700px)]:flex-wrap">
-                  <input
-                    v-model="form.draft.logoUrl"
-                    :disabled="!canEdit()"
-                    :placeholder="t('pageEditor.logoPlaceholder')"
-                  ><Button v-if="canEdit()" as-child>
+                  <formApi.Field v-slot="{ field }" name="draft.logoUrl">
+                    <FieldInput
+                      :model-value="field.state.value" :disabled="!canEdit()" :placeholder="t('pageEditor.logoPlaceholder')"
+                      @update:model-value="field.handleChange($event)"
+                      @blur="field.handleBlur"
+                    />
+                  </formApi.Field><Button v-if="canEdit()" as-child>
                     <label><span class="i-lucide-upload" w="14px" h="14px" aria-hidden="true" />{{ t('pageEditor.upload')
                     }}<input
                       type="file"
+                      :aria-label="t('pageEditor.upload')"
                       accept="image/png,image/jpeg,image/gif"
                       hidden=""
                       @change="uploadLogo"
@@ -418,58 +453,70 @@ async function remove() {
                 </div>
               </Field><Field :label="t('pageEditor.brandColor')">
                 <div flex="~ items-center gap-10px" class="[@media(max-width:700px)]:flex-wrap">
-                  <input
-                    v-model="form.draft.brandColor"
-                    type="color"
-                    :disabled="!canEdit()"
-                  ><input
-                    v-model="form.draft.brandColor"
-                    :disabled="!canEdit()"
-                    pattern="#[0-9a-fA-F]{6}"
-                  >
+                  <formApi.Field v-slot="{ field }" name="draft.brandColor">
+                    <input
+                      :value="field.state.value" type="color" :disabled="!canEdit()" :aria-label="t('pageEditor.brandColor')"
+                      @input="field.handleChange(($event.target as HTMLInputElement).value)"
+                      @blur="field.handleBlur"
+                    >
+
+                    <FieldInput
+                      :model-value="field.state.value" :disabled="!canEdit()" pattern="#[0-9a-fA-F]{6}"
+                      @update:model-value="field.handleChange($event)"
+                      @blur="field.handleBlur"
+                    />
+                  </formApi.Field>
                 </div>
               </Field><Field :label="t('pageEditor.colorScheme')">
-                <Select v-model="form.draft.colorScheme" :disabled="!canEdit()">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="system">
-                        {{ t('common.system') }}
-                      </SelectItem>
-                      <SelectItem value="light">
-                        {{ t('common.light') }}
-                      </SelectItem>
-                      <SelectItem value="dark">
-                        {{ t('common.dark') }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <formApi.Field v-slot="{ field }" name="draft.colorScheme">
+                  <Select :model-value="field.state.value" :disabled="!canEdit()" @focusout="field.handleBlur" @update:model-value="field.handleChange($event as Page['draft']['colorScheme'])">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="system">
+                          {{ t('common.system') }}
+                        </SelectItem>
+                        <SelectItem value="light">
+                          {{ t('common.light') }}
+                        </SelectItem>
+                        <SelectItem value="dark">
+                          {{ t('common.dark') }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </formApi.Field>
               </Field>
               <div class="span-full">
                 <FieldLabel as="label">
                   {{ t('pageEditor.publicLinks') }}
                 </FieldLabel>
                 <div
-                  v-for="(link, index) in form.draft.links"
+                  v-for="(_, index) in form.draft.links"
                   :key="index"
                   grid="~ cols-[1fr_2fr_auto]" gap="9px" mb="9px" class="[@media(max-width:700px)]:grid-cols-1"
                   mt="3"
                 >
-                  <input
-                    v-model="link.label"
-                    :disabled="!canEdit()"
-                    :placeholder="t('pageEditor.linkLabel')"
-                  ><input
-                    v-model="link.url"
-                    :disabled="!canEdit()"
-                    type="url"
-                    placeholder="https://…"
-                  ><Button
+                  <formApi.Field :key="`draft.links[${index}].label`" v-slot="{ field }" :name="`draft.links[${index}].label`">
+                    <input
+                      :value="field.state.value" :disabled="!canEdit()" :placeholder="t('pageEditor.linkLabel')" :aria-label="t('pageEditor.linkLabel')"
+                      @input="field.handleChange(($event.target as HTMLInputElement).value)"
+                      @blur="field.handleBlur"
+                    >
+                  </formApi.Field><formApi.Field :key="`draft.links[${index}].url`" v-slot="{ field }" :name="`draft.links[${index}].url`">
+                    <input
+                      :value="field.state.value" :disabled="!canEdit()" type="url"
+                      aria-label="URL" placeholder="https://…"
+                      @input="field.handleChange(($event.target as HTMLInputElement).value)"
+                      @blur="field.handleBlur"
+                    >
+                  </formApi.Field><Button
                     v-if="canEdit()"
                     :aria-label="t('pageEditor.removeLink')"
                     shape="square"
-                    @click="form.draft.links.splice(index, 1)"
+                    @click="formApi.removeFieldValue('draft.links', index)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
                   </Button>
@@ -479,7 +526,7 @@ async function remove() {
                   mt="2"
                   variant="ghost"
                   size="sm"
-                  @click="form.draft.links.push({ label: '', url: '' })"
+                  @click="formApi.pushFieldValue('draft.links', { label: '', url: '' })"
                 >
                   <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('pageEditor.addLink') }}
                 </Button>
@@ -493,30 +540,32 @@ async function remove() {
             </p>
             <div v-for="(group, index) in form.draft.groups" :key="group.id" class="group-editor" border="1px solid line" rounded="9px" mt="15px" overflow="hidden">
               <div class="group-editor-header" flex="~ items-center gap-8px" p="13px" bg="tint" border="b-1px b-solid b-line">
-                <input
-                  v-model="group.name"
-                  :aria-label="t('common.groupName')"
-                  :disabled="!canEdit()"
-                  :placeholder="t('common.groupName')"
-                ><template v-if="canEdit()">
+                <formApi.Field :key="`draft.groups[${index}].name`" v-slot="{ field }" :name="`draft.groups[${index}].name`">
+                  <input
+                    :value="field.state.value" :aria-label="t('common.groupName')" :disabled="!canEdit()"
+                    :placeholder="t('common.groupName')"
+                    @input="field.handleChange(($event.target as HTMLInputElement).value)"
+                    @blur="field.handleBlur"
+                  >
+                </formApi.Field><template v-if="canEdit()">
                   <Button
                     :disabled="index === 0"
                     :aria-label="t('pageEditor.moveGroupUp')"
                     shape="square"
-                    @click="move(form.draft.groups, index, -1)"
+                    @click="moveGroup(index, -1)"
                   >
                     <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :disabled="index === form.draft.groups.length - 1"
                     :aria-label="t('pageEditor.moveGroupDown')"
                     shape="square"
-                    @click="move(form.draft.groups, index, 1)"
+                    @click="moveGroup(index, 1)"
                   >
                     <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :aria-label="t('pageEditor.removeGroup')"
                     shape="square"
-                    @click="form.draft.groups.splice(index, 1)"
+                    @click="formApi.removeFieldValue('draft.groups', index)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
                   </Button>
@@ -530,19 +579,25 @@ async function remove() {
                 <div flex="1" min-w="0">
                   <span un-text="12px subtle" tracking="0.5px">{{
                     monitors.find((x) => x.id === item.monitorId)?.name
-                  }}</span><input
-                    v-model="item.alias"
-                    flex="1"
-                    min-w="0"
-                    :aria-label="t('common.publicAlias')"
-                    :disabled="!canEdit()"
-                    :placeholder="t('common.publicAlias')"
-                    mt="1"
-                  >
+                  }}</span><formApi.Field :key="`draft.groups[${index}].monitors[${mIndex}].alias`" v-slot="{ field }" :name="`draft.groups[${index}].monitors[${mIndex}].alias`">
+                    <input
+                      :value="field.state.value" flex="1" min-w="0"
+                      :aria-label="t('common.publicAlias')"
+                      :disabled="!canEdit()"
+                      :placeholder="t('common.publicAlias')"
+                      mt="1"
+                      @input="field.handleChange(($event.target as HTMLInputElement).value)"
+                      @blur="field.handleBlur"
+                    >
+                  </formApi.Field>
                   <div flex="~ gap-4" mt="2">
-                    <label flex="~ items-center gap-8px" un-text="12px default"><input v-model="item.showUptime" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
+                    <label flex="~ items-center gap-8px" un-text="12px default"><formApi.Field :key="`draft.groups[${index}].monitors[${mIndex}].showUptime`" v-slot="{ field }" :name="`draft.groups[${index}].monitors[${mIndex}].showUptime`">
+                      <input :checked="field.state.value" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()" @change="field.handleChange(($event.target as HTMLInputElement).checked)" @blur="field.handleBlur">
+                    </formApi.Field>{{
                       t('common.uptime')
-                    }}</label><label flex="~ items-center gap-8px" un-text="12px default"><input v-model="item.showLatency" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()">{{
+                    }}</label><label flex="~ items-center gap-8px" un-text="12px default"><formApi.Field :key="`draft.groups[${index}].monitors[${mIndex}].showLatency`" v-slot="{ field }" :name="`draft.groups[${index}].monitors[${mIndex}].showLatency`">
+                      <input :checked="field.state.value" flex="1" min-w="0" type="checkbox" :disabled="!canEdit()" @change="field.handleChange(($event.target as HTMLInputElement).checked)" @blur="field.handleBlur">
+                    </formApi.Field>{{
                       t('pageEditor.latency')
                     }}</label>
                   </div>
@@ -552,20 +607,20 @@ async function remove() {
                     :disabled="mIndex === 0"
                     :aria-label="t('pageEditor.moveServiceUp')"
                     shape="square"
-                    @click="move(group.monitors, mIndex, -1)"
+                    @click="moveMonitor(index, mIndex, -1)"
                   >
                     <span class="i-lucide-arrow-up" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :disabled="mIndex === group.monitors.length - 1"
                     :aria-label="t('pageEditor.moveServiceDown')"
                     shape="square"
-                    @click="move(group.monitors, mIndex, 1)"
+                    @click="moveMonitor(index, mIndex, 1)"
                   >
                     <span class="i-lucide-arrow-down" w="13px" h="13px" aria-hidden="true" />
                   </Button><Button
                     :aria-label="t('pageEditor.removeService')"
                     shape="square"
-                    @click="group.monitors.splice(mIndex, 1)"
+                    @click="formApi.removeFieldValue(`draft.groups[${index}].monitors`, mIndex)"
                   >
                     <span class="i-lucide-x" w="14px" h="14px" aria-hidden="true" />
                   </Button>
@@ -596,7 +651,7 @@ async function remove() {
               mt="4"
               size="sm"
               @click="
-                form.draft.groups.push({
+                formApi.pushFieldValue('draft.groups', {
                   id: newID(),
                   name: t('pageEditor.services'),
                   monitors: [],
