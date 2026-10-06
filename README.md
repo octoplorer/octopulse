@@ -24,6 +24,15 @@ docker compose logs -f octopulse
 
 默认使用 SQLite，数据库、加密密钥和上传图片保存在 `octopulse-data` 卷；应用端口仅发布到宿主机回环地址。PostgreSQL、二进制部署、域名与备份流程见 [运维手册](docs/operations.md)。本地开发的工具安装和启动步骤见 [开发指南](docs/development.md#本地开发)。
 
+本地开发安装 mise 固定工具链后，也在仓库根目录执行：
+
+```sh
+mise exec -- aube install --frozen-lockfile
+mise run dev
+```
+
+根目录的私有 aube workspace 管理 Node 命令、共享工具和 ESLint 配置；`web/` 保留前端代码、运行时依赖、专用工具及构建配置。Go 命令和整项目的 `dev`、`check`、`test`、`build` 编排由 mise 管理；根 `package.json` 的同名脚本仅处理前端。Node.js 只参与开发与构建，生产仍由 Go 提供页面和 API。
+
 ## 文档导航
 
 | 内容                                   | 文档                                                                                     |

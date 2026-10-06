@@ -46,7 +46,7 @@ export default defineComponent({
       const icon = slots.icon
         ? slots.icon({ class: iconClass })
         : props.icon
-          ? h('span', { class: [...iconClass, props.icon], 'aria-hidden': true })
+          ? h('span', { 'class': [...iconClass, props.icon], 'aria-hidden': true })
           : null
       const content = h('div', {
         class: [
@@ -73,8 +73,8 @@ export default defineComponent({
       ]
       const commonProps = {
         ...attrs,
-        ref: setInteractiveRef,
-        class: buttonClasses,
+        'ref': setInteractiveRef,
+        'class': buttonClasses,
         'data-active': props.active || undefined,
         'data-sidebar': 'menu-button',
         'data-sidebar-item-id': isInsideMenuItem ? props.itemId : undefined,
@@ -96,10 +96,10 @@ export default defineComponent({
       return isInsideMenuItem
         ? button
         : h('li', {
-            ref: itemElement,
+            'ref': itemElement,
             'data-sidebar': 'menu-item',
             'data-sidebar-item-id': props.itemId,
-            class: 'relative group-data-[state=collapsed]/sidebar:overflow-hidden',
+            'class': 'relative group-data-[state=collapsed]/sidebar:overflow-hidden',
           }, button)
     }
   },

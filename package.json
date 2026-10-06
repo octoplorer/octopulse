@@ -1,0 +1,23 @@
+{
+  "name": "@octopulse/root",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "aube --filter @octopulse/web run --no-install dev",
+    "build": "aube --filter @octopulse/web run --no-install build",
+    "typecheck": "aube --filter @octopulse/web run --no-install typecheck",
+    "check": "aube run --no-install lint && aube run --no-install typecheck && aube run --no-install test",
+    "lint": "eslint web package.json eslint.config.js --max-warnings 0",
+    "lint:fix": "eslint web package.json eslint.config.js --fix --max-warnings 0",
+    "test": "aube --filter @octopulse/web run --no-install test",
+    "test:watch": "aube --filter @octopulse/web run --no-install test:watch",
+    "generate": "aube --filter @octopulse/web run --no-install generate"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "9.5.1",
+    "@types/node": "24.10.1",
+    "eslint": "10.11.0",
+    "eslint-plugin-format": "2.0.1",
+    "typescript": "6.0.3"
+  }
+}

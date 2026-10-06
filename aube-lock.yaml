@@ -7,6 +7,24 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@antfu/eslint-config':
+        specifier: 9.5.1
+        version: 9.5.1(eslint@10.11.0)(eslint-plugin-format@2.0.1(eslint@10.11.0))
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      eslint:
+        specifier: 10.11.0
+        version: 10.11.0
+      eslint-plugin-format:
+        specifier: 2.0.1
+        version: 2.0.1(eslint@10.11.0)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  web:
     dependencies:
       '@ark-ui/vue':
         specifier: 5.39.2
@@ -36,30 +54,15 @@ importers:
         specifier: 5.3.1
         version: 5.3.1(@pinia/colada@1.4.6(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3)))(vue@3.5.43(typescript@6.0.3)))(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3)))(vite@8.3.2(@types/node@24.10.1))(vue@3.5.43(typescript@6.0.3))
     devDependencies:
-      '@antfu/eslint-config':
-        specifier: 9.5.1
-        version: 9.5.1(eslint@10.11.0)(eslint-plugin-format@2.0.1(eslint@10.11.0))
       '@hey-api/openapi-ts':
         specifier: 0.99.0
         version: 0.99.0(typescript@6.0.3)
       '@iconify-json/lucide':
         specifier: 1.2.138
         version: 1.2.138
-      '@types/node':
-        specifier: 24.10.1
-        version: 24.10.1
       '@vitejs/plugin-vue':
         specifier: 6.0.9
         version: 6.0.9(vite@8.3.2(@types/node@24.10.1))(vue@3.5.43(typescript@6.0.3))
-      eslint:
-        specifier: 10.11.0
-        version: 10.11.0
-      eslint-plugin-format:
-        specifier: 2.0.1
-        version: 2.0.1(eslint@10.11.0)
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
       unocss:
         specifier: 66.10.5
         version: 66.10.5

@@ -4,11 +4,16 @@ node = "24.19.0"
 "github:aubepkg/aube" = "2.6.1"
 sqlc = "1.30.0"
 
+[tasks.install]
+run = "aube install --frozen-lockfile"
+
+[tasks.dev]
+depends = ["dev:api", "dev:web"]
+
 [tasks."dev:api"]
 run = "go run ./cmd/octopulse serve"
 
 [tasks."dev:web"]
-dir = "web"
 run = "aube run dev"
 
 [tasks."generate:api"]
@@ -23,31 +28,38 @@ mv .cache/openapi.json.tmp api/openapi.json
 run = "sqlc generate"
 
 [tasks."generate:web"]
-dir = "web"
 run = "aube run generate"
 depends = ["generate:api"]
 
 [tasks."test:go"]
 run = "go test ./..."
 
+[tasks."test:web"]
+run = "aube run test"
+
+[tasks."test:watch:web"]
+run = "aube run test:watch"
+
+[tasks.test]
+depends = ["test:go", "test:web"]
+
 [tasks."check:web"]
-dir = "web"
 run = "aube run check"
 
 [tasks."lint:web"]
-dir = "web"
 run = "aube run lint"
 
+[tasks."lint:fix:web"]
+run = "aube run lint:fix"
+
 [tasks."build:web"]
-dir = "web"
 run = "aube run build"
 
 [tasks."build:go"]
 run = "go build -trimpath -o bin/octopulse ./cmd/octopulse"
-depends = ["build:web"]
 
 [tasks.check]
-depends = ["test:go", "check:web", "lint:web"]
+depends = ["test:go", "check:web"]
 
 [tasks.build]
-depends = ["build:go"]
+depends = ["build:web", "build:go"]

@@ -3,12 +3,12 @@ import type { SidebarContextValue, SidebarProviderProps, SidebarScrollToItemOpti
 import { useMediaQuery } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
 import {
-  SIDEBAR_STYLING,
   SIDEBAR_ANIMATION_DURATION_MS,
   SIDEBAR_DEFAULT_WIDTH,
   SIDEBAR_EASING,
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
+  SIDEBAR_STYLING,
 } from './constants'
 import { provideSidebarContext } from './context'
 import { useOpenChangeComplete } from './use-open-change-complete'

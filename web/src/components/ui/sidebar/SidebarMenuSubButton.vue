@@ -41,8 +41,8 @@ export default defineComponent({
       ]
       const commonProps = {
         ...attrs,
-        ref: setInteractiveRef,
-        class: buttonClasses,
+        'ref': setInteractiveRef,
+        'class': buttonClasses,
         'data-active': props.active || undefined,
         'data-sidebar': 'menu-sub-button',
         'data-component': 'Sidebar',
@@ -54,7 +54,7 @@ export default defineComponent({
 
       return isInsideMenuSubItem
         ? button
-        : h('li', { 'data-sidebar': 'menu-sub-item', class: 'relative' }, button)
+        : h('li', { 'data-sidebar': 'menu-sub-item', 'class': 'relative' }, button)
     }
   },
 })

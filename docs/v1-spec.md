@@ -9,7 +9,7 @@
 - 单组织自托管，多人账号；首版单 Go 服务实例，不提供分布式探针或多实例调度。
 - 容量目标为 100 个监控项、主动检查最小 30 秒；首版实施阶段记录了两库真实时间的正常及竞态构建负载通过，运行条件、测量和适用边界见 [容量记录](capacity.md)。
 - Go 承担 API、探测、调度、历史统计、通知、页面发布和 Beszel 适配。Node.js 仅用于前端和契约构建。
-- `mise.toml` 固定 Go、Node.js、aube、sqlc 与开发任务；aube 管理前端依赖并维护 `web/aube-lock.yaml`，Go 依赖由 `go.mod/go.sum` 固定。
+- `mise.toml` 固定 Go、Node.js、aube、sqlc 版本，并管理 Go 命令和整项目任务编排；Node 命令定义在根 `package.json`。根目录私有 aube workspace 维护共享工具依赖和 ESLint 配置；前端代码、运行时依赖、专用工具及构建配置保留在 `web/`，前端工具依赖根 workspace。workspace 依赖由根目录 `aube-lock.yaml` 固定，Go 依赖由 `go.mod/go.sum` 固定。
 - SQLite 与 PostgreSQL 均可配置使用，保持相同业务语义，SQLite 为默认值。完整两库套件包含迁移、备份恢复、状态与投递流程；工程细节和实际版本参数见 [双数据库方案](./database-design.md)。
 - 提供二进制与 `web/dist`、Docker 交付；运行数据与平台管理的图片资源持久化。实际容器验证结果见验收映射。内网探测和自定义代理是正常自托管能力。
 

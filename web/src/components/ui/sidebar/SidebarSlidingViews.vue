@@ -22,7 +22,11 @@ export default defineComponent({
   setup(props, { attrs, slots, expose }) {
     let element: HTMLDivElement | null = null
     provideSidebarSlidingViewActive(toRef(props, 'activeKey'))
-    expose({ get element() { return element } })
+    expose({
+      get element() {
+        return element
+      },
+    })
 
     return () => {
       const children = flattenChildren(slots.default?.() ?? [])

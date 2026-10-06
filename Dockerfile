@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:24.19.0-bookworm-slim AS frontend
 ARG TARGETARCH
-WORKDIR /src/web
+WORKDIR /src
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 RUN case "$TARGETARCH" in \
@@ -13,9 +13,10 @@ RUN case "$TARGETARCH" in \
     && mkdir /tmp/aube && tar -xzf /tmp/aube.tar.gz -C /tmp/aube \
     && find /tmp/aube -type f -name aube -exec install -m 0755 '{}' /usr/local/bin/aube ';' \
     && rm -rf /tmp/aube /tmp/aube.tar.gz
-COPY web/package.json web/aube-lock.yaml ./
+COPY package.json aube-lock.yaml aube-workspace.yaml ./
+COPY web/package.json ./web/
 RUN aube install --frozen-lockfile
-COPY web/ ./
+COPY web/ ./web/
 RUN aube run --no-install build
 
 FROM golang:1.27.1-alpine AS backend

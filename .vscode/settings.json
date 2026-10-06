@@ -1,3 +1,4 @@
 {
-  "eslint.bulkSuppression.location": "./web"
+  "eslint.bulkSuppression.location": ".",
+  "eslint.workingDirectories": ["."]
 }

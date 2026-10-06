@@ -12,10 +12,10 @@
     "check": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix --max-warnings 0",
-    "format": "eslint . --fix --max-warnings 0",
-    "format:check": "eslint . --max-warnings 0"
+    "lint": "aube --workspace-root run --no-install lint",
+    "lint:fix": "aube --workspace-root run --no-install lint:fix",
+    "format": "aube --workspace-root run --no-install lint:fix",
+    "format:check": "aube --workspace-root run --no-install lint"
   },
   "dependencies": {
     "@ark-ui/vue": "5.39.2",
@@ -29,14 +29,9 @@
     "vue-router": "5.3.1"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "9.5.1",
     "@hey-api/openapi-ts": "0.99.0",
     "@iconify-json/lucide": "1.2.138",
-    "@types/node": "24.10.1",
     "@vitejs/plugin-vue": "6.0.9",
-    "eslint": "10.11.0",
-    "eslint-plugin-format": "2.0.1",
-    "typescript": "6.0.3",
     "unocss": "66.10.5",
     "vite": "8.3.2",
     "vitest": "5.0.3",
