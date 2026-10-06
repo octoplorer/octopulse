@@ -364,9 +364,16 @@ function viewRound(round: Round) {
               </CardContent>
               <AsyncState :pending="history.isPending.value" :error="history.error.value" @retry="refreshHistory()">
                 <EmptyState v-if="!history.data.value?.rounds.length" :title="t('monitorDetails.noCheckRecordsYet')" :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')" />
-                <TableContainer v-else>
+                <TableContainer
+                  v-else
+                  max-h="400px"
+                  overscroll="contain"
+                  tabindex="0"
+                  role="region"
+                  :aria-label="t('monitorDetails.historyTrends')"
+                >
                   <Table>
-                    <TableHeader>
+                    <TableHeader sticky top="0" z="1">
                       <TableRow>
                         <TableHead>{{ t('monitorDetails.checkedAt') }}</TableHead>
                         <TableHead>{{ t('monitorDetails.result') }}</TableHead>
