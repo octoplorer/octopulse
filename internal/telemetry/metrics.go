@@ -25,17 +25,77 @@ type Metrics struct {
 
 func New() *Metrics {
 	m := &Metrics{
-		probes:        prometheus.NewCounterVec(prometheus.CounterOpts{Name: "octopulse_probe_attempts_total", Help: "Probe attempts by protocol and success."}, []string{"type", "success"}),
-		probeDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "octopulse_probe_attempt_duration_seconds", Help: "Probe attempt duration by protocol.", Buckets: []float64{.01, .05, .1, .25, .5, 1, 2.5, 5, 10, 30, 60}}, []string{"type"}),
-		queueWait:     prometheus.NewHistogram(prometheus.HistogramOpts{Name: "octopulse_probe_queue_wait_seconds", Help: "Accepted probe round queue wait.", Buckets: []float64{.001, .01, .1, 1, 5, 15, 30, 60}}),
-		registry:      prometheus.NewRegistry(),
-		requests:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "octopulse_http_requests_total", Help: "Completed HTTP requests by registered route, method and status."}, []string{"route", "method", "status"}),
-		duration:      prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "octopulse_http_request_duration_seconds", Help: "HTTP request duration by registered route.", Buckets: prometheus.DefBuckets}, []string{"route", "method"}),
-		inFlight:      prometheus.NewGauge(prometheus.GaugeOpts{Name: "octopulse_http_requests_in_flight", Help: "HTTP requests currently being handled."}),
-		errors:        prometheus.NewCounterVec(prometheus.CounterOpts{Name: "octopulse_operation_errors_total", Help: "Background operation failures."}, []string{"operation"}),
-		deliveries:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "octopulse_delivery_completions_total", Help: "Persisted delivery outcomes, including scheduled retries."}, []string{"state"}),
+		probes: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "octopulse_probe_attempts_total",
+				Help: "Probe attempts by protocol and success.",
+			},
+			[]string{"type", "success"},
+		),
+		probeDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "octopulse_probe_attempt_duration_seconds",
+				Help:    "Probe attempt duration by protocol.",
+				Buckets: []float64{.01, .05, .1, .25, .5, 1, 2.5, 5, 10, 30, 60},
+			},
+			[]string{"type"},
+		),
+		queueWait: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:    "octopulse_probe_queue_wait_seconds",
+				Help:    "Accepted probe round queue wait.",
+				Buckets: []float64{.001, .01, .1, 1, 5, 15, 30, 60},
+			},
+		),
+		registry: prometheus.NewRegistry(),
+		requests: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "octopulse_http_requests_total",
+				Help: "Completed HTTP requests by registered route, method and status.",
+			},
+			[]string{"route", "method", "status"},
+		),
+		duration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "octopulse_http_request_duration_seconds",
+				Help:    "HTTP request duration by registered route.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"route", "method"},
+		),
+		inFlight: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "octopulse_http_requests_in_flight",
+				Help: "HTTP requests currently being handled.",
+			},
+		),
+		errors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "octopulse_operation_errors_total",
+				Help: "Background operation failures.",
+			},
+			[]string{"operation"},
+		),
+		deliveries: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "octopulse_delivery_completions_total",
+				Help: "Persisted delivery outcomes, including scheduled retries.",
+			},
+			[]string{"state"},
+		),
 	}
-	m.registry.MustRegister(collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}), m.requests, m.duration, m.inFlight, m.errors, m.deliveries, m.probes, m.probeDuration, m.queueWait)
+	m.registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		m.requests,
+		m.duration,
+		m.inFlight,
+		m.errors,
+		m.deliveries,
+		m.probes,
+		m.probeDuration,
+		m.queueWait,
+	)
 	return m
 }
 

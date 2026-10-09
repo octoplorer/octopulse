@@ -47,7 +47,12 @@ func newHarness(t *testing.T, m domain.Monitor) *harness {
 	}
 	h.save(t, m)
 	for _, id := range m.NotificationChannelIDs {
-		if err = s.Put(context.Background(), "channels", id, domain.Channel{ID: id, Name: id, Enabled: true}); err != nil {
+		if err = s.Put(
+			context.Background(),
+			"channels",
+			id,
+			domain.Channel{ID: id, Name: id, Enabled: true},
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -65,10 +70,26 @@ func (h *harness) save(t *testing.T, m domain.Monitor) {
 		generation = record.Generation
 	}
 	if err = h.s.WithTx(context.Background(), func(tx *store.Tx) error {
-		if err := tx.Put(context.Background(), "monitors", m.ID, m); err != nil {
+		if err := tx.Put(
+			context.Background(),
+			"monitors",
+			m.ID,
+			m,
+		); err != nil {
 			return err
 		}
-		return tx.PutMonitor(context.Background(), store.Monitor{ID: m.ID, Kind: m.Type, Enabled: m.Enabled, ConfigVersion: m.ConfigVersion, Generation: generation, IntervalMS: int64(m.IntervalSeconds) * 1000, ConfigJSON: data})
+		return tx.PutMonitor(
+			context.Background(),
+			store.Monitor{
+				ID:            m.ID,
+				Kind:          m.Type,
+				Enabled:       m.Enabled,
+				ConfigVersion: m.ConfigVersion,
+				Generation:    generation,
+				IntervalMS:    int64(m.IntervalSeconds) * 1000,
+				ConfigJSON:    data,
+			},
+		)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +111,12 @@ func (h *harness) check(t *testing.T) {
 }
 func (h *harness) events(t *testing.T, kind string) []store.Event {
 	t.Helper()
-	events, err := h.s.ListEvents(context.Background(), h.m.ID, 0, 1000)
+	events, err := h.s.ListEvents(
+		context.Background(),
+		h.m.ID,
+		0,
+		1000,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +129,15 @@ func (h *harness) events(t *testing.T, kind string) []store.Event {
 	return selected
 }
 func activeHTTP() domain.Monitor {
-	return domain.Monitor{Type: domain.MonitorHTTP, IntervalSeconds: 30, TimeoutSeconds: 2, Retries: 2, HTTP: &domain.HTTPConfig{URL: "https://example.test"}}
+	return domain.Monitor{
+		Type:            domain.MonitorHTTP,
+		IntervalSeconds: 30,
+		TimeoutSeconds:  2,
+		Retries:         2,
+		HTTP: &domain.HTTPConfig{
+			URL: "https://example.test",
+		},
+	}
 }
 
 func TestAttemptsThresholdsStateIntervalsAndAtomicOutbox(t *testing.T) {
@@ -127,11 +161,19 @@ func TestAttemptsThresholdsStateIntervalsAndAtomicOutbox(t *testing.T) {
 		if got := h.state(t).State; got != wantState {
 			t.Fatalf("state=%s want=%s", got, wantState)
 		}
-		rounds, err := h.s.ListRounds(context.Background(), h.m.ID, 0, 1)
+		rounds, err := h.s.ListRounds(
+			context.Background(),
+			h.m.ID,
+			0,
+			1,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(rounds) != 1 || len(rounds[0].Attempts) != attempts || rounds[0].LatencyMS != int64(attempts*10) {
+		if len(rounds) != 1 {
+			t.Fatalf("rounds=%+v", rounds)
+		}
+		if len(rounds[0].Attempts) != attempts || rounds[0].LatencyMS != int64(attempts*10) {
 			t.Fatalf("rounds=%+v", rounds)
 		}
 		h.clock.Add(30000)
@@ -166,7 +208,12 @@ func TestAttemptsThresholdsStateIntervalsAndAtomicOutbox(t *testing.T) {
 	if downCycle == "" || downCycle != upCycle {
 		t.Fatal("recovery lost its fault cycle")
 	}
-	intervals, err := h.s.Intervals(context.Background(), h.m.ID, h.m.CreatedAt, h.clock.Load()+1)
+	intervals, err := h.s.Intervals(
+		context.Background(),
+		h.m.ID,
+		h.m.CreatedAt,
+		h.clock.Load()+1,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +261,12 @@ func TestNoOverlapPauseAndObsoleteConfigurationRejection(t *testing.T) {
 	if h.state(t).State != StatePaused {
 		t.Fatal(h.state(t))
 	}
-	rounds, _ := h.s.ListRounds(context.Background(), h.m.ID, 0, 100)
+	rounds, _ := h.s.ListRounds(
+		context.Background(),
+		h.m.ID,
+		0,
+		100,
+	)
 	if len(rounds) != 0 {
 		t.Fatal("paused obsolete result stored")
 	}
@@ -245,8 +297,15 @@ func TestStandaloneParentDeadlineBoundsRetryWaitAndCancellationDiscardsObservati
 	defer cancel()
 	start := time.Now()
 	err := h.e.Check(ctx, h.m.ID)
-	if err != nil || attempts.Load() != 1 || time.Since(start) > time.Second {
-		t.Fatalf("err=%v attempts=%d elapsed=%s", err, attempts.Load(), time.Since(start))
+	completedSingleAttempt := err == nil && attempts.Load() == 1
+	completedPromptly := time.Since(start) <= time.Second
+	if !completedSingleAttempt || !completedPromptly {
+		t.Fatalf(
+			"err=%v attempts=%d elapsed=%s",
+			err,
+			attempts.Load(),
+			time.Since(start),
+		)
 	}
 	if h.state(t).State != domain.StateDown {
 		t.Fatal("failed attempt must confirm the round when the remaining retry budget expires")
@@ -279,7 +338,12 @@ func TestStartupCutsKnownStateAtWatermarkAndChecksImmediately(t *testing.T) {
 	h.e.Attempt = func(context.Context, domain.Monitor) probe.Result { return probe.Result{Success: true} }
 	h.check(t)
 	oldEnd := h.clock.Add(5000)
-	if err := h.s.WithTx(context.Background(), func(tx *store.Tx) error { return tx.PutWatermark(context.Background(), collectionWatermark, oldEnd) }); err != nil {
+	if err := h.s.WithTx(
+		context.Background(),
+		func(tx *store.Tx) error {
+			return tx.PutWatermark(context.Background(), collectionWatermark, oldEnd)
+		},
+	); err != nil {
 		t.Fatal(err)
 	}
 	h.clock.Add(20000)
@@ -309,16 +373,27 @@ func TestStartupCutsKnownStateAtWatermarkAndChecksImmediately(t *testing.T) {
 	for h.state(t).State != domain.StateUp && time.Now().Before(deadline) {
 		time.Sleep(time.Millisecond)
 	}
-	intervals, err := h.s.Intervals(context.Background(), h.m.ID, h.m.CreatedAt, h.clock.Load()+1)
+	intervals, err := h.s.Intervals(
+		context.Background(),
+		h.m.ID,
+		h.m.CreatedAt,
+		h.clock.Load()+1,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	gapFound := false
 	for _, interval := range intervals {
-		if interval.State == domain.StateUp && interval.StartedAt < oldEnd && (interval.EndedAt == nil || *interval.EndedAt > oldEnd) {
+		wasUpBeforeGap := interval.State == domain.StateUp && interval.StartedAt < oldEnd
+		spansGap := interval.EndedAt == nil || *interval.EndedAt > oldEnd
+		if wasUpBeforeGap && spansGap {
 			t.Fatal("Up carried over a collection gap")
 		}
-		if interval.State == domain.StateUnknown && interval.StartedAt == oldEnd && interval.EndedAt != nil && *interval.EndedAt == h.clock.Load() {
+		isExplicitGap := interval.State == domain.StateUnknown && interval.StartedAt == oldEnd
+		if !isExplicitGap || interval.EndedAt == nil {
+			continue
+		}
+		if *interval.EndedAt == h.clock.Load() {
 			gapFound = true
 		}
 	}

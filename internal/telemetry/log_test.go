@@ -16,7 +16,13 @@ func TestErrorDiagnosticsRetainCodeWithoutCredentials(t *testing.T) {
 	previous := slog.Default()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
 	t.Cleanup(func() { slog.SetDefault(previous) })
-	err := fmt.Errorf("postgres://admin:top-secret@db: %w", &pgconn.PgError{Code: "40001", Message: "top-secret serialized payload"})
+	err := fmt.Errorf(
+		"postgres://admin:top-secret@db: %w",
+		&pgconn.PgError{
+			Code:    "40001",
+			Message: "top-secret serialized payload",
+		},
+	)
 	LogError(WithRequestID(context.Background(), "request-123"), "collection.commit", err)
 	got := output.String()
 	for _, required := range []string{"40001", "postgres", "request-123", "collection.commit"} {

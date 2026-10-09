@@ -25,18 +25,40 @@ func TestReadSnapshotRetainsPolicyAcrossConcurrentWrite(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer s.Close()
-			if err := s.Put(ctx, "maintenance", "policy", map[string]int{"version": 1}); err != nil {
+			if err := s.Put(
+				ctx,
+				"maintenance",
+				"policy",
+				map[string]int{"version": 1},
+			); err != nil {
 				t.Fatal(err)
 			}
 			err = s.withReadSnapshot(ctx, func(q dbtx) error {
 				var before, after map[string]int
-				if err := s.get(ctx, q, "maintenance", "policy", &before); err != nil {
+				if err := s.get(
+					ctx,
+					q,
+					"maintenance",
+					"policy",
+					&before,
+				); err != nil {
 					return err
 				}
-				if err := s.Put(ctx, "maintenance", "policy", map[string]int{"version": 2}); err != nil {
+				if err := s.Put(
+					ctx,
+					"maintenance",
+					"policy",
+					map[string]int{"version": 2},
+				); err != nil {
 					return err
 				}
-				if err := s.get(ctx, q, "maintenance", "policy", &after); err != nil {
+				if err := s.get(
+					ctx,
+					q,
+					"maintenance",
+					"policy",
+					&after,
+				); err != nil {
 					return err
 				}
 				if before["version"] != 1 || after["version"] != 1 {
@@ -48,7 +70,12 @@ func TestReadSnapshotRetainsPolicyAcrossConcurrentWrite(t *testing.T) {
 				t.Fatal(err)
 			}
 			var current map[string]int
-			if err := s.Get(ctx, "maintenance", "policy", &current); err != nil || current["version"] != 2 {
+			if err := s.Get(
+				ctx,
+				"maintenance",
+				"policy",
+				&current,
+			); err != nil || current["version"] != 2 {
 				t.Fatal(current, err)
 			}
 		})
@@ -71,7 +98,19 @@ func TestFinishedRoundIndexUpgradeAcrossDatabases(t *testing.T) {
 			t.Cleanup(func() { s.Close() })
 			seedMonitor(t, s, "migration")
 			if err := s.WithTx(ctx, func(tx *Tx) error {
-				return tx.PutRound(ctx, Round{ID: "preserved", MonitorID: "migration", ConfigVersion: 1, Generation: 1, StartedAt: 10, FinishedAt: 20, Success: true, LatencyMS: 10})
+				return tx.PutRound(
+					ctx,
+					Round{
+						ID:            "preserved",
+						MonitorID:     "migration",
+						ConfigVersion: 1,
+						Generation:    1,
+						StartedAt:     10,
+						FinishedAt:    20,
+						Success:       true,
+						LatencyMS:     10,
+					},
+				)
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -93,7 +132,8 @@ func TestFinishedRoundIndexUpgradeAcrossDatabases(t *testing.T) {
 			var count int
 			indexQuery := `SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='rounds_monitor_finished'`
 			if backend == "postgres" {
-				indexQuery = `SELECT COUNT(*) FROM pg_indexes WHERE schemaname=current_schema() AND indexname='rounds_monitor_finished'`
+				indexQuery = `SELECT COUNT(*) FROM pg_indexes WHERE schemaname=current_schema() ` +
+					`AND indexname='rounds_monitor_finished'`
 			}
 			if err := s.read.QueryRowContext(ctx, indexQuery).Scan(&count); err != nil || count != 0 {
 				t.Fatal("down migration", count, err)
@@ -108,12 +148,25 @@ func TestFinishedRoundIndexUpgradeAcrossDatabases(t *testing.T) {
 			if err := s.read.QueryRowContext(ctx, indexQuery).Scan(&count); err != nil || count != 1 {
 				t.Fatal("up migration", count, err)
 			}
-			rows, err := s.RoundBuckets(ctx, "migration", 0, 100, 100)
+			rows, err := s.RoundBuckets(
+				ctx,
+				"migration",
+				0,
+				100,
+				100,
+			)
 			if err != nil || len(rows) != 1 || rows[0].Count != 1 || rows[0].Successes != 1 {
 				t.Fatal("preserved data", rows, err)
 			}
 			if backend == "sqlite" {
-				planRows, err := s.read.QueryContext(ctx, `EXPLAIN QUERY PLAN SELECT finished_at,latency_ms FROM rounds WHERE monitor_id=? AND finished_at>=? AND finished_at<?`, "migration", 0, 100)
+				planRows, err := s.read.QueryContext(
+					ctx,
+					`EXPLAIN QUERY PLAN SELECT finished_at,latency_ms FROM rounds WHERE monitor_id=? `+
+						`AND finished_at>=? AND finished_at<?`,
+					"migration",
+					0,
+					100,
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -122,7 +175,12 @@ func TestFinishedRoundIndexUpgradeAcrossDatabases(t *testing.T) {
 				for planRows.Next() {
 					var id, parent, unused int
 					var detail string
-					if err := planRows.Scan(&id, &parent, &unused, &detail); err != nil {
+					if err := planRows.Scan(
+						&id,
+						&parent,
+						&unused,
+						&detail,
+					); err != nil {
 						t.Fatal(err)
 					}
 					found = found || strings.Contains(detail, "rounds_monitor_finished")

@@ -38,22 +38,77 @@ func TestStoreContract(t *testing.T) {
 			}
 			t.Run("atomic_round_state_event_outbox", func(t *testing.T) {
 				m := seedMonitor(t, s, "atomic")
-				r := Round{ID: "round-atomic", MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: 100, FinishedAt: 130, Success: false, LatencyMS: 30, Attempts: []Attempt{{Number: 1, StartedAt: 100, FinishedAt: 130, LatencyMS: 30, Error: "connection refused"}}}
+				r := Round{
+					ID:            "round-atomic",
+					MonitorID:     m.ID,
+					ConfigVersion: 1,
+					Generation:    1,
+					StartedAt:     100,
+					FinishedAt:    130,
+					Success:       false,
+					LatencyMS:     30,
+					Attempts: []Attempt{
+						{
+							Number:     1,
+							StartedAt:  100,
+							FinishedAt: 130,
+							LatencyMS:  30,
+							Error:      "connection refused",
+						},
+					},
+				}
 				abort := errors.New("abort")
 				err = s.WithTx(ctx, func(tx *Tx) error {
 					if err := tx.PutRound(ctx, r); err != nil {
 						return err
 					}
-					if err := tx.PutRuntime(ctx, Runtime{MonitorID: m.ID, ConfigVersion: 1, Generation: 1, State: "down", Failures: 1, LastRoundID: r.ID, LastCollectedAt: 130}); err != nil {
+					if err := tx.PutRuntime(
+						ctx,
+						Runtime{
+							MonitorID:       m.ID,
+							ConfigVersion:   1,
+							Generation:      1,
+							State:           "down",
+							Failures:        1,
+							LastRoundID:     r.ID,
+							LastCollectedAt: 130,
+						},
+					); err != nil {
 						return err
 					}
-					if err := tx.ReplaceInterval(ctx, Interval{ID: "interval-atomic", MonitorID: m.ID, State: "down", StartedAt: 130}); err != nil {
+					if err := tx.ReplaceInterval(
+						ctx,
+						Interval{
+							ID:        "interval-atomic",
+							MonitorID: m.ID,
+							State:     "down",
+							StartedAt: 130,
+						},
+					); err != nil {
 						return err
 					}
-					if err := tx.PutEvent(ctx, Event{ID: "event-atomic", MonitorID: m.ID, Generation: 1, Kind: "down", CreatedAt: 130}); err != nil {
+					if err := tx.PutEvent(
+						ctx,
+						Event{
+							ID:         "event-atomic",
+							MonitorID:  m.ID,
+							Generation: 1,
+							Kind:       "down",
+							CreatedAt:  130,
+						},
+					); err != nil {
 						return err
 					}
-					if err := tx.PutDelivery(ctx, Delivery{ID: "delivery-atomic", EventID: "event-atomic", ChannelID: "mail", Generation: 1, DueAt: 130}); err != nil {
+					if err := tx.PutDelivery(
+						ctx,
+						Delivery{
+							ID:         "delivery-atomic",
+							EventID:    "event-atomic",
+							ChannelID:  "mail",
+							Generation: 1,
+							DueAt:      130,
+						},
+					); err != nil {
 						return err
 					}
 					return abort
@@ -77,7 +132,12 @@ func TestStoreContract(t *testing.T) {
 				if err = s.WithTx(ctx, func(tx *Tx) error { return tx.PutRound(ctx, r) }); err != nil {
 					t.Fatal("idempotent round", err)
 				}
-				rounds, err := s.ListRounds(ctx, m.ID, 0, 100)
+				rounds, err := s.ListRounds(
+					ctx,
+					m.ID,
+					0,
+					100,
+				)
 				if err != nil || len(rounds) != 1 || len(rounds[0].Attempts) != 1 {
 					t.Fatal(rounds, err)
 				}
@@ -89,14 +149,29 @@ func TestStoreContract(t *testing.T) {
 					t.Fatal(err)
 				}
 				if err = s.WithTx(ctx, func(tx *Tx) error {
-					return tx.PutMonitor(ctx, Monitor{ID: m.ID, ConfigVersion: 2, Generation: 2, Kind: "http", Enabled: true, IntervalMS: 30000})
+					return tx.PutMonitor(
+						ctx,
+						Monitor{
+							ID:            m.ID,
+							ConfigVersion: 2,
+							Generation:    2,
+							Kind:          "http",
+							Enabled:       true,
+							IntervalMS:    30000,
+						},
+					)
 				}); err != nil {
 					t.Fatal(err)
 				}
 				next := old
 				next.State = "down"
 				next.LastRoundID = "obsolete"
-				if err = s.WithTx(ctx, func(tx *Tx) error { return tx.CompareRuntime(ctx, old, next) }); !errors.Is(err, ErrConflict) {
+				if err = s.WithTx(
+					ctx,
+					func(tx *Tx) error {
+						return tx.CompareRuntime(ctx, old, next)
+					},
+				); !errors.Is(err, ErrConflict) {
 					t.Fatalf("stale runtime applied: %v", err)
 				}
 				if err = s.WithTx(ctx, func(tx *Tx) error {
@@ -105,7 +180,17 @@ func TestStoreContract(t *testing.T) {
 					t.Fatalf("two open intervals: %v", err)
 				}
 				if err = s.WithTx(ctx, func(tx *Tx) error {
-					return tx.PutRound(ctx, Round{ID: "orphan", MonitorID: "missing", ConfigVersion: 1, Generation: 1, StartedAt: 1, FinishedAt: 2})
+					return tx.PutRound(
+						ctx,
+						Round{
+							ID:            "orphan",
+							MonitorID:     "missing",
+							ConfigVersion: 1,
+							Generation:    1,
+							StartedAt:     1,
+							FinishedAt:    2,
+						},
+					)
 				}); !errors.Is(err, ErrConflict) {
 					t.Fatalf("orphan round: %v", err)
 				}
@@ -161,18 +246,41 @@ func TestStoreContract(t *testing.T) {
 					t.Fatal(err)
 				}
 				current, err := s.GetMonitor(ctx, m.ID)
-				if err != nil || current.Generation != 3 || current.ConfigVersion != 2 || string(current.ConfigJSON) != `{"name":"edited"}` {
+				if err != nil || current.Generation != 3 || current.ConfigVersion != 2 || string(
+					current.ConfigJSON,
+				) != `{"name":"edited"}` {
 					t.Fatal(current, err)
 				}
 			})
 			t.Run("unique_page_bindings_rollback", func(t *testing.T) {
-				if err = s.BindPage(ctx, PageBinding{PageID: "p1", Slug: "Status1", Domains: []string{"Status1.Example.com."}}); err != nil {
+				if err = s.BindPage(
+					ctx,
+					PageBinding{
+						PageID:  "p1",
+						Slug:    "Status1",
+						Domains: []string{"Status1.Example.com."},
+					},
+				); err != nil {
 					t.Fatal(err)
 				}
-				if err = s.BindPage(ctx, PageBinding{PageID: "p2", Slug: "status2", Domains: []string{"status2.example.com"}}); err != nil {
+				if err = s.BindPage(
+					ctx,
+					PageBinding{
+						PageID:  "p2",
+						Slug:    "status2",
+						Domains: []string{"status2.example.com"},
+					},
+				); err != nil {
 					t.Fatal(err)
 				}
-				if err = s.BindPage(ctx, PageBinding{PageID: "p2", Slug: "renamed", Domains: []string{"STATUS1.EXAMPLE.COM"}}); !errors.Is(err, ErrConflict) {
+				if err = s.BindPage(
+					ctx,
+					PageBinding{
+						PageID:  "p2",
+						Slug:    "renamed",
+						Domains: []string{"STATUS1.EXAMPLE.COM"},
+					},
+				); !errors.Is(err, ErrConflict) {
 					t.Fatalf("domain clash: %v", err)
 				}
 				b, err := s.PageBinding(ctx, "p2")
@@ -186,15 +294,39 @@ func TestStoreContract(t *testing.T) {
 			t.Run("lease_recovery_and_completion_marker", func(t *testing.T) {
 				m := seedMonitor(t, s, "leases")
 				err = s.WithTx(ctx, func(tx *Tx) error {
-					if err := tx.PutEvent(ctx, Event{ID: "lease-event", MonitorID: m.ID, Generation: 1, Kind: "down", CreatedAt: 100}); err != nil {
+					if err := tx.PutEvent(
+						ctx,
+						Event{
+							ID:         "lease-event",
+							MonitorID:  m.ID,
+							Generation: 1,
+							Kind:       "down",
+							CreatedAt:  100,
+						},
+					); err != nil {
 						return err
 					}
-					return tx.PutDelivery(ctx, Delivery{ID: "lease-job", EventID: "lease-event", ChannelID: "mail", Generation: 1, DueAt: 100})
+					return tx.PutDelivery(
+						ctx,
+						Delivery{
+							ID:         "lease-job",
+							EventID:    "lease-event",
+							ChannelID:  "mail",
+							Generation: 1,
+							DueAt:      100,
+						},
+					)
 				})
 				if err != nil {
 					t.Fatal(err)
 				}
-				first, err := s.ClaimDeliveries(ctx, 100, 50, 10, "worker-a")
+				first, err := s.ClaimDeliveries(
+					ctx,
+					100,
+					50,
+					10,
+					"worker-a",
+				)
 				if err != nil || len(first) != 1 {
 					t.Fatal(first, err)
 				}
@@ -206,20 +338,48 @@ func TestStoreContract(t *testing.T) {
 				if err != nil || len(flights) != 0 {
 					t.Fatal("wrong channel in flight", flights, err)
 				}
-				before, err := s.ClaimDeliveries(ctx, 120, 50, 10, "worker-b")
+				before, err := s.ClaimDeliveries(
+					ctx,
+					120,
+					50,
+					10,
+					"worker-b",
+				)
 				if err != nil || len(before) != 0 {
 					t.Fatal(before, err)
 				}
-				after, err := s.ClaimDeliveries(ctx, 151, 50, 10, "worker-b")
+				after, err := s.ClaimDeliveries(
+					ctx,
+					151,
+					50,
+					10,
+					"worker-b",
+				)
 				if err != nil || len(after) != 1 || after[0].Attempts != 2 {
 					t.Fatal(after, err)
 				}
-				if err = s.CompleteDelivery(ctx, "lease-job", "worker-a", 152, "sent", 0, ""); !errors.Is(err, ErrLeaseLost) {
+				if err = s.CompleteDelivery(
+					ctx,
+					"lease-job",
+					"worker-a",
+					152,
+					"sent",
+					0,
+					"",
+				); !errors.Is(err, ErrLeaseLost) {
 					t.Fatal("old token completed", err)
 				}
 				abort := errors.New("marker failed")
 				err = s.WithTx(ctx, func(tx *Tx) error {
-					if err := tx.CompleteDelivery(ctx, "lease-job", "worker-b", 152, "sent", 0, ""); err != nil {
+					if err := tx.CompleteDelivery(
+						ctx,
+						"lease-job",
+						"worker-b",
+						152,
+						"sent",
+						0,
+						"",
+					); err != nil {
 						return err
 					}
 					return abort
@@ -232,10 +392,23 @@ func TestStoreContract(t *testing.T) {
 					t.Fatal(d, err)
 				}
 				err = s.WithTx(ctx, func(tx *Tx) error {
-					if err := tx.CompleteDelivery(ctx, "lease-job", "worker-b", 153, "sent", 0, ""); err != nil {
+					if err := tx.CompleteDelivery(
+						ctx,
+						"lease-job",
+						"worker-b",
+						153,
+						"sent",
+						0,
+						"",
+					); err != nil {
 						return err
 					}
-					return tx.Put(ctx, "delivery_marker", m.ID+"/mail", map[string]any{"event": "lease-event"})
+					return tx.Put(
+						ctx,
+						"delivery_marker",
+						m.ID+"/mail",
+						map[string]any{"event": "lease-event"},
+					)
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -253,11 +426,41 @@ func TestStoreContract(t *testing.T) {
 				m := seedMonitor(t, s, "aggregate")
 				err = s.WithTx(ctx, func(tx *Tx) error {
 					for i := int64(1); i <= 2; i++ {
-						if err := tx.PutRound(ctx, Round{ID: fmt.Sprintf("agg-round-%d", i), MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: i * 100, FinishedAt: i*100 + 10, LatencyMS: 10, Attempts: []Attempt{{Number: 1, StartedAt: i * 100, FinishedAt: i*100 + 10, LatencyMS: 10}}}); err != nil {
+						if err := tx.PutRound(
+							ctx,
+							Round{
+								ID:            fmt.Sprintf("agg-round-%d", i),
+								MonitorID:     m.ID,
+								ConfigVersion: 1,
+								Generation:    1,
+								StartedAt:     i * 100,
+								FinishedAt:    i*100 + 10,
+								LatencyMS:     10,
+								Attempts: []Attempt{
+									{
+										Number:     1,
+										StartedAt:  i * 100,
+										FinishedAt: i*100 + 10,
+										LatencyMS:  10,
+									},
+								},
+							},
+						); err != nil {
 							return err
 						}
 					}
-					if err := tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, UpMS: 150, DownMS: 50, RoundCount: 1, SuccessfulRoundCount: 1}); err != nil {
+					if err := tx.PutAggregate(
+						ctx,
+						Aggregate{
+							MonitorID:            m.ID,
+							BucketAt:             0,
+							WidthMS:              300000,
+							UpMS:                 150,
+							DownMS:               50,
+							RoundCount:           1,
+							SuccessfulRoundCount: 1,
+						},
+					); err != nil {
 						return err
 					}
 					return tx.PutWatermark(ctx, "aggregate", 150)
@@ -267,7 +470,17 @@ func TestStoreContract(t *testing.T) {
 				}
 				abort := errors.New("aggregation interrupted")
 				err = s.WithTx(ctx, func(tx *Tx) error {
-					if err := tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, UpMS: 250, DownMS: 50, RoundCount: 2}); err != nil {
+					if err := tx.PutAggregate(
+						ctx,
+						Aggregate{
+							MonitorID:  m.ID,
+							BucketAt:   0,
+							WidthMS:    300000,
+							UpMS:       250,
+							DownMS:     50,
+							RoundCount: 2,
+						},
+					); err != nil {
 						return err
 					}
 					if err := tx.PutWatermark(ctx, "aggregate", 300); err != nil {
@@ -281,14 +494,33 @@ func TestStoreContract(t *testing.T) {
 				if watermark, err := s.Watermark(ctx, "aggregate"); err != nil || watermark != 150 {
 					t.Fatal("watermark partially committed", watermark, err)
 				}
-				if err = s.WithTx(ctx, func(tx *Tx) error { return tx.PruneHistory(ctx, 300, 300, 150, 10) }); err != nil {
+				if err = s.WithTx(ctx, func(tx *Tx) error {
+					return tx.PruneHistory(
+						ctx,
+						300,
+						300,
+						150,
+						10,
+					)
+				}); err != nil {
 					t.Fatal(err)
 				}
-				rounds, err := s.ListRounds(ctx, m.ID, 0, 10)
+				rounds, err := s.ListRounds(
+					ctx,
+					m.ID,
+					0,
+					10,
+				)
 				if err != nil || len(rounds) != 1 || rounds[0].StartedAt != 200 {
 					t.Fatal("pruned beyond watermark", rounds, err)
 				}
-				aggs, err := s.Aggregates(ctx, m.ID, 0, 300000, 300000)
+				aggs, err := s.Aggregates(
+					ctx,
+					m.ID,
+					0,
+					300000,
+					300000,
+				)
 				if err != nil || len(aggs) != 1 || aggs[0].UpMS != 150 || aggs[0].SuccessfulRoundCount != 1 {
 					t.Fatal(aggs, err)
 				}
@@ -310,13 +542,23 @@ func TestStoreContract(t *testing.T) {
 						conn.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&busy)
 						conn.QueryRowContext(ctx, "PRAGMA query_only").Scan(&queryOnly)
 						if fk != 1 || syncMode != 2 || busy != 5000 || queryOnly != 1 {
-							t.Fatal(fk, syncMode, busy, queryOnly)
+							t.Fatal(
+								fk,
+								syncMode,
+								busy,
+								queryOnly,
+							)
 						}
 					}
 					for _, conn := range connections {
 						conn.Close()
 					}
-					if err = s.Put(ctx, "setting", "backup", map[string]string{"value": "durable"}); err != nil {
+					if err = s.Put(
+						ctx,
+						"setting",
+						"backup",
+						map[string]string{"value": "durable"},
+					); err != nil {
 						t.Fatal(err)
 					}
 					path := filepath.Join(t.TempDir(), "restored.db")
@@ -329,7 +571,12 @@ func TestStoreContract(t *testing.T) {
 					}
 					defer restored.Close()
 					var got map[string]string
-					if err = restored.Get(ctx, "setting", "backup", &got); err != nil || got["value"] != "durable" {
+					if err = restored.Get(
+						ctx,
+						"setting",
+						"backup",
+						&got,
+					); err != nil || got["value"] != "durable" {
 						t.Fatal(got, err)
 					}
 				})
@@ -351,11 +598,22 @@ func TestStoreContract(t *testing.T) {
 					if schema == "" {
 						t.Fatal("restore test requires isolated schema")
 					}
-					if err = s.Put(ctx, "settings", "restore", map[string]string{"value": "committed"}); err != nil {
+					if err = s.Put(
+						ctx,
+						"settings",
+						"restore",
+						map[string]string{"value": "committed"},
+					); err != nil {
 						t.Fatal(err)
 					}
 					path := filepath.Join(t.TempDir(), "postgres.dump")
-					dumpCmd := exec.Command(dump, "--format=custom", "--no-owner", "--schema="+schema, "--file="+path)
+					dumpCmd := exec.Command(
+						dump,
+						"--format=custom",
+						"--no-owner",
+						"--schema="+schema,
+						"--file="+path,
+					)
 					dumpCmd.Env = postgresEnvironment(u)
 					if output, err := dumpCmd.CombinedOutput(); err != nil {
 						t.Fatalf("pg_dump: %s: %v", output, err)
@@ -375,7 +633,13 @@ func TestStoreContract(t *testing.T) {
 						t.Fatal(err)
 					}
 					admin.Close()
-					restoreCmd := exec.Command(restore, "--no-owner", "--exit-on-error", "--dbname="+strings.TrimPrefix(u.Path, "/"), path)
+					restoreCmd := exec.Command(
+						restore,
+						"--no-owner",
+						"--exit-on-error",
+						"--dbname="+strings.TrimPrefix(u.Path, "/"),
+						path,
+					)
 					restoreCmd.Env = postgresEnvironment(u)
 					if output, err := restoreCmd.CombinedOutput(); err != nil {
 						t.Fatalf("pg_restore: %s: %v", output, err)
@@ -385,10 +649,20 @@ func TestStoreContract(t *testing.T) {
 						t.Fatal(err)
 					}
 					var value map[string]string
-					if err = s.Get(ctx, "settings", "restore", &value); err != nil || value["value"] != "committed" {
+					if err = s.Get(
+						ctx,
+						"settings",
+						"restore",
+						&value,
+					); err != nil || value["value"] != "committed" {
 						t.Fatal(value, err)
 					}
-					if err = s.Put(ctx, "settings", "restore-after", map[string]bool{"writable": true}); err != nil {
+					if err = s.Put(
+						ctx,
+						"settings",
+						"restore-after",
+						map[string]bool{"writable": true},
+					); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -422,13 +696,46 @@ func TestStoreContract(t *testing.T) {
 			t.Run("schema_one_upgrade_preserves_successful_round_count", func(t *testing.T) {
 				m := seedMonitor(t, s, "upgrade")
 				if err := s.WithTx(ctx, func(tx *Tx) error {
-					if err := tx.PutRound(ctx, Round{ID: "upgrade-success", MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: 10, FinishedAt: 20, Success: true, LatencyMS: 10}); err != nil {
+					if err := tx.PutRound(
+						ctx,
+						Round{
+							ID:            "upgrade-success",
+							MonitorID:     m.ID,
+							ConfigVersion: 1,
+							Generation:    1,
+							StartedAt:     10,
+							FinishedAt:    20,
+							Success:       true,
+							LatencyMS:     10,
+						},
+					); err != nil {
 						return err
 					}
-					if err := tx.PutRound(ctx, Round{ID: "upgrade-failure", MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: 30, FinishedAt: 40, LatencyMS: 10}); err != nil {
+					if err := tx.PutRound(
+						ctx,
+						Round{
+							ID:            "upgrade-failure",
+							MonitorID:     m.ID,
+							ConfigVersion: 1,
+							Generation:    1,
+							StartedAt:     30,
+							FinishedAt:    40,
+							LatencyMS:     10,
+						},
+					); err != nil {
 						return err
 					}
-					return tx.PutAggregate(ctx, Aggregate{MonitorID: m.ID, BucketAt: 0, WidthMS: 300000, RoundCount: 2, SuccessfulRoundCount: 1, LatencyTotalMS: 20})
+					return tx.PutAggregate(
+						ctx,
+						Aggregate{
+							MonitorID:            m.ID,
+							BucketAt:             0,
+							WidthMS:              300000,
+							RoundCount:           2,
+							SuccessfulRoundCount: 1,
+							LatencyTotalMS:       20,
+						},
+					)
 				}); err != nil {
 					t.Fatal(err)
 				}
@@ -464,7 +771,13 @@ func TestStoreContract(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				aggs, err := s.Aggregates(ctx, m.ID, 0, 300000, 300000)
+				aggs, err := s.Aggregates(
+					ctx,
+					m.ID,
+					0,
+					300000,
+					300000,
+				)
 				if err != nil || len(aggs) != 1 || aggs[0].SuccessfulRoundCount != 1 || aggs[0].RoundCount != 2 {
 					t.Fatal(aggs, err)
 				}
@@ -483,7 +796,10 @@ func TestStoreContract(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = pool.ExecContext(ctx, fmt.Sprintf(`INSERT INTO goose_db_version(version_id,is_applied) VALUES(%d,TRUE)`, SchemaVersion+1))
+			_, err = pool.ExecContext(
+				ctx,
+				fmt.Sprintf(`INSERT INTO goose_db_version(version_id,is_applied) VALUES(%d,TRUE)`, SchemaVersion+1),
+			)
 			pool.Close()
 			if err != nil {
 				t.Fatal(err)
@@ -508,7 +824,12 @@ func postgresCommand(name string) (string, error) {
 }
 
 func postgresEnvironment(u *url.URL) []string {
-	env := append(os.Environ(), "PGHOST="+u.Hostname(), "PGPORT="+u.Port(), "PGDATABASE="+strings.TrimPrefix(u.Path, "/"))
+	env := append(
+		os.Environ(),
+		"PGHOST="+u.Hostname(),
+		"PGPORT="+u.Port(),
+		"PGDATABASE="+strings.TrimPrefix(u.Path, "/"),
+	)
 	if u.User != nil {
 		env = append(env, "PGUSER="+u.User.Username())
 		if password, ok := u.User.Password(); ok {
@@ -536,7 +857,10 @@ func testConfig(t *testing.T, backend string) Config {
 		pool.Close()
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { pool.Exec(`DROP SCHEMA ` + schema + ` CASCADE`); pool.Close() })
+	t.Cleanup(func() {
+		pool.Exec(`DROP SCHEMA ` + schema + ` CASCADE`)
+		pool.Close()
+	})
 	u, err := url.Parse(dsn)
 	if err != nil {
 		t.Fatal(err)
@@ -550,7 +874,15 @@ func testConfig(t *testing.T, backend string) Config {
 func seedMonitor(t *testing.T, s *Store, id string) Monitor {
 	t.Helper()
 	ctx := context.Background()
-	m := Monitor{ID: id, ConfigVersion: 1, Generation: 1, Kind: "http", Enabled: true, IntervalMS: 30000, ConfigJSON: json.RawMessage(`{"name":"test"}`)}
+	m := Monitor{
+		ID:            id,
+		ConfigVersion: 1,
+		Generation:    1,
+		Kind:          "http",
+		Enabled:       true,
+		IntervalMS:    30000,
+		ConfigJSON:    json.RawMessage(`{"name":"test"}`),
+	}
 	err := s.WithTx(ctx, func(tx *Tx) error {
 		if err := tx.PutMonitor(ctx, m); err != nil {
 			return err

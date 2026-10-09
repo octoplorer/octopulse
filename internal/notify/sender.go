@@ -22,7 +22,7 @@ var (
 // ValidateURL validates through the installed Shoutrrr service implementation.
 // Provider errors are intentionally replaced because they may include secrets.
 func ValidateURL(raw string) error {
-	r := router.ServiceRouter{}
+	var r router.ServiceRouter
 	service, err := r.Locate(raw)
 	if err != nil || !boundedSupport(service) {
 		return ErrInvalidURL

@@ -45,11 +45,14 @@ func (w *Worker) relevant(ctx context.Context, d store.Delivery, p domain.Notifi
 		if err = json.Unmarshal(raw, &window); err != nil {
 			return false, err
 		}
-		if !strings.HasPrefix(p.Kind, "certificate_") && window.StartsAt <= now && now < window.EndsAt {
-			for _, id := range window.MonitorIDs {
-				if id == p.MonitorID {
-					return false, nil
-				}
+		availabilityNotification := !strings.HasPrefix(p.Kind, "certificate_")
+		activeWindow := window.StartsAt <= now && now < window.EndsAt
+		if !availabilityNotification || !activeWindow {
+			continue
+		}
+		for _, id := range window.MonitorIDs {
+			if id == p.MonitorID {
+				return false, nil
 			}
 		}
 	}
@@ -66,12 +69,21 @@ func (w *Worker) relevant(ctx context.Context, d store.Delivery, p domain.Notifi
 		}
 		for _, flight := range flights {
 			var fault domain.NotificationPayload
-			if json.Unmarshal(flight.Payload, &fault) == nil && fault.Kind == "down" && fault.CycleID == p.CycleID && flight.LeaseUntil > now {
+			if err := json.Unmarshal(flight.Payload, &fault); err != nil {
+				continue
+			}
+			sameFaultCycle := fault.Kind == "down" && fault.CycleID == p.CycleID
+			if sameFaultCycle && flight.LeaseUntil > now {
 				return false, &awaitingDown{until: flight.LeaseUntil}
 			}
 		}
 		var marker domain.DeliveryMarker
-		err = w.Store.Get(ctx, "deliveryMarkers", domain.DeliveryMarkerID(p.MonitorID, d.ChannelID, p.CycleID), &marker)
+		err = w.Store.Get(
+			ctx,
+			"deliveryMarkers",
+			domain.DeliveryMarkerID(p.MonitorID, d.ChannelID, p.CycleID),
+			&marker,
+		)
 		if errors.Is(err, store.ErrNotFound) {
 			return false, nil
 		}
@@ -86,7 +98,12 @@ func (w *Worker) relevant(ctx context.Context, d store.Delivery, p domain.Notifi
 		var metadata struct {
 			Certificate *domain.CertificateConfig `json:"certificate"`
 		}
-		err = w.Store.Get(ctx, "engineMonitor", p.MonitorID, &metadata)
+		err = w.Store.Get(
+			ctx,
+			"engineMonitor",
+			p.MonitorID,
+			&metadata,
+		)
 		if errors.Is(err, store.ErrNotFound) {
 			return false, nil
 		}

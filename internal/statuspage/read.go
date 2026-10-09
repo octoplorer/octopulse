@@ -13,6 +13,11 @@ import (
 	"github.com/octoplorer/octopulse/internal/store"
 )
 
+const (
+	publicDayMS       int64 = 86400000
+	publicHistoryDays int64 = 90
+)
+
 type Reader struct {
 	// Authenticated draft previews preload hidden history for local display toggles.
 	IncludeHiddenDaily bool
@@ -51,7 +56,16 @@ func list[T any](ctx context.Context, st *store.Store, kind string) ([]T, error)
 func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig) (domain.PublicPage, error) {
 	now := domain.Now()
 	from := now - 86400000
-	result := domain.PublicPage{ID: p.ID, Slug: p.Slug, Config: c, State: "unknown", Groups: []domain.PublicGroup{}, Incidents: []domain.PublicIncident{}, Maintenance: []domain.PublicMaintenance{}, UpdatedAt: now}
+	result := domain.PublicPage{
+		ID:          p.ID,
+		Slug:        p.Slug,
+		Config:      c,
+		State:       "unknown",
+		Groups:      []domain.PublicGroup{},
+		Incidents:   []domain.PublicIncident{},
+		Maintenance: []domain.PublicMaintenance{},
+		UpdatedAt:   now,
+	}
 	maintenance, e := list[domain.Maintenance](ctx, s.Store, "maintenance")
 	if e != nil {
 		return result, e
@@ -89,16 +103,27 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			}
 		}
 	}
+	// Nil distinguishes absent batch readers from empty batch results.
 	var availability map[string]domain.Availability
 	var latency map[string][]domain.LatencyPoint
 	if s.StatsBatch != nil && len(availabilityIDs) > 0 {
-		availability, e = s.StatsBatch(ctx, availabilityIDs, from, now)
+		availability, e = s.StatsBatch(
+			ctx,
+			availabilityIDs,
+			from,
+			now,
+		)
 		if e != nil {
 			return result, e
 		}
 	}
 	if s.LatencyBatch != nil && len(latencyIDs) > 0 {
-		latency, e = s.LatencyBatch(ctx, latencyIDs, from, now)
+		latency, e = s.LatencyBatch(
+			ctx,
+			latencyIDs,
+			from,
+			now,
+		)
 		if e != nil {
 			return result, e
 		}
@@ -109,7 +134,12 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 		if readDaily == nil {
 			readDaily = statistics.New(s.Store).DailyAvailabilityBatch
 		}
-		daily, e = readDaily(ctx, dailyIDs, dailyHistoryStart(now), now)
+		daily, e = readDaily(
+			ctx,
+			dailyIDs,
+			dailyHistoryStart(now),
+			now,
+		)
 		if e != nil {
 			return result, e
 		}
@@ -134,14 +164,31 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			if strings.TrimSpace(name) == "" {
 				name = m.Name
 			}
-			item := domain.PublicMonitor{ID: m.ID, Name: name, Type: m.Type, State: m.State, Paused: !m.Enabled, Availability: domain.Availability{From: from, To: now, UnknownMs: now - from}, Latency: []domain.LatencyPoint{}, DailyAvailability: []domain.Availability{}}
+			item := domain.PublicMonitor{
+				ID:     m.ID,
+				Name:   name,
+				Type:   m.Type,
+				State:  m.State,
+				Paused: !m.Enabled,
+				Availability: domain.Availability{
+					From:      from,
+					To:        now,
+					UnknownMs: now - from,
+				},
+				Latency:           []domain.LatencyPoint{},
+				DailyAvailability: []domain.Availability{},
+			}
 			for _, w := range maintenance {
 				if hasID(w.MonitorIDs, m.ID) && w.StartsAt <= now && now < w.EndsAt {
 					item.Maintenance = true
 				}
 			}
 			if m.Certificate != nil {
-				item.Certificate = &domain.PublicCertificate{State: m.Certificate.State, ExpiresAt: m.Certificate.ExpiresAt, DaysRemaining: m.Certificate.DaysRemaining}
+				item.Certificate = &domain.PublicCertificate{
+					State:         m.Certificate.State,
+					ExpiresAt:     m.Certificate.ExpiresAt,
+					DaysRemaining: m.Certificate.DaysRemaining,
+				}
 				if item.Certificate.State == "" {
 					item.Certificate.State = domain.CertificateCheckFailed
 				}
@@ -154,7 +201,12 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 						return result, store.ErrNotFound
 					}
 				} else if s.Stats != nil {
-					item.Availability, e = s.Stats(ctx, m.ID, from, now)
+					item.Availability, e = s.Stats(
+						ctx,
+						m.ID,
+						from,
+						now,
+					)
 					if e != nil {
 						return result, e
 					}
@@ -174,18 +226,35 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 							return result, store.ErrNotFound
 						}
 					} else if s.Latency != nil {
-						item.Latency, e = s.Latency(ctx, m.ID, from, now)
+						item.Latency, e = s.Latency(
+							ctx,
+							m.ID,
+							from,
+							now,
+						)
 						if e != nil {
 							return result, e
 						}
 					} else {
-						rounds, e := s.Store.ListRounds(ctx, m.ID, from, 96)
+						rounds, e := s.Store.ListRounds(
+							ctx,
+							m.ID,
+							from,
+							96,
+						)
 						if e != nil {
 							return result, e
 						}
 						for i := len(rounds) - 1; i >= 0; i-- {
 							r := rounds[i]
-							item.Latency = append(item.Latency, domain.LatencyPoint{At: r.FinishedAt, LatencyMs: float64(r.LatencyMS), Success: r.Success})
+							item.Latency = append(
+								item.Latency,
+								domain.LatencyPoint{
+									At:        r.FinishedAt,
+									LatencyMs: float64(r.LatencyMS),
+									Success:   r.Success,
+								},
+							)
 						}
 					}
 				}
@@ -202,7 +271,16 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			applies = applies || ids[id]
 		}
 		if applies && w.EndsAt > now && w.StartsAt < now+30*86400000 {
-			result.Maintenance = append(result.Maintenance, domain.PublicMaintenance{ID: w.ID, Name: w.Name, Description: w.Description, StartsAt: w.StartsAt, EndsAt: w.EndsAt})
+			result.Maintenance = append(
+				result.Maintenance,
+				domain.PublicMaintenance{
+					ID:          w.ID,
+					Name:        w.Name,
+					Description: w.Description,
+					StartsAt:    w.StartsAt,
+					EndsAt:      w.EndsAt,
+				},
+			)
 		}
 	}
 	incidents, e := list[domain.Incident](ctx, s.Store, "incidents")
@@ -215,7 +293,19 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 			continue
 		}
 		if incident.Status != "resolved" || len(result.Incidents) < 100 {
-			result.Incidents = append(result.Incidents, domain.PublicIncident{ID: incident.ID, Title: incident.Title, Body: incident.Body, Status: incident.Status, Impact: incident.Impact, Updates: incident.Updates, CreatedAt: incident.CreatedAt, ResolvedAt: incident.ResolvedAt})
+			result.Incidents = append(
+				result.Incidents,
+				domain.PublicIncident{
+					ID:         incident.ID,
+					Title:      incident.Title,
+					Body:       incident.Body,
+					Status:     incident.Status,
+					Impact:     incident.Impact,
+					Updates:    incident.Updates,
+					CreatedAt:  incident.CreatedAt,
+					ResolvedAt: incident.ResolvedAt,
+				},
+			)
 		}
 		if incident.Status != "resolved" {
 			if incident.Impact == "outage" {
@@ -228,7 +318,7 @@ func (s *Reader) Project(ctx context.Context, p domain.Page, c domain.PageConfig
 	return result, nil
 }
 func State(items []domain.PublicMonitor) string {
-	eligible, down, unknown, maintenance := 0, 0, 0, 0
+	var eligible, down, unknown, maintenance int
 	for _, m := range items {
 		if m.Paused || m.Type == domain.MonitorCertificate {
 			continue
@@ -261,9 +351,6 @@ func State(items []domain.PublicMonitor) string {
 		return "operational"
 	}
 }
-
-const publicDayMS int64 = 86400000
-const publicHistoryDays int64 = 90
 
 func dailyHistoryStart(now int64) int64 {
 	return now/publicDayMS*publicDayMS - (publicHistoryDays-1)*publicDayMS

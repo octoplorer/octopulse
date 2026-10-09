@@ -21,7 +21,23 @@ type SessionBody struct {
 }
 
 func (SessionBody) Schema(registry huma.Registry) *huma.Schema {
-	return &huma.Schema{Type: "object", Properties: map[string]*huma.Schema{"user": {AnyOf: []*huma.Schema{registry.Schema(reflect.TypeFor[domain.User](), true, "User"), {Type: "null"}}}, "csrfToken": {Type: "string"}}, Required: []string{"user", "csrfToken"}}
+	return &huma.Schema{
+		Type: "object",
+		Properties: map[string]*huma.Schema{
+			"user": {
+				AnyOf: []*huma.Schema{
+					registry.Schema(reflect.TypeFor[domain.User](), true, "User"),
+					{
+						Type: "null",
+					},
+				},
+			},
+			"csrfToken": {
+				Type: "string",
+			},
+		},
+		Required: []string{"user", "csrfToken"},
+	}
 }
 
 type SessionOutput struct {
@@ -53,191 +69,338 @@ type UserWrite struct {
 
 func (s *Server) createSession(ctx context.Context, t *store.Tx, u domain.User) (*SessionOutput, error) {
 	token := security.Token()
-	sess := domain.Session{ID: security.HashToken(token), UserID: u.ID, CSRFToken: security.Token(), CreatedAt: domain.Now(), ExpiresAt: domain.Now() + sessionLifetime.Milliseconds()}
-	if e := t.Put(ctx, "sessions", sess.ID, sess); e != nil {
+	sess := domain.Session{
+		ID:        security.HashToken(token),
+		UserID:    u.ID,
+		CSRFToken: security.Token(),
+		CreatedAt: domain.Now(),
+		ExpiresAt: domain.Now() + sessionLifetime.Milliseconds(),
+	}
+	if e := t.Put(
+		ctx,
+		"sessions",
+		sess.ID,
+		sess,
+	); e != nil {
 		return nil, e
 	}
-	cookie := http.Cookie{Name: "octopulse_session", Value: token, Path: "/api/v1", HttpOnly: true, Secure: s.Config.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: int(sessionLifetime.Seconds())}
+	cookie := http.Cookie{
+		Name:     "octopulse_session",
+		Value:    token,
+		Path:     "/api/v1",
+		HttpOnly: true,
+		Secure:   s.Config.CookieSecure,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(sessionLifetime.Seconds()),
+	}
 	return &SessionOutput{SetCookie: cookie.String(), Body: SessionBody{User: &u, CSRFToken: sess.CSRFToken}}, nil
 }
 
 func (s *Server) registerIdentity() {
 	s.registerProfile()
-	huma.Register(s.API, huma.Operation{OperationID: "getSetup", Method: "GET", Path: "/api/v1/setup"}, func(ctx context.Context, _ *struct{}) (*Output[SetupStatus], error) {
-		users, e := s.Store.List(ctx, "users")
-		if e != nil {
-			return nil, apiError(ctx, e)
-		}
-		return &Output[SetupStatus]{Body: SetupStatus{Required: len(users) == 0}}, nil
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "createSetup", Method: "POST", Path: "/api/v1/setup"}, func(ctx context.Context, in *SetupInput) (*SessionOutput, error) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		u, e := makeUser(in.Body.Username, in.Body.Username, domain.RoleAdmin, "zh-CN", in.Body.Timezone, true)
-		if e != nil {
-			return nil, huma.Error422UnprocessableEntity(e.Error())
-		}
-		hash, e := security.HashPassword(in.Body.Password)
-		if e != nil {
-			return nil, huma.Error422UnprocessableEntity(e.Error())
-		}
-		var result *SessionOutput
-		e = s.Store.WithTx(ctx, func(t *store.Tx) error {
-			users, e := t.List(ctx, "users")
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "getSetup",
+			Method:      "GET",
+			Path:        "/api/v1/setup",
+		},
+		func(ctx context.Context, _ *struct{}) (*Output[SetupStatus], error) {
+			users, e := s.Store.List(ctx, "users")
 			if e != nil {
-				return e
+				return nil, apiError(ctx, e)
 			}
-			if len(users) != 0 {
-				return huma.Error409Conflict("Setup already completed")
+			return &Output[SetupStatus]{Body: SetupStatus{Required: len(users) == 0}}, nil
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "createSetup",
+			Method:      "POST",
+			Path:        "/api/v1/setup",
+		},
+		func(ctx context.Context, in *SetupInput) (*SessionOutput, error) {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			u, e := makeUser(domain.User{
+				Username: in.Body.Username,
+				Name:     in.Body.Username,
+				Role:     domain.RoleAdmin,
+				Locale:   "zh-CN",
+				Timezone: in.Body.Timezone,
+				Enabled:  true,
+			})
+			if e != nil {
+				return nil, huma.Error422UnprocessableEntity(e.Error())
 			}
-
-			if e = t.Put(ctx, "users", u.ID, domain.UserRecord{User: u, PasswordHash: hash}); e != nil {
-				return e
+			hash, e := security.HashPassword(in.Body.Password)
+			if e != nil {
+				return nil, huma.Error422UnprocessableEntity(e.Error())
 			}
-			settings := domain.DefaultSettings()
-			if in.Body.OrganizationName != "" {
-				settings.OrganizationName = in.Body.OrganizationName
-			}
-			settings.Timezone = u.Timezone
-			if e = t.Put(ctx, "settings", "organization", settings); e != nil {
-				return e
-			}
-			if e = audit(context.WithValue(ctx, contextKey{}, identity{User: u}), t, "setup", "users", u.ID); e != nil {
-				return e
-			}
-			result, e = s.createSession(ctx, t, u)
-			return e
-		})
-		if e != nil {
-			if se, ok := e.(huma.StatusError); ok {
-				return nil, se
-			}
-			return nil, apiError(ctx, e)
-		}
-		return result, nil
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "getSession", Method: "GET", Path: "/api/v1/session"}, func(ctx context.Context, _ *struct{}) (*Output[SessionBody], error) {
-		id := currentIdentity(ctx)
-		body := SessionBody{}
-		if id.User.ID != "" {
-			body.User = &id.User
-			body.CSRFToken = id.Session.CSRFToken
-		}
-		return &Output[SessionBody]{Body: body}, nil
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "createSession", Method: "POST", Path: "/api/v1/session"}, func(ctx context.Context, in *CreateInput[Credentials]) (*SessionOutput, error) {
-		users, e := list[domain.UserRecord](ctx, s.Store, "users")
-		if e != nil {
-			return nil, apiError(ctx, e)
-		}
-		var found domain.UserRecord
-		for _, u := range users {
-			if u.Username == strings.ToLower(strings.TrimSpace(in.Body.Username)) {
-				found = u
-				break
-			}
-		}
-		hash := found.PasswordHash
-		if hash == "" {
-			hash = s.dummyPassword
-		}
-		if !security.CheckPassword(hash, in.Body.Password) || !found.Enabled {
-			return nil, huma.Error401Unauthorized("Invalid credentials")
-		}
-		var out *SessionOutput
-		e = s.Store.WithTx(ctx, func(t *store.Tx) error { var err error; out, err = s.createSession(ctx, t, found.User); return err })
-		return out, apiError(ctx, e)
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "deleteSession", Method: "DELETE", Path: "/api/v1/session"}, func(ctx context.Context, _ *struct{}) (*SessionOutput, error) {
-		id := currentIdentity(ctx)
-		if e := s.Store.Delete(ctx, "sessions", id.Session.ID); e != nil {
-			return nil, apiError(ctx, e)
-		}
-		return &SessionOutput{SetCookie: (&http.Cookie{Name: "octopulse_session", Path: "/api/v1", MaxAge: -1, HttpOnly: true, Secure: s.Config.CookieSecure, SameSite: http.SameSiteStrictMode}).String()}, nil
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "listUsers", Method: "GET", Path: "/api/v1/users"}, func(ctx context.Context, _ *struct{}) (*Output[Items[domain.User]], error) {
-		if CurrentUser(ctx).Role != domain.RoleAdmin {
-			return nil, huma.Error403Forbidden("Administrator permission required")
-		}
-		records, e := list[domain.UserRecord](ctx, s.Store, "users")
-		if e != nil {
-			return nil, apiError(ctx, e)
-		}
-		users := []domain.User{}
-		for _, u := range records {
-			users = append(users, u.User)
-		}
-		return &Output[Items[domain.User]]{Body: Items[domain.User]{Items: users}}, nil
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "createUser", Method: "POST", Path: "/api/v1/users"}, func(ctx context.Context, in *CreateInput[UserWrite]) (*Output[domain.User], error) {
-		return s.saveUser(ctx, "", in.Body)
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "updateUser", Method: "PATCH", Path: "/api/v1/users/{id}"}, func(ctx context.Context, in *WriteInput[UserWrite]) (*Output[domain.User], error) {
-		return s.saveUser(ctx, in.ID, in.Body)
-	})
-	huma.Register(s.API, huma.Operation{OperationID: "deleteUser", Method: "DELETE", Path: "/api/v1/users/{id}"}, func(ctx context.Context, in *IDInput) (*Output[Ack], error) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		e := s.Store.WithTx(ctx, func(t *store.Tx) error {
-			var old domain.UserRecord
-			if e := t.Get(ctx, "users", in.ID, &old); e != nil {
-				return e
-			}
-			if old.Role == domain.RoleAdmin && old.Enabled {
-				records, e := t.List(ctx, "users")
+			var result *SessionOutput
+			e = s.Store.WithTx(ctx, func(t *store.Tx) error {
+				users, e := t.List(ctx, "users")
 				if e != nil {
 					return e
 				}
-				count := 0
-				for _, r := range records {
-					var u domain.UserRecord
-					if e = jsonUser(r, &u); e != nil {
+				if len(users) != 0 {
+					return huma.Error409Conflict("Setup already completed")
+				}
+
+				if e = t.Put(
+					ctx,
+					"users",
+					u.ID,
+					domain.UserRecord{User: u, PasswordHash: hash},
+				); e != nil {
+					return e
+				}
+				settings := domain.DefaultSettings()
+				if in.Body.OrganizationName != "" {
+					settings.OrganizationName = in.Body.OrganizationName
+				}
+				settings.Timezone = u.Timezone
+				if e = t.Put(
+					ctx,
+					"settings",
+					"organization",
+					settings,
+				); e != nil {
+					return e
+				}
+				if e = audit(
+					context.WithValue(ctx, contextKey{}, identity{User: u}),
+					t,
+					"setup",
+					"users",
+					u.ID,
+				); e != nil {
+					return e
+				}
+				result, e = s.createSession(ctx, t, u)
+				return e
+			})
+			if e != nil {
+				if se, ok := e.(huma.StatusError); ok {
+					return nil, se
+				}
+				return nil, apiError(ctx, e)
+			}
+			return result, nil
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "getSession",
+			Method:      "GET",
+			Path:        "/api/v1/session",
+		},
+		func(ctx context.Context, _ *struct{}) (*Output[SessionBody], error) {
+			id := currentIdentity(ctx)
+			var body SessionBody
+			if id.User.ID != "" {
+				body.User = &id.User
+				body.CSRFToken = id.Session.CSRFToken
+			}
+			return &Output[SessionBody]{Body: body}, nil
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "createSession",
+			Method:      "POST",
+			Path:        "/api/v1/session",
+		},
+		func(ctx context.Context, in *CreateInput[Credentials]) (*SessionOutput, error) {
+			users, e := list[domain.UserRecord](ctx, s.Store, "users")
+			if e != nil {
+				return nil, apiError(ctx, e)
+			}
+			var found domain.UserRecord
+			for _, u := range users {
+				if u.Username == strings.ToLower(strings.TrimSpace(in.Body.Username)) {
+					found = u
+					break
+				}
+			}
+			hash := found.PasswordHash
+			if hash == "" {
+				hash = s.dummyPassword
+			}
+			if !security.CheckPassword(hash, in.Body.Password) || !found.Enabled {
+				return nil, huma.Error401Unauthorized("Invalid credentials")
+			}
+			var out *SessionOutput
+			e = s.Store.WithTx(
+				ctx,
+				func(t *store.Tx) error {
+					var err error
+					out, err = s.createSession(ctx, t, found.User)
+					return err
+				},
+			)
+			return out, apiError(ctx, e)
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "deleteSession",
+			Method:      "DELETE",
+			Path:        "/api/v1/session",
+		},
+		func(ctx context.Context, _ *struct{}) (*SessionOutput, error) {
+			id := currentIdentity(ctx)
+			if e := s.Store.Delete(ctx, "sessions", id.Session.ID); e != nil {
+				return nil, apiError(ctx, e)
+			}
+			return &SessionOutput{
+				SetCookie: (&http.Cookie{
+					Name:     "octopulse_session",
+					Path:     "/api/v1",
+					MaxAge:   -1,
+					HttpOnly: true,
+					Secure:   s.Config.CookieSecure,
+					SameSite: http.SameSiteStrictMode,
+				}).String(),
+			}, nil
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "listUsers",
+			Method:      "GET",
+			Path:        "/api/v1/users",
+		},
+		func(ctx context.Context, _ *struct{}) (*Output[Items[domain.User]], error) {
+			if CurrentUser(ctx).Role != domain.RoleAdmin {
+				return nil, huma.Error403Forbidden("Administrator permission required")
+			}
+			records, e := list[domain.UserRecord](ctx, s.Store, "users")
+			if e != nil {
+				return nil, apiError(ctx, e)
+			}
+			users := []domain.User{}
+			for _, u := range records {
+				users = append(users, u.User)
+			}
+			return &Output[Items[domain.User]]{Body: Items[domain.User]{Items: users}}, nil
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "createUser",
+			Method:      "POST",
+			Path:        "/api/v1/users",
+		},
+		func(ctx context.Context, in *CreateInput[UserWrite]) (*Output[domain.User], error) {
+			return s.saveUser(ctx, "", in.Body)
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "updateUser",
+			Method:      "PATCH",
+			Path:        "/api/v1/users/{id}",
+		},
+		func(ctx context.Context, in *WriteInput[UserWrite]) (*Output[domain.User], error) {
+			return s.saveUser(ctx, in.ID, in.Body)
+		},
+	)
+	huma.Register(
+		s.API,
+		huma.Operation{
+			OperationID: "deleteUser",
+			Method:      "DELETE",
+			Path:        "/api/v1/users/{id}",
+		},
+		func(ctx context.Context, in *IDInput) (*Output[Ack], error) {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			e := s.Store.WithTx(ctx, func(t *store.Tx) error {
+				var old domain.UserRecord
+				if e := t.Get(
+					ctx,
+					"users",
+					in.ID,
+					&old,
+				); e != nil {
+					return e
+				}
+				if old.Role == domain.RoleAdmin && old.Enabled {
+					records, e := t.List(ctx, "users")
+					if e != nil {
 						return e
 					}
-					if u.Role == domain.RoleAdmin && u.Enabled {
-						count++
+					var count int
+					for _, r := range records {
+						var u domain.UserRecord
+						if e = jsonUser(r, &u); e != nil {
+							return e
+						}
+						if u.Role == domain.RoleAdmin && u.Enabled {
+							count++
+						}
+					}
+					if count <= 1 {
+						return huma.Error409Conflict("Cannot delete the last enabled administrator")
 					}
 				}
-				if count <= 1 {
-					return huma.Error409Conflict("Cannot delete the last enabled administrator")
+				if e := t.Delete(ctx, "users", in.ID); e != nil {
+					return e
 				}
+				return audit(
+					ctx,
+					t,
+					"delete",
+					"users",
+					in.ID,
+				)
+			})
+			if e != nil {
+				return nil, statusOrAPIError(ctx, e)
 			}
-			if e := t.Delete(ctx, "users", in.ID); e != nil {
-				return e
-			}
-			return audit(ctx, t, "delete", "users", in.ID)
-		})
-		if e != nil {
-			return nil, statusOrAPIError(ctx, e)
-		}
-		return &Output[Ack]{Body: Ack{true}}, nil
-	})
+			return &Output[Ack]{Body: Ack{OK: true}}, nil
+		},
+	)
 }
 
-func makeUser(username, name string, role domain.Role, locale, timezone string, enabled bool) (domain.User, error) {
-	username = strings.ToLower(strings.TrimSpace(username))
-	if username == "" || len(username) > 100 || strings.ContainsAny(username, " \t\n/") {
+func makeUser(u domain.User) (domain.User, error) {
+	u.Username = strings.ToLower(strings.TrimSpace(u.Username))
+	validUsernameLength := len(u.Username) > 0 && len(u.Username) <= 100
+	if !validUsernameLength || strings.ContainsAny(u.Username, " \t\n/") {
 		return domain.User{}, errors.New("invalid username")
 	}
-	if role == "" {
-		role = domain.RoleOperator
+	if u.Role == "" {
+		u.Role = domain.RoleOperator
 	}
-	if role != domain.RoleAdmin && role != domain.RoleOperator && role != domain.RoleViewer {
+	switch u.Role {
+	case domain.RoleAdmin, domain.RoleOperator, domain.RoleViewer:
+	default:
 		return domain.User{}, errors.New("invalid role")
 	}
-	if locale == "" {
-		locale = "zh-CN"
+	if u.Locale == "" {
+		u.Locale = "zh-CN"
 	}
-	if locale != "zh-CN" && locale != "en" {
+	if u.Locale != "zh-CN" && u.Locale != "en" {
 		return domain.User{}, errors.New("invalid locale")
 	}
-	if timezone == "" {
-		timezone = "UTC"
+	if u.Timezone == "" {
+		u.Timezone = "UTC"
 	}
-	if _, e := time.LoadLocation(timezone); e != nil {
+	if _, e := time.LoadLocation(u.Timezone); e != nil {
 		return domain.User{}, errors.New("invalid timezone")
 	}
-	return domain.User{ID: domain.ID(), Username: username, Name: name, Role: role, Locale: locale, Timezone: timezone, Enabled: enabled, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}, nil
+	u.ID = domain.ID()
+	u.CreatedAt = domain.Now()
+	u.UpdatedAt = domain.Now()
+	return u, nil
 }
 func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output[domain.User], error) {
 	s.mu.Lock()
@@ -246,13 +409,25 @@ func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output
 	if in.Enabled != nil {
 		enabled = *in.Enabled
 	}
-	u, e := makeUser(in.Username, in.Name, in.Role, in.Locale, in.Timezone, enabled)
+	u, e := makeUser(domain.User{
+		Username: in.Username,
+		Name:     in.Name,
+		Role:     in.Role,
+		Locale:   in.Locale,
+		Timezone: in.Timezone,
+		Enabled:  enabled,
+	})
 	if e != nil {
 		return nil, huma.Error422UnprocessableEntity(e.Error())
 	}
 	var old domain.UserRecord
 	if id != "" {
-		if e = s.Store.Get(ctx, "users", id, &old); e != nil {
+		if e = s.Store.Get(
+			ctx,
+			"users",
+			id,
+			&old,
+		); e != nil {
 			return nil, apiError(ctx, e)
 		}
 		u.ID = id
@@ -270,7 +445,7 @@ func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output
 		if e != nil {
 			return e
 		}
-		admins := 0
+		var admins int
 		for _, r := range records {
 			var record domain.UserRecord
 			if e = jsonUser(r, &record); e != nil {
@@ -303,10 +478,21 @@ func (s *Server) saveUser(ctx context.Context, id string, in UserWrite) (*Output
 				}
 			}
 		}
-		if e = t.Put(ctx, "users", u.ID, domain.UserRecord{User: u, PasswordHash: hash}); e != nil {
+		if e = t.Put(
+			ctx,
+			"users",
+			u.ID,
+			domain.UserRecord{User: u, PasswordHash: hash},
+		); e != nil {
 			return e
 		}
-		return audit(ctx, t, "save", "users", u.ID)
+		return audit(
+			ctx,
+			t,
+			"save",
+			"users",
+			u.ID,
+		)
 	})
 	if e != nil {
 		return nil, statusOrAPIError(ctx, e)

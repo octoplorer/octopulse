@@ -52,7 +52,12 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	task, err := e.acceptRound(ctx, record, m, true)
+	task, err := e.acceptRound(
+		ctx,
+		record,
+		m,
+		true,
+	)
 	if err != nil {
 		return err
 	}
@@ -75,7 +80,12 @@ func (e *Engine) Check(ctx context.Context, id string) error {
 	}
 }
 
-func (e *Engine) acceptRound(ctx context.Context, record store.Monitor, m domain.Monitor, manual bool) (*checkTask, error) {
+func (e *Engine) acceptRound(
+	ctx context.Context,
+	record store.Monitor,
+	m domain.Monitor,
+	manual bool,
+) (*checkTask, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -95,7 +105,16 @@ func (e *Engine) acceptRound(ctx context.Context, record store.Monitor, m domain
 		return nil, ErrBusy
 	}
 	roundContext, cancel := context.WithTimeout(lifetime, time.Duration(m.IntervalSeconds)*time.Second)
-	task := &checkTask{lifetime: lifetime, ctx: roundContext, cancel: cancel, record: record, monitor: m, epoch: e.schedules[m.ID].evaluationEpoch, managed: e.started, acceptedAt: time.Now()}
+	task := &checkTask{
+		lifetime:   lifetime,
+		ctx:        roundContext,
+		cancel:     cancel,
+		record:     record,
+		monitor:    m,
+		epoch:      e.schedules[m.ID].evaluationEpoch,
+		managed:    e.started,
+		acceptedAt: time.Now(),
+	}
 	if manual && task.managed {
 		task.result = make(chan error, 1)
 		task.abandoned = make(chan struct{})
@@ -177,7 +196,13 @@ func (e *Engine) worker() {
 		if e.OnRoundStart != nil && task.ctx.Err() == nil {
 			e.OnRoundStart(time.Since(task.acceptedAt))
 		}
-		err := e.checkRound(task.lifetime, task.ctx, task.record, task.monitor, task.epoch)
+		err := e.checkRound(
+			task.lifetime,
+			task.ctx,
+			task.record,
+			task.monitor,
+			task.epoch,
+		)
 		e.mu.Lock()
 		e.active--
 		e.mu.Unlock()
@@ -201,6 +226,16 @@ func (e *Engine) runStandalone(task *checkTask) error {
 	e.mu.Lock()
 	e.active++
 	e.mu.Unlock()
-	defer func() { e.mu.Lock(); e.active--; e.mu.Unlock() }()
-	return e.checkRound(task.lifetime, task.ctx, task.record, task.monitor, task.epoch)
+	defer func() {
+		e.mu.Lock()
+		e.active--
+		e.mu.Unlock()
+	}()
+	return e.checkRound(
+		task.lifetime,
+		task.ctx,
+		task.record,
+		task.monitor,
+		task.epoch,
+	)
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -75,7 +76,14 @@ func (s *Store) put(ctx context.Context, q dbtx, kind, id string, value any) err
 	if s.driver == "sqlite" {
 		err = sqlitequery.New(q).PutDocument(ctx, sqlitequery.PutDocumentParams{Kind: kind, ID: id, Payload: string(payload)})
 	} else {
-		err = postgresquery.New(q).PutDocument(ctx, postgresquery.PutDocumentParams{Kind: kind, ID: id, Payload: string(payload)})
+		err = postgresquery.New(q).PutDocument(
+			ctx,
+			postgresquery.PutDocumentParams{
+				Kind:    kind,
+				ID:      id,
+				Payload: string(payload),
+			},
+		)
 	}
 	return mapError(err)
 }
@@ -107,11 +115,12 @@ func (s *Store) sql(query string) string {
 		return query
 	}
 	var b strings.Builder
-	n := 0
+	var n int
 	for _, r := range query {
 		if r == '?' {
 			n++
-			fmt.Fprintf(&b, "$%d", n)
+			b.WriteByte('$')
+			b.WriteString(strconv.Itoa(n))
 		} else {
 			b.WriteRune(r)
 		}

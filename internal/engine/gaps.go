@@ -11,8 +11,17 @@ import (
 // A live scheduler cannot extend a known state forever after persistence or
 // scheduling failures. The next cadence plus one full round is the latest
 // expected result deadline. Past it, record an explicit collection gap.
-func (e *Engine) expireCollection(ctx context.Context, record store.Monitor, m domain.Monitor, runtime store.Runtime, now int64) (store.Runtime, error) {
-	if !m.Enabled || m.Type == domain.MonitorHeartbeat || m.Type == domain.MonitorCertificate || runtime.LastCollectedAt == 0 || (runtime.State != domain.StateUp && runtime.State != domain.StateDown) {
+func (e *Engine) expireCollection(
+	ctx context.Context,
+	record store.Monitor,
+	m domain.Monitor,
+	runtime store.Runtime,
+	now int64,
+) (store.Runtime, error) {
+	passiveMonitor := m.Type == domain.MonitorHeartbeat || m.Type == domain.MonitorCertificate
+	knownState := runtime.State == domain.StateUp || runtime.State == domain.StateDown
+	hasCollection := runtime.LastCollectedAt != 0 && knownState
+	if !m.Enabled || passiveMonitor || !hasCollection {
 		return runtime, nil
 	}
 	interval := int64(m.IntervalSeconds) * 1000
@@ -30,7 +39,9 @@ func (e *Engine) expireCollection(ctx context.Context, record store.Monitor, m d
 		if err != nil {
 			return err
 		}
-		if !current.Enabled || current.ConfigVersion != record.ConfigVersion || latest.LastCollectedAt != runtime.LastCollectedAt || latest.Generation != runtime.Generation {
+		configurationChanged := current.ConfigVersion != record.ConfigVersion
+		runtimeChanged := latest.LastCollectedAt != runtime.LastCollectedAt || latest.Generation != runtime.Generation
+		if !current.Enabled || configurationChanged || runtimeChanged {
 			next = latest
 			return nil
 		}
@@ -46,11 +57,29 @@ func (e *Engine) expireCollection(ctx context.Context, record store.Monitor, m d
 		if err = tx.CompareRuntime(ctx, latest, next); err != nil {
 			return err
 		}
-		if err = tx.ReplaceInterval(ctx, store.Interval{ID: domain.ID(), MonitorID: m.ID, State: domain.StateUnknown, StartedAt: boundary}); err != nil {
+		if err = tx.ReplaceInterval(
+			ctx,
+			store.Interval{
+				ID:        domain.ID(),
+				MonitorID: m.ID,
+				State:     domain.StateUnknown,
+				StartedAt: boundary,
+			},
+		); err != nil {
 			return err
 		}
 		payload, _ := json.Marshal(map[string]int64{"since": boundary, "observedAt": now})
-		return tx.PutEvent(ctx, store.Event{ID: domain.ID(), MonitorID: m.ID, Generation: next.Generation, Kind: "collection_gap", CreatedAt: now, Payload: payload})
+		return tx.PutEvent(
+			ctx,
+			store.Event{
+				ID:         domain.ID(),
+				MonitorID:  m.ID,
+				Generation: next.Generation,
+				Kind:       "collection_gap",
+				CreatedAt:  now,
+				Payload:    payload,
+			},
+		)
 	})
 	return next, err
 }

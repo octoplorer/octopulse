@@ -24,19 +24,17 @@ type Write struct {
 type ValidationError struct{ Message string }
 
 func (e *ValidationError) Error() string { return e.Message }
-func invalid(message string) error       { return &ValidationError{message} }
+func invalid(message string) error       { return &ValidationError{Message: message} }
 
 func (s *Service) Save(ctx context.Context, id string, in Write, actor domain.User) (domain.Monitor, error) {
 	m := in.Monitor
 	var previous domain.Monitor
 	if id != "" {
-		var e error
-		var record store.Monitor
-		record, e = s.Store.GetMonitor(ctx, id)
-		if e == nil {
-			e = json.Unmarshal(record.ConfigJSON, &previous)
-		}
+		record, e := s.Store.GetMonitor(ctx, id)
 		if e != nil {
+			return domain.Monitor{}, e
+		}
+		if e := json.Unmarshal(record.ConfigJSON, &previous); e != nil {
 			return domain.Monitor{}, e
 		}
 		m.ID = id
@@ -50,26 +48,22 @@ func (s *Service) Save(ctx context.Context, id string, in Write, actor domain.Us
 		m.CreatedAt = domain.Now()
 		m.ConfigVersion = 1
 	}
+	m.Enabled = previous.Enabled
+	m.Retries = previous.Retries
+	m.NotifyRecovery = previous.NotifyRecovery
+	if id == "" {
+		m.Enabled = true
+		m.Retries = 2
+		m.NotifyRecovery = true
+	}
 	if in.Enabled != nil {
 		m.Enabled = *in.Enabled
-	} else if id == "" {
-		m.Enabled = true
-	} else {
-		m.Enabled = previous.Enabled
 	}
 	if in.Retries != nil {
 		m.Retries = *in.Retries
-	} else if id == "" {
-		m.Retries = 2
-	} else {
-		m.Retries = previous.Retries
 	}
 	if in.NotifyRecovery != nil {
 		m.NotifyRecovery = *in.NotifyRecovery
-	} else if id == "" {
-		m.NotifyRecovery = true
-	} else {
-		m.NotifyRecovery = previous.NotifyRecovery
 	}
 	m.State = domain.StateUnknown
 	m.FailureCount = 0
@@ -106,7 +100,12 @@ func (s *Service) Save(ctx context.Context, id string, in Write, actor domain.Us
 		}
 		for _, ref := range m.SecretReferences() {
 			var v domain.SecretRecord
-			if e := t.Get(ctx, "secrets", ref, &v); e != nil {
+			if e := t.Get(
+				ctx,
+				"secrets",
+				ref,
+				&v,
+			); e != nil {
 				if errors.Is(e, store.ErrNotFound) {
 					return invalid("A referenced secret is unavailable")
 				}
@@ -115,7 +114,12 @@ func (s *Service) Save(ctx context.Context, id string, in Write, actor domain.Us
 		}
 		for _, channelID := range m.NotificationChannelIDs {
 			var v domain.Channel
-			if e := t.Get(ctx, "channels", channelID, &v); e != nil {
+			if e := t.Get(
+				ctx,
+				"channels",
+				channelID,
+				&v,
+			); e != nil {
 				if errors.Is(e, store.ErrNotFound) {
 					return invalid("A notification channel is unavailable")
 				}
@@ -126,15 +130,41 @@ func (s *Service) Save(ctx context.Context, id string, in Write, actor domain.Us
 		if e != nil {
 			return e
 		}
-		row := store.Monitor{ID: m.ID, ConfigVersion: m.ConfigVersion, Generation: generation, Kind: m.Type, Enabled: m.Enabled, IntervalMS: int64(m.IntervalSeconds) * 1000, ConfigJSON: b}
+		row := store.Monitor{
+			ID:            m.ID,
+			ConfigVersion: m.ConfigVersion,
+			Generation:    generation,
+			Kind:          m.Type,
+			Enabled:       m.Enabled,
+			IntervalMS:    int64(m.IntervalSeconds) * 1000,
+			ConfigJSON:    b,
+		}
 		if e = t.PutMonitor(ctx, row); e != nil {
 			return e
 		}
-		if e = t.Put(ctx, "monitors", m.ID, m); e != nil {
+		if e = t.Put(
+			ctx,
+			"monitors",
+			m.ID,
+			m,
+		); e != nil {
 			return e
 		}
-		a := domain.Audit{ID: domain.ID(), UserID: actor.ID, Username: actor.Username, Action: "save", ResourceType: "monitors", ResourceID: m.ID, CreatedAt: domain.Now()}
-		return t.Put(ctx, "audit", a.ID, a)
+		a := domain.Audit{
+			ID:           domain.ID(),
+			UserID:       actor.ID,
+			Username:     actor.Username,
+			Action:       "save",
+			ResourceType: "monitors",
+			ResourceID:   m.ID,
+			CreatedAt:    domain.Now(),
+		}
+		return t.Put(
+			ctx,
+			"audit",
+			a.ID,
+			a,
+		)
 	})
 	if e != nil {
 		return domain.Monitor{}, e

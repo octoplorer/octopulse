@@ -16,14 +16,26 @@ import (
 func TestMonitorCollectionsAcrossPersistence(t *testing.T) {
 	s, ts, c := testServer(t)
 	csrf := bootstrap(t, c, ts.URL)
-	status, body := request(t, c, "POST", ts.URL+"/api/v1/pages", csrf, domain.Page{
-		Name: "Invalid collection", Slug: "invalid",
-		Draft: domain.PageConfig{Title: "Status", BrandColor: "#008877", ColorScheme: "system", Links: []domain.Link{}},
-	})
+	status, body := request(
+		t,
+		c,
+		"POST",
+		ts.URL+"/api/v1/pages",
+		csrf,
+		domain.Page{
+			Name: "Invalid collection", Slug: "invalid",
+			Draft: domain.PageConfig{Title: "Status", BrandColor: "#008877", ColorScheme: "system", Links: []domain.Link{}},
+		},
+	)
 	if status != 422 || !bytes.Contains(body, []byte("body.draft.groups")) {
 		t.Fatalf("required null collection accepted: %d %s", status, body)
 	}
-	m := createTestMonitor(t, c, ts.URL, csrf)
+	m := createTestMonitor(
+		t,
+		c,
+		ts.URL,
+		csrf,
+	)
 	if m.Tags == nil || m.NotificationChannelIDs == nil || m.HTTP.Headers == nil {
 		t.Fatalf("creation returned null collections: %+v", m)
 	}
@@ -49,7 +61,14 @@ func TestMonitorCollectionsAcrossPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, path := range []string{"/api/v1/monitors/" + m.ID, "/api/v1/monitors"} {
-		status, body := request(t, c, "GET", ts.URL+path, "", nil)
+		status, body := request(
+			t,
+			c,
+			"GET",
+			ts.URL+path,
+			"",
+			nil,
+		)
 		if status != 200 {
 			t.Fatalf("read monitor: %d %s", status, body)
 		}
@@ -70,7 +89,12 @@ func TestMonitorCollectionsAcrossPersistence(t *testing.T) {
 				item = item.(map[string]any)[key]
 			}
 			if array, ok := item.([]any); !ok || len(array) != 0 {
-				t.Fatalf("%s %v must be an empty array, got %#v", path, keys, item)
+				t.Fatalf(
+					"%s %v must be an empty array, got %#v",
+					path,
+					keys,
+					item,
+				)
 			}
 		}
 	}
@@ -116,7 +140,28 @@ func TestAPIJSONPreservesNullableValues(t *testing.T) {
 		for _, entry := range []struct {
 			object map[string]any
 			key    string
-		}{{stats, "uptime"}, {stats, "coverage"}, {got, "rawNull"}, {got, "rawNil"}, {got, "metadata"}} {
+		}{
+			{
+				object: stats,
+				key:    "uptime",
+			},
+			{
+				object: stats,
+				key:    "coverage",
+			},
+			{
+				object: got,
+				key:    "rawNull",
+			},
+			{
+				object: got,
+				key:    "rawNil",
+			},
+			{
+				object: got,
+				key:    "metadata",
+			},
+		} {
 			if item, present := entry.object[entry.key]; !present || item != nil {
 				t.Fatalf("meaningful null value %s changed: %s", entry.key, body.Bytes())
 			}

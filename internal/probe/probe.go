@@ -144,7 +144,10 @@ func (x *execution) safeError(ctx context.Context, err error) string {
 	return message
 }
 
-func fingerprint(der []byte) string { sum := sha256.Sum256(der); return hex.EncodeToString(sum[:]) }
+func fingerprint(der []byte) string {
+	sum := sha256.Sum256(der)
+	return hex.EncodeToString(sum[:])
+}
 func assertionError(kind string, index int) error {
 	return fmt.Errorf("%s assertion %d failed", kind, index+1)
 }

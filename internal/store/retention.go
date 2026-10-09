@@ -19,7 +19,13 @@ func (s *Store) DocumentPage(ctx context.Context, kind, afterID string, limit in
 	if limit <= 0 || limit > 1000 {
 		return nil, fmt.Errorf("document page limit must be between 1 and 1000")
 	}
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT id,payload FROM documents WHERE kind=? AND id>? ORDER BY id LIMIT ?`), kind, afterID, limit)
+	rows, err := s.read.QueryContext(
+		ctx,
+		s.sql(`SELECT id,payload FROM documents WHERE kind=? AND id>? ORDER BY id LIMIT ?`),
+		kind,
+		afterID,
+		limit,
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -48,7 +54,13 @@ func (s *Store) DeleteDocumentsIfUnchanged(ctx context.Context, kind string, doc
 	}
 	return s.WithTx(ctx, func(tx *Tx) error {
 		for _, document := range documents {
-			if _, err := tx.tx.ExecContext(ctx, s.sql(`DELETE FROM documents WHERE kind=? AND id=? AND payload=?`), kind, document.ID, string(document.Payload)); err != nil {
+			if _, err := tx.tx.ExecContext(
+				ctx,
+				s.sql(`DELETE FROM documents WHERE kind=? AND id=? AND payload=?`),
+				kind,
+				document.ID,
+				string(document.Payload),
+			); err != nil {
 				return mapError(err)
 			}
 		}
@@ -65,26 +77,38 @@ func (s *Store) PruneOperationHistory(ctx context.Context, before int64, batch i
 		return fmt.Errorf("history cleanup requires a positive cutoff and batch between 1 and 1000")
 	}
 	if err := s.WithTx(ctx, func(tx *Tx) error {
-		_, err := tx.tx.ExecContext(ctx, s.sql(`DELETE FROM deliveries WHERE id IN (
+		_, err := tx.tx.ExecContext(
+			ctx,
+			s.sql(`DELETE FROM deliveries WHERE id IN (
 			SELECT d.id FROM deliveries d JOIN events e ON e.id=d.event_id
 			WHERE d.state IN ('sent','failed','cancelled') AND d.due_at<? AND e.created_at<?
 			AND NOT EXISTS (SELECT 1 FROM deliveries active WHERE active.event_id=e.id AND active.state IN ('pending','sending'))
 			ORDER BY d.due_at,d.id LIMIT ?
-		) AND state IN ('sent','failed','cancelled')`), before, before, batch)
+		) AND state IN ('sent','failed','cancelled')`),
+			before,
+			before,
+			batch,
+		)
 		return mapError(err)
 	}); err != nil {
 		return err
 	}
 	return s.WithTx(ctx, func(tx *Tx) error {
-		query := `SELECT e.id FROM events e WHERE e.created_at<? AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.event_id=e.id) ORDER BY e.created_at,e.id LIMIT ?`
+		query := `SELECT e.id FROM events e WHERE e.created_at<? AND NOT EXISTS (SELECT 1 FROM deliveries d ` +
+			`WHERE d.event_id=e.id) ORDER BY e.created_at,e.id LIMIT ?`
 		if s.driver == "postgres" {
 			query += ` FOR UPDATE OF e SKIP LOCKED`
 		}
-		rows, err := tx.tx.QueryContext(ctx, s.sql(query), before, batch)
+		rows, err := tx.tx.QueryContext(
+			ctx,
+			s.sql(query),
+			before,
+			batch,
+		)
 		if err != nil {
 			return mapError(err)
 		}
-		var ids []string
+		ids := make([]string, 0, batch)
 		for rows.Next() {
 			var id string
 			if err := rows.Scan(&id); err != nil {
@@ -102,7 +126,13 @@ func (s *Store) PruneOperationHistory(ctx context.Context, before int64, batch i
 			// A fresh statement after locking rechecks references committed while
 			// the candidate query ran. The lock blocks subsequent FK inserts, so
 			// ON DELETE CASCADE cannot remove a newly queued delivery.
-			if _, err := tx.tx.ExecContext(ctx, s.sql(`DELETE FROM events WHERE id=? AND created_at<? AND NOT EXISTS (SELECT 1 FROM deliveries WHERE event_id=?)`), id, before, id); err != nil {
+			if _, err := tx.tx.ExecContext(
+				ctx,
+				s.sql(`DELETE FROM events WHERE id=? AND created_at<? AND NOT EXISTS (SELECT 1 FROM deliveries WHERE event_id=?)`),
+				id,
+				before,
+				id,
+			); err != nil {
 				return mapError(err)
 			}
 		}

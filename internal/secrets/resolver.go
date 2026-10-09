@@ -24,7 +24,12 @@ func (r *Resolver) ResolveSecret(ctx context.Context, id string) (string, error)
 		return "", errors.New("secret resolver is unavailable")
 	}
 	var record domain.SecretRecord
-	if err := r.store.Get(ctx, "secrets", id, &record); err != nil {
+	if err := r.store.Get(
+		ctx,
+		"secrets",
+		id,
+		&record,
+	); err != nil {
 		return "", errors.New("secret reference is unavailable")
 	}
 	return r.vault.Decrypt(id, record.Ciphertext)

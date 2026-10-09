@@ -15,7 +15,10 @@ func (s *Service) project(snapshot store.MonitorSnapshot) (domain.Monitor, error
 		return m, err
 	}
 	if rt := snapshot.Runtime; rt != nil && rt.ConfigVersion == row.ConfigVersion && rt.Generation == row.Generation {
-		m.State, m.FailureCount, m.SuccessCount, m.LastCheckedAt = rt.State, int(rt.Failures), int(rt.Successes), rt.LastCollectedAt
+		m.State = rt.State
+		m.FailureCount = int(rt.Failures)
+		m.SuccessCount = int(rt.Successes)
+		m.LastCheckedAt = rt.LastCollectedAt
 		if m.Heartbeat != nil {
 			m.Heartbeat.LastReceivedAt = rt.HeartbeatAt
 		}
@@ -35,7 +38,10 @@ func (s *Service) project(snapshot store.MonitorSnapshot) (domain.Monitor, error
 				m.Heartbeat.LastSuccess, m.Heartbeat.Description = metadata.HeartbeatSuccess, metadata.HeartbeatDescription
 			}
 			if m.Certificate != nil && metadata.Certificate != nil {
-				m.Certificate.State, m.Certificate.ExpiresAt, m.Certificate.Fingerprint, m.Certificate.DaysRemaining = metadata.Certificate.State, metadata.Certificate.ExpiresAt, metadata.Certificate.Fingerprint, metadata.Certificate.DaysRemaining
+				m.Certificate.State = metadata.Certificate.State
+				m.Certificate.ExpiresAt = metadata.Certificate.ExpiresAt
+				m.Certificate.Fingerprint = metadata.Certificate.Fingerprint
+				m.Certificate.DaysRemaining = metadata.Certificate.DaysRemaining
 			}
 		}
 	}

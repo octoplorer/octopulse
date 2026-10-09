@@ -55,7 +55,12 @@ func (s *Service) window(from, to int64) (int64, int64, error) {
 }
 
 func (s *Service) Availability(ctx context.Context, id string, from, to int64) (domain.Availability, error) {
-	results, err := s.AvailabilityBatch(ctx, []string{id}, from, to)
+	results, err := s.AvailabilityBatch(
+		ctx,
+		[]string{id},
+		from,
+		to,
+	)
 	if err != nil {
 		return domain.Availability{}, err
 	}
@@ -68,7 +73,11 @@ func (s *Service) Availability(ctx context.Context, id string, from, to int64) (
 
 // AvailabilityBatch calculates a common window from one database snapshot.
 // Unknown IDs are omitted; an empty request returns an empty map.
-func (s *Service) AvailabilityBatch(ctx context.Context, ids []string, from, to int64) (map[string]domain.Availability, error) {
+func (s *Service) AvailabilityBatch(
+	ctx context.Context,
+	ids []string,
+	from, to int64,
+) (map[string]domain.Availability, error) {
 	from, to, err := s.window(from, to)
 	if err != nil {
 		return nil, err
@@ -77,10 +86,17 @@ func (s *Service) AvailabilityBatch(ctx context.Context, ids []string, from, to 
 	if len(ids) == 0 {
 		return results, nil
 	}
-	snapshots, err := s.Store.ReadStatisticsBatch(ctx, ids, from, to, 0)
+	snapshots, err := s.Store.ReadStatisticsBatch(
+		ctx,
+		ids,
+		from,
+		to,
+		0,
+	)
 	if err != nil {
 		return nil, err
 	}
+	// Nil marks policies that have not yet been decoded from this snapshot.
 	var maintenance map[string][]span
 	for id, snapshot := range snapshots {
 		if snapshot.Monitor.Kind == domain.MonitorCertificate {
@@ -98,7 +114,11 @@ func (s *Service) AvailabilityBatch(ctx context.Context, ids []string, from, to 
 // DailyAvailabilityBatch partitions a common window at UTC midnight boundaries.
 // Each monitor's days use one immutable snapshot, including maintenance policies.
 // Unknown IDs are omitted; certificate monitors have unknown-only daily buckets.
-func (s *Service) DailyAvailabilityBatch(ctx context.Context, ids []string, from, to int64) (map[string][]domain.Availability, error) {
+func (s *Service) DailyAvailabilityBatch(
+	ctx context.Context,
+	ids []string,
+	from, to int64,
+) (map[string][]domain.Availability, error) {
 	from, to, err := s.window(from, to)
 	if err != nil {
 		return nil, err
@@ -107,16 +127,23 @@ func (s *Service) DailyAvailabilityBatch(ctx context.Context, ids []string, from
 	if len(ids) == 0 {
 		return results, nil
 	}
-	snapshots, err := s.Store.ReadStatisticsBatch(ctx, ids, from, to, 0)
+	snapshots, err := s.Store.ReadStatisticsBatch(
+		ctx,
+		ids,
+		from,
+		to,
+		0,
+	)
 	if err != nil {
 		return nil, err
 	}
 	days := make([]span, 0, (to-from)/dayMS+2)
 	for start := from; start < to; {
 		end := min(floor(start, dayMS)+dayMS, to)
-		days = append(days, span{start, end})
+		days = append(days, span{from: start, to: end})
 		start = end
 	}
+	// Nil marks policies that have not yet been decoded from this snapshot.
 	var maintenance map[string][]span
 	for id, snapshot := range snapshots {
 		buckets := make([]domain.Availability, 0, len(days))
@@ -140,7 +167,12 @@ func (s *Service) DailyAvailabilityBatch(ctx context.Context, ids []string, from
 
 func (s *Service) retention(ctx context.Context) (domain.Retention, error) {
 	settings := domain.DefaultSettings()
-	err := s.Store.Get(ctx, "settings", "organization", &settings)
+	err := s.Store.Get(
+		ctx,
+		"settings",
+		"organization",
+		&settings,
+	)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return domain.Retention{}, err
 	}
@@ -161,7 +193,12 @@ func (s *Service) retention(ctx context.Context) (domain.Retention, error) {
 }
 
 func (s *Service) Latency(ctx context.Context, id string, from, to int64) ([]domain.LatencyPoint, error) {
-	results, err := s.LatencyBatch(ctx, []string{id}, from, to)
+	results, err := s.LatencyBatch(
+		ctx,
+		[]string{id},
+		from,
+		to,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +211,11 @@ func (s *Service) Latency(ctx context.Context, id string, from, to int64) ([]dom
 
 // LatencyBatch reads retention settings once and all requested series together.
 // This read snapshot is independent of an AvailabilityBatch call.
-func (s *Service) LatencyBatch(ctx context.Context, ids []string, from, to int64) (map[string][]domain.LatencyPoint, error) {
+func (s *Service) LatencyBatch(
+	ctx context.Context,
+	ids []string,
+	from, to int64,
+) (map[string][]domain.LatencyPoint, error) {
 	from, to, err := s.window(from, to)
 	if err != nil {
 		return nil, err
@@ -193,12 +234,24 @@ func (s *Service) LatencyBatch(ctx context.Context, ids []string, from, to int64
 		width = hourMS
 	}
 	rawFrom := max(from, now-int64(retention.RoundDays)*dayMS)
-	snapshots, err := s.Store.ReadLatencyBatch(ctx, ids, from, to, rawFrom, width)
+	snapshots, err := s.Store.ReadLatencyBatch(
+		ctx,
+		ids,
+		from,
+		to,
+		rawFrom,
+		width,
+	)
 	if err != nil {
 		return nil, err
 	}
 	for id, snapshot := range snapshots {
-		results[id] = latencyPoints(snapshot, from, to, rawFrom)
+		results[id] = latencyPoints(
+			snapshot,
+			from,
+			to,
+			rawFrom,
+		)
 	}
 	return results, nil
 }
@@ -211,7 +264,11 @@ func latencyPoints(snapshot store.LatencySnapshot, from, to, rawFrom int64) []do
 		if bucket.RoundCount == 0 {
 			continue
 		}
-		points[bucket.BucketAt] = domain.LatencyPoint{At: bucket.BucketAt, LatencyMs: float64(bucket.LatencyTotalMS) / float64(bucket.RoundCount), Success: bucket.SuccessfulRoundCount == bucket.RoundCount}
+		points[bucket.BucketAt] = domain.LatencyPoint{
+			At:        bucket.BucketAt,
+			LatencyMs: float64(bucket.LatencyTotalMS) / float64(bucket.RoundCount),
+			Success:   bucket.SuccessfulRoundCount == bucket.RoundCount,
+		}
 	}
 	if rawFrom < to {
 		for _, bucket := range snapshot.Rounds {
@@ -223,7 +280,11 @@ func latencyPoints(snapshot store.LatencySnapshot, from, to, rawFrom int64) []do
 					continue
 				}
 			}
-			points[bucket.At] = domain.LatencyPoint{At: bucket.At, LatencyMs: float64(bucket.LatencyTotalMS) / float64(bucket.Count), Success: bucket.Successes == bucket.Count}
+			points[bucket.At] = domain.LatencyPoint{
+				At:        bucket.At,
+				LatencyMs: float64(bucket.LatencyTotalMS) / float64(bucket.Count),
+				Success:   bucket.Successes == bucket.Count,
+			}
 		}
 	}
 	result := make([]domain.LatencyPoint, 0, len(points))

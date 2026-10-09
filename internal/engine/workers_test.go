@@ -110,7 +110,12 @@ func TestQueuedManualCheckOutlivesCallerCancellation(t *testing.T) {
 	}
 	close(release)
 	awaitEngineStats(t, h.e, EngineStats{})
-	rows, err := h.s.ListRounds(context.Background(), m.ID, 0, 10)
+	rows, err := h.s.ListRounds(
+		context.Background(),
+		m.ID,
+		0,
+		10,
+	)
 	if err != nil || len(rows) != 1 || !rows[0].Success {
 		t.Fatalf("accepted queued round was not committed: rows=%+v err=%v", rows, err)
 	}

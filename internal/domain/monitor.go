@@ -297,7 +297,11 @@ func (m Monitor) SecretReferences() []string {
 			refs[ref] = true
 		}
 	}
-	addTLS := func(c TLSConfig) { add(c.CASecretRef); add(c.ClientCertificateSecretRef); add(c.ClientKeySecretRef) }
+	addTLS := func(c TLSConfig) {
+		add(c.CASecretRef)
+		add(c.ClientCertificateSecretRef)
+		add(c.ClientKeySecretRef)
+	}
 	addPairs := func(pairs []NameValue) {
 		for _, pair := range pairs {
 			add(pair.SecretRef)
@@ -343,16 +347,20 @@ func (m Monitor) Validate() error {
 	if m.TimeoutSeconds < 1 || m.TimeoutSeconds > m.IntervalSeconds {
 		return errors.New("timeout must fit the check interval")
 	}
-	if m.Retries < 0 || m.Retries > 10 || m.RetryDelaySeconds < 0 || m.RetryDelaySeconds > m.IntervalSeconds {
+	invalidRetries := m.Retries < 0 || m.Retries > 10
+	invalidRetryDelay := m.RetryDelaySeconds < 0 || m.RetryDelaySeconds > m.IntervalSeconds
+	if invalidRetries || invalidRetryDelay {
 		return errors.New("invalid retry budget")
 	}
-	if m.FailureThreshold < 1 || m.FailureThreshold > 100 || m.RecoveryThreshold < 1 || m.RecoveryThreshold > 100 {
+	invalidFailureThreshold := m.FailureThreshold < 1 || m.FailureThreshold > 100
+	invalidRecoveryThreshold := m.RecoveryThreshold < 1 || m.RecoveryThreshold > 100
+	if invalidFailureThreshold || invalidRecoveryThreshold {
 		return errors.New("confirmation thresholds must be between 1 and 100")
 	}
 	if m.ReminderSeconds != 0 && m.ReminderSeconds < 30 {
 		return errors.New("reminder interval must be zero or at least 30 seconds")
 	}
-	count := 0
+	var count int
 	for _, present := range []bool{m.HTTP != nil, m.TCP != nil, m.DNS != nil, m.Heartbeat != nil, m.Certificate != nil} {
 		if present {
 			count++
@@ -403,10 +411,14 @@ func (m Monitor) Validate() error {
 			return errors.New("dns configuration required")
 		}
 		c := m.DNS
-		if c.Name == "" || len(c.Name) > 253 || strings.ContainsAny(c.Name, " \t\r\n") {
+		invalidNameLength := c.Name == "" || len(c.Name) > 253
+		if invalidNameLength || strings.ContainsAny(c.Name, " \t\r\n") {
 			return errors.New("invalid DNS query name")
 		}
-		if !contains([]string{"A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "PTR", "SOA", "CAA"}, strings.ToUpper(c.RecordType)) {
+		if !contains(
+			[]string{"A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "PTR", "SOA", "CAA"},
+			strings.ToUpper(c.RecordType),
+		) {
 			return errors.New("unsupported DNS record type")
 		}
 		if c.Protocol != "udp" && c.Protocol != "tcp" {
@@ -417,7 +429,10 @@ func (m Monitor) Validate() error {
 				return errors.New("DNS server must be host:port")
 			}
 		}
-		if !contains([]string{"NOERROR", "FORMERR", "SERVFAIL", "NXDOMAIN", "NOTIMP", "REFUSED"}, strings.ToUpper(c.ExpectedRCode)) {
+		if !contains(
+			[]string{"NOERROR", "FORMERR", "SERVFAIL", "NXDOMAIN", "NOTIMP", "REFUSED"},
+			strings.ToUpper(c.ExpectedRCode),
+		) {
 			return errors.New("unsupported DNS response code")
 		}
 		if c.MatchMode != "contains" && c.MatchMode != "exact" {
@@ -455,7 +470,12 @@ func (m Monitor) Validate() error {
 
 func (c HTTPConfig) Validate() error {
 	u, err := url.Parse(c.URL)
-	if err != nil || u.Hostname() == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil {
+	if err != nil {
+		return errors.New("HTTP URL must be http(s) with no embedded credentials")
+	}
+	invalidScheme := u.Scheme != "http" && u.Scheme != "https"
+	invalidAuthority := u.Hostname() == "" || u.User != nil
+	if invalidScheme || invalidAuthority {
 		return errors.New("HTTP URL must be http(s) with no embedded credentials")
 	}
 	if c.Method == "" || !regexp.MustCompile("^[!#$%&'*+.^_`|~0-9A-Za-z-]+$").MatchString(c.Method) {
@@ -475,10 +495,12 @@ func (c HTTPConfig) Validate() error {
 	if !contains([]string{"none", "json", "form", "multipart", "text", "raw"}, c.Body.Format) {
 		return errors.New("unsupported body format")
 	}
-	if c.Body.Format == "json" && c.Body.SecretRef == "" && !json.Valid([]byte(c.Body.Text)) {
+	hasInlineJSONBody := c.Body.Format == "json" && c.Body.SecretRef == ""
+	if hasInlineJSONBody && !json.Valid([]byte(c.Body.Text)) {
 		return errors.New("invalid JSON request body")
 	}
-	if c.Body.Format == "json" && c.Body.Charset != "" && !strings.EqualFold(c.Body.Charset, "utf-8") {
+	hasJSONCharset := c.Body.Format == "json" && c.Body.Charset != ""
+	if hasJSONCharset && !strings.EqualFold(c.Body.Charset, "utf-8") {
 		return errors.New("JSON charset must be UTF-8")
 	}
 	if c.Body.Format == "raw" && c.Body.SecretRef == "" {
@@ -487,7 +509,8 @@ func (c HTTPConfig) Validate() error {
 		}
 	}
 	for _, f := range c.Body.Files {
-		if f.Field == "" || f.Filename == "" || strings.ContainsAny(f.Filename+f.Field, "\r\n") {
+		missingFileMetadata := f.Field == "" || f.Filename == ""
+		if missingFileMetadata || strings.ContainsAny(f.Filename+f.Field, "\r\n") {
 			return errors.New("invalid multipart file")
 		}
 		if f.SecretRef == "" {
@@ -502,7 +525,9 @@ func (c HTTPConfig) Validate() error {
 	if err := validateCharset(c.ResponseCharset); err != nil {
 		return err
 	}
-	if c.AcceptEncoding != "" && c.AcceptEncoding != "gzip" && c.AcceptEncoding != "identity" {
+	switch c.AcceptEncoding {
+	case "", "gzip", "identity":
+	default:
 		return errors.New("Accept-Encoding must be gzip or identity")
 	}
 	if c.MaxResponseBytes < 1 || c.MaxResponseBytes > 16<<20 {
@@ -511,7 +536,8 @@ func (c HTTPConfig) Validate() error {
 	if !contains([]string{"", "none", "basic", "bearer", "header"}, c.Auth.Type) {
 		return errors.New("unsupported authentication")
 	}
-	if c.Auth.Type != "" && c.Auth.Type != "none" && c.Auth.SecretRef == "" {
+	requiresAuthSecret := c.Auth.Type != "" && c.Auth.Type != "none"
+	if requiresAuthSecret && c.Auth.SecretRef == "" {
 		return errors.New("authentication requires a secret reference")
 	}
 	if c.Auth.Type == "header" && !regexp.MustCompile("^[!#$%&'*+.^_`|~0-9A-Za-z-]+$").MatchString(c.Auth.Header) {
@@ -535,7 +561,8 @@ func (c HTTPConfig) Validate() error {
 		}
 	}
 	for _, r := range c.Assertions.StatusRanges {
-		if r.Min < 100 || r.Max > 599 || r.Max < r.Min {
+		outsideStatusBounds := r.Min < 100 || r.Max > 599
+		if outsideStatusBounds || r.Max < r.Min {
 			return errors.New("invalid status range")
 		}
 	}
@@ -585,11 +612,14 @@ func (c TLSConfig) Validate() error {
 		return errors.New("client certificate and key references are required together")
 	}
 	for _, v := range []string{c.MinVersion, c.MaxVersion} {
-		if v != "" && v != "1.2" && v != "1.3" {
+		switch v {
+		case "", "1.2", "1.3":
+		default:
 			return errors.New("TLS version must be 1.2 or 1.3")
 		}
 	}
-	if c.MinVersion != "" && c.MaxVersion != "" && c.MinVersion > c.MaxVersion {
+	hasVersionRange := c.MinVersion != "" && c.MaxVersion != ""
+	if hasVersionRange && c.MinVersion > c.MaxVersion {
 		return errors.New("TLS minimum exceeds maximum")
 	}
 	return nil
@@ -606,7 +636,11 @@ func (c ConnectionConfig) Validate() error {
 	}
 	if c.ProxyURL != "" {
 		u, err := url.Parse(c.ProxyURL)
-		if err != nil || u.Hostname() == "" || !contains([]string{"http", "https", "socks5", "socks5h"}, u.Scheme) || u.User != nil {
+		if err != nil {
+			return errors.New("proxy URL must use http(s)/socks5(h) without embedded credentials")
+		}
+		invalidAuthority := u.Hostname() == "" || u.User != nil
+		if invalidAuthority || !contains([]string{"http", "https", "socks5", "socks5h"}, u.Scheme) {
 			return errors.New("proxy URL must use http(s)/socks5(h) without embedded credentials")
 		}
 		if c.FixedIP != "" {
@@ -617,13 +651,18 @@ func (c ConnectionConfig) Validate() error {
 }
 
 func validateTarget(host string, port int) error {
-	if host == "" || strings.ContainsAny(host, " \t\r\n/") || port < 1 || port > 65535 {
+	invalidHost := host == "" || strings.ContainsAny(host, " \t\r\n/")
+	invalidPort := port < 1 || port > 65535
+	if invalidHost || invalidPort {
 		return errors.New("target requires a host and a port between 1 and 65535")
 	}
 	return nil
 }
 func validateCharset(charset string) error {
-	if !contains([]string{"", "utf-8", "utf8", "iso-8859-1", "windows-1252", "gbk", "gb18030", "shift_jis", "big5"}, strings.ToLower(charset)) {
+	if !contains(
+		[]string{"", "utf-8", "utf8", "iso-8859-1", "windows-1252", "gbk", "gb18030", "shift_jis", "big5"},
+		strings.ToLower(charset),
+	) {
 		return fmt.Errorf("unsupported charset %q", charset)
 	}
 	return nil

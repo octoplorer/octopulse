@@ -61,11 +61,13 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 	defer r.mu.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	if r.BatchSize <= 0 || r.BatchSize > 1000 || r.OperationHistoryDays < 0 || r.OperationHistoryDays > 3650 {
+	invalidBatchSize := r.BatchSize <= 0 || r.BatchSize > 1000
+	invalidHistoryDays := r.OperationHistoryDays < 0 || r.OperationHistoryDays > 3650
+	if invalidBatchSize || invalidHistoryDays {
 		return fmt.Errorf("invalid retention batch size or operation history days")
 	}
 	now := r.Now().UnixMilli()
-	var failures []error
+	failures := []error{}
 	if err := r.sweep(ctx, "sessions", func(raw json.RawMessage) (bool, error) {
 		var session domain.Session
 		if err := json.Unmarshal(raw, &session); err != nil {
@@ -109,18 +111,28 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 }
 
 func (r *Runner) sweep(ctx context.Context, kind string, expired func(json.RawMessage) (bool, error)) error {
-	documents, err := r.Store.DocumentPage(ctx, kind, r.cursors[kind], r.BatchSize)
+	documents, err := r.Store.DocumentPage(
+		ctx,
+		kind,
+		r.cursors[kind],
+		r.BatchSize,
+	)
 	if err != nil {
 		return err
 	}
-	var candidates []store.Document
-	var failures []error
+	candidates := make([]store.Document, 0, len(documents))
+	failures := []error{}
 	for _, document := range documents {
 		remove, err := expired(document.Payload)
 		if err != nil {
 			// Preserve malformed records but continue the cursor so one record
 			// cannot prevent all subsequent valid records from being cleaned up.
-			failures = append(failures, fmt.Errorf("decode retention document %s/%s: %w", kind, document.ID, err))
+			failures = append(failures, fmt.Errorf(
+				"decode retention document %s/%s: %w",
+				kind,
+				document.ID,
+				err,
+			))
 		} else if remove {
 			candidates = append(candidates, document)
 		}

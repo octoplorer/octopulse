@@ -18,9 +18,31 @@ func (t *Tx) PutMonitor(ctx context.Context, m Monitor) error {
 		return fmt.Errorf("monitor ID is required")
 	}
 	if t.s.driver == "sqlite" {
-		err = sqlitequery.New(t.tx).PutMonitor(ctx, sqlitequery.PutMonitorParams{ID: m.ID, ConfigVersion: m.ConfigVersion, Generation: m.Generation, Kind: m.Kind, Enabled: boolInt(m.Enabled), IntervalMs: m.IntervalMS, ConfigJson: payload})
+		err = sqlitequery.New(t.tx).PutMonitor(
+			ctx,
+			sqlitequery.PutMonitorParams{
+				ID:            m.ID,
+				ConfigVersion: m.ConfigVersion,
+				Generation:    m.Generation,
+				Kind:          m.Kind,
+				Enabled:       boolInt(m.Enabled),
+				IntervalMs:    m.IntervalMS,
+				ConfigJson:    payload,
+			},
+		)
 	} else {
-		err = postgresquery.New(t.tx).PutMonitor(ctx, postgresquery.PutMonitorParams{ID: m.ID, ConfigVersion: m.ConfigVersion, Generation: m.Generation, Kind: m.Kind, Enabled: boolInt(m.Enabled), IntervalMs: m.IntervalMS, ConfigJson: payload})
+		err = postgresquery.New(t.tx).PutMonitor(
+			ctx,
+			postgresquery.PutMonitorParams{
+				ID:            m.ID,
+				ConfigVersion: m.ConfigVersion,
+				Generation:    m.Generation,
+				Kind:          m.Kind,
+				Enabled:       boolInt(m.Enabled),
+				IntervalMs:    m.IntervalMS,
+				ConfigJson:    payload,
+			},
+		)
 	}
 	return mapError(err)
 }
@@ -28,10 +50,26 @@ func (t *Tx) PutMonitor(ctx context.Context, m Monitor) error {
 func (s *Store) getMonitor(ctx context.Context, q dbtx, id string) (Monitor, error) {
 	if s.driver == "sqlite" {
 		r, err := sqlitequery.New(q).GetMonitor(ctx, id)
-		return Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)}, mapError(err)
+		return Monitor{
+			ID:            r.ID,
+			ConfigVersion: r.ConfigVersion,
+			Generation:    r.Generation,
+			Kind:          r.Kind,
+			Enabled:       r.Enabled != 0,
+			IntervalMS:    r.IntervalMs,
+			ConfigJSON:    json.RawMessage(r.ConfigJson),
+		}, mapError(err)
 	}
 	r, err := postgresquery.New(q).GetMonitor(ctx, id)
-	return Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)}, mapError(err)
+	return Monitor{
+		ID:            r.ID,
+		ConfigVersion: r.ConfigVersion,
+		Generation:    r.Generation,
+		Kind:          r.Kind,
+		Enabled:       r.Enabled != 0,
+		IntervalMS:    r.IntervalMs,
+		ConfigJSON:    json.RawMessage(r.ConfigJson),
+	}, mapError(err)
 }
 
 func (s *Store) ListMonitors(ctx context.Context) ([]Monitor, error) {
@@ -42,7 +80,18 @@ func (s *Store) ListMonitors(ctx context.Context) ([]Monitor, error) {
 			return nil, mapError(err)
 		}
 		for _, r := range records {
-			result = append(result, Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)})
+			result = append(
+				result,
+				Monitor{
+					ID:            r.ID,
+					ConfigVersion: r.ConfigVersion,
+					Generation:    r.Generation,
+					Kind:          r.Kind,
+					Enabled:       r.Enabled != 0,
+					IntervalMS:    r.IntervalMs,
+					ConfigJSON:    json.RawMessage(r.ConfigJson),
+				},
+			)
 		}
 	} else {
 		records, err := postgresquery.New(s.read).ListMonitors(ctx)
@@ -50,7 +99,18 @@ func (s *Store) ListMonitors(ctx context.Context) ([]Monitor, error) {
 			return nil, mapError(err)
 		}
 		for _, r := range records {
-			result = append(result, Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)})
+			result = append(
+				result,
+				Monitor{
+					ID:            r.ID,
+					ConfigVersion: r.ConfigVersion,
+					Generation:    r.Generation,
+					Kind:          r.Kind,
+					Enabled:       r.Enabled != 0,
+					IntervalMS:    r.IntervalMs,
+					ConfigJSON:    json.RawMessage(r.ConfigJson),
+				},
+			)
 		}
 	}
 	return result, nil
@@ -80,21 +140,89 @@ func (s *Store) DeleteMonitor(ctx context.Context, id string) error {
 func (s *Store) getRuntime(ctx context.Context, q dbtx, id string) (Runtime, error) {
 	if s.driver == "sqlite" {
 		r, err := sqlitequery.New(q).GetRuntime(ctx, id)
-		return Runtime{r.MonitorID, r.ConfigVersion, r.Generation, r.State, r.Failures, r.Successes, r.LastRoundID, r.LastCollectedAt, r.HeartbeatVersion, r.HeartbeatAt}, mapError(err)
+		return Runtime{
+			MonitorID:        r.MonitorID,
+			ConfigVersion:    r.ConfigVersion,
+			Generation:       r.Generation,
+			State:            r.State,
+			Failures:         r.Failures,
+			Successes:        r.Successes,
+			LastRoundID:      r.LastRoundID,
+			LastCollectedAt:  r.LastCollectedAt,
+			HeartbeatVersion: r.HeartbeatVersion,
+			HeartbeatAt:      r.HeartbeatAt,
+		}, mapError(err)
 	}
 	r, err := postgresquery.New(q).GetRuntime(ctx, id)
-	return Runtime{r.MonitorID, r.ConfigVersion, r.Generation, r.State, r.Failures, r.Successes, r.LastRoundID, r.LastCollectedAt, r.HeartbeatVersion, r.HeartbeatAt}, mapError(err)
+	return Runtime{
+		MonitorID:        r.MonitorID,
+		ConfigVersion:    r.ConfigVersion,
+		Generation:       r.Generation,
+		State:            r.State,
+		Failures:         r.Failures,
+		Successes:        r.Successes,
+		LastRoundID:      r.LastRoundID,
+		LastCollectedAt:  r.LastCollectedAt,
+		HeartbeatVersion: r.HeartbeatVersion,
+		HeartbeatAt:      r.HeartbeatAt,
+	}, mapError(err)
 }
 
 func (t *Tx) PutRuntime(ctx context.Context, r Runtime) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO monitor_runtime(monitor_id,config_version,generation,state,failures,successes,last_round_id,last_collected_at,heartbeat_version,heartbeat_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(monitor_id) DO UPDATE SET config_version=excluded.config_version,generation=excluded.generation,state=excluded.state,failures=excluded.failures,successes=excluded.successes,last_round_id=excluded.last_round_id,last_collected_at=excluded.last_collected_at,heartbeat_version=excluded.heartbeat_version,heartbeat_at=excluded.heartbeat_at`), r.MonitorID, r.ConfigVersion, r.Generation, r.State, r.Failures, r.Successes, r.LastRoundID, r.LastCollectedAt, r.HeartbeatVersion, r.HeartbeatAt)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`INSERT INTO monitor_runtime(monitor_id,config_version,generation,state,failures,successes,`+
+				`last_round_id,last_collected_at,heartbeat_version,heartbeat_at) VALUES(?,?,?,?,?,?,?,?,?,?) `+
+				`ON CONFLICT(monitor_id) `+
+				`DO UPDATE SET config_version=excluded.config_version,generation=excluded.generation,`+
+				`state=excluded.state,failures=excluded.failures,successes=excluded.successes,`+
+				`last_round_id=excluded.last_round_id,last_collected_at=excluded.last_collected_at,`+
+				`heartbeat_version=excluded.heartbeat_version,heartbeat_at=excluded.heartbeat_at`,
+		),
+		r.MonitorID,
+		r.ConfigVersion,
+		r.Generation,
+		r.State,
+		r.Failures,
+		r.Successes,
+		r.LastRoundID,
+		r.LastCollectedAt,
+		r.HeartbeatVersion,
+		r.HeartbeatAt,
+	)
 	return mapError(err)
 }
 
 // CompareRuntime rejects an in-flight result from an obsolete configuration,
 // generation, heartbeat version, or concurrently replaced last round.
 func (t *Tx) CompareRuntime(ctx context.Context, previous Runtime, next Runtime) error {
-	result, err := t.tx.ExecContext(ctx, t.s.sql(`UPDATE monitor_runtime SET config_version=?,generation=?,state=?,failures=?,successes=?,last_round_id=?,last_collected_at=?,heartbeat_version=?,heartbeat_at=? WHERE monitor_id=? AND config_version=? AND generation=? AND heartbeat_version=? AND last_round_id=? AND EXISTS(SELECT 1 FROM monitors WHERE id=? AND config_version=? AND generation=?)`), next.ConfigVersion, next.Generation, next.State, next.Failures, next.Successes, next.LastRoundID, next.LastCollectedAt, next.HeartbeatVersion, next.HeartbeatAt, previous.MonitorID, previous.ConfigVersion, previous.Generation, previous.HeartbeatVersion, previous.LastRoundID, previous.MonitorID, next.ConfigVersion, next.Generation)
+	result, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`UPDATE monitor_runtime SET config_version=?,generation=?,state=?,failures=?,successes=?,`+
+				`last_round_id=?,last_collected_at=?,heartbeat_version=?,heartbeat_at=? WHERE monitor_id=? `+
+				`AND config_version=? AND generation=? AND heartbeat_version=? AND last_round_id=? `+
+				`AND EXISTS(SELECT 1 FROM monitors WHERE id=? AND config_version=? AND generation=?)`,
+		),
+		next.ConfigVersion,
+		next.Generation,
+		next.State,
+		next.Failures,
+		next.Successes,
+		next.LastRoundID,
+		next.LastCollectedAt,
+		next.HeartbeatVersion,
+		next.HeartbeatAt,
+		previous.MonitorID,
+		previous.ConfigVersion,
+		previous.Generation,
+		previous.HeartbeatVersion,
+		previous.LastRoundID,
+		previous.MonitorID,
+		next.ConfigVersion,
+		next.Generation,
+	)
 	if err != nil {
 		return mapError(err)
 	}

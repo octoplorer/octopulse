@@ -24,7 +24,14 @@ func concurrentHub(t *testing.T, records http.HandlerFunc) (*Client, *atomic.Int
 		switch r.URL.Path {
 		case "/api/collections/users/auth-with-password":
 			authCalls.Add(1)
-			json.NewEncoder(w).Encode(map[string]any{"token": jwt(time.Now().Add(time.Hour).Unix()), "record": map[string]string{"collectionName": "users"}})
+			json.NewEncoder(w).Encode(
+				map[string]any{
+					"token": jwt(time.Now().Add(time.Hour).Unix()),
+					"record": map[string]string{
+						"collectionName": "users",
+					},
+				},
+			)
 		case "/api/beszel/info":
 			json.NewEncoder(w).Encode(map[string]string{"v": "0.20.0"})
 		default:
@@ -32,7 +39,12 @@ func concurrentHub(t *testing.T, records http.HandlerFunc) (*Client, *atomic.Int
 		}
 	}))
 	t.Cleanup(hub.Close)
-	return adapter(t, hub.URL, "reader@example.invalid", "password"), authCalls
+	return adapter(
+		t,
+		hub.URL,
+		"reader@example.invalid",
+		"password",
+	), authCalls
 }
 
 func receive[T any](t *testing.T, ch <-chan T) T {
@@ -67,7 +79,19 @@ func TestConcurrentResourcesCacheAndCallerCancellation(t *testing.T) {
 			}
 		}
 		if strings.Contains(r.URL.Path, "system_stats") {
-			json.NewEncoder(w).Encode(map[string]any{"items": []any{map[string]any{"created": time.Now().UnixMilli(), "stats": map[string]int{"cpu": 12}}}, "totalPages": 1})
+			json.NewEncoder(w).Encode(
+				map[string]any{
+					"items": []any{
+						map[string]any{
+							"created": time.Now().UnixMilli(),
+							"stats": map[string]int{
+								"cpu": 12,
+							},
+						},
+					},
+					"totalPages": 1,
+				},
+			)
 		} else {
 			json.NewEncoder(w).Encode(map[string]any{"items": []any{}, "totalPages": 1})
 		}
@@ -189,20 +213,36 @@ func TestConfigUpdateDiscardsInflightResultsAndPersistedSnapshot(t *testing.T) {
 	ctx := context.Background()
 	results := make(chan error, 3)
 	go func() { results <- c.Poll(ctx) }()
-	go func() { _, err := c.History(ctx, "system1", "24h"); results <- err }()
-	go func() { _, err := c.Containers(ctx, "system1"); results <- err }()
+	go func() {
+		_, err := c.History(ctx, "system1", "24h")
+		results <- err
+	}()
+	go func() {
+		_, err := c.Containers(ctx, "system1")
+		results <- err
+	}()
 	for i := 0; i < 3; i++ {
 		receive(t, started)
 	}
 	var cfg domain.BeszelConfig
-	if err := c.Store.Get(ctx, "beszel", "config", &cfg); err != nil {
+	if err := c.Store.Get(
+		ctx,
+		"beszel",
+		"config",
+		&cfg,
+	); err != nil {
 		t.Fatal(err)
 	}
 	// Same URL, different account: source URL alone must never retain the cache.
 	cfg.Email = "new@example.invalid"
 	if err := c.UpdateConfig(ctx, func() error {
 		return c.Store.WithTx(ctx, func(tx *store.Tx) error {
-			if err := tx.Put(ctx, "beszel", "config", cfg); err != nil {
+			if err := tx.Put(
+				ctx,
+				"beszel",
+				"config",
+				cfg,
+			); err != nil {
 				return err
 			}
 			if err := tx.Delete(ctx, "beszelSnapshots", "systems"); err != nil && !errors.Is(err, store.ErrNotFound) {
@@ -221,7 +261,12 @@ func TestConfigUpdateDiscardsInflightResultsAndPersistedSnapshot(t *testing.T) {
 		}
 	}
 	var persisted SystemsResponse
-	if err := c.Store.Get(ctx, "beszelSnapshots", "systems", &persisted); !errors.Is(err, store.ErrNotFound) {
+	if err := c.Store.Get(
+		ctx,
+		"beszelSnapshots",
+		"systems",
+		&persisted,
+	); !errors.Is(err, store.ErrNotFound) {
 		t.Fatal("obsolete snapshot survived", persisted, err)
 	}
 	c.mu.RLock()
@@ -232,7 +277,12 @@ func TestConfigUpdateDiscardsInflightResultsAndPersistedSnapshot(t *testing.T) {
 	if err := c.Poll(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.Store.Get(ctx, "beszelSnapshots", "systems", &persisted); err != nil || persisted.SyncedAt == 0 {
+	if err := c.Store.Get(
+		ctx,
+		"beszelSnapshots",
+		"systems",
+		&persisted,
+	); err != nil || persisted.SyncedAt == 0 {
 		t.Fatal("new generation did not persist", persisted, err)
 	}
 }
@@ -250,19 +300,27 @@ func TestStartWaitsForSharedWorkOnShutdown(t *testing.T) {
 	defer once.Do(func() { close(release) })
 	caller := make(chan error, 1)
 	go func() {
-		_, err := c.fetch(context.Background(), session, "shutdown", func(ctx context.Context) (any, error) {
-			close(started)
-			<-ctx.Done()
-			close(cancelled)
-			<-release // Simulate transport cleanup after cancellation.
-			return nil, ctx.Err()
-		})
+		_, err := c.fetch(
+			context.Background(),
+			session,
+			"shutdown",
+			func(ctx context.Context) (any, error) {
+				close(started)
+				<-ctx.Done()
+				close(cancelled)
+				<-release // Simulate transport cleanup after cancellation.
+				return nil, ctx.Err()
+			},
+		)
 		caller <- err
 	}()
 	receive(t, started)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
-	go func() { c.Start(ctx); close(done) }()
+	go func() {
+		c.Start(ctx)
+		close(done)
+	}()
 	cancel()
 	receive(t, cancelled)
 	select {

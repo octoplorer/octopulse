@@ -13,7 +13,11 @@ func TestMetricsUseRouteTemplatesAndStayOffPublicRouter(t *testing.T) {
 	s, _, _ := testServer(t)
 	s.Metrics = telemetry.New()
 	s.Metrics.ObserveStore(s.Store)
-	req := httptest.NewRequest(http.MethodPost, "http://localhost/api/heartbeat/private-monitor/private-token?secret=private-query", strings.NewReader(`{"status":"up"}`))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"http://localhost/api/heartbeat/private-monitor/private-token?secret=private-query",
+		strings.NewReader(`{"status":"up"}`),
+	)
 	req.Header.Set("Content-Type", "application/json")
 	res := httptest.NewRecorder()
 	s.Handler().ServeHTTP(res, req)
@@ -23,7 +27,12 @@ func TestMetricsUseRouteTemplatesAndStayOffPublicRouter(t *testing.T) {
 	metrics := httptest.NewRecorder()
 	s.Metrics.Handler().ServeHTTP(metrics, httptest.NewRequest("GET", "http://localhost/metrics", nil))
 	text := metrics.Body.String()
-	if metrics.Code != 200 || !strings.Contains(text, `/api/heartbeat/{id}/{token}`) || !strings.Contains(text, "octopulse_delivery_pending 0") {
+	if metrics.Code != 200 {
+		t.Fatalf("missing bounded route or backlog metric: %d %s", metrics.Code, text)
+	}
+	hasRouteMetric := strings.Contains(text, `/api/heartbeat/{id}/{token}`)
+	hasBacklogMetric := strings.Contains(text, "octopulse_delivery_pending 0")
+	if !hasRouteMetric || !hasBacklogMetric {
 		t.Fatalf("missing bounded route or backlog metric: %d %s", metrics.Code, text)
 	}
 	for _, secret := range []string{"private-monitor", "private-token", "private-query"} {

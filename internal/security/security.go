@@ -70,14 +70,24 @@ func Open(dataDir, encodedKey string) (*Vault, error) {
 	return &Vault{aead: aead}, nil
 }
 func (v *Vault) Encrypt(id, value string) string {
-	return base64.StdEncoding.EncodeToString(v.aead.Seal(nil, nil, []byte(value), []byte(id)))
+	return base64.StdEncoding.EncodeToString(v.aead.Seal(
+		nil,
+		nil,
+		[]byte(value),
+		[]byte(id),
+	))
 }
 func (v *Vault) Decrypt(id, value string) (string, error) {
 	b, e := base64.StdEncoding.DecodeString(value)
 	if e != nil {
 		return "", errors.New("invalid encrypted secret")
 	}
-	p, e := v.aead.Open(nil, nil, b, []byte(id))
+	p, e := v.aead.Open(
+		nil,
+		nil,
+		b,
+		[]byte(id),
+	)
 	if e != nil {
 		return "", errors.New("secret authentication failed")
 	}

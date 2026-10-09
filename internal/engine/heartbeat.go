@@ -20,7 +20,7 @@ func (e *Engine) Heartbeat(ctx context.Context, id string, success bool, descrip
 	// Reports do not acquire the active-check mutex: an arrival can race an
 	// expiry evaluation. CompareRuntime's heartbeat-version CAS decides which
 	// observation is still current; the report retries the fresh runtime.
-	for attempt := 0; attempt < 4; attempt++ {
+	for range 4 {
 		record, err := e.Store.GetMonitor(ctx, id)
 		if err != nil {
 			return err
@@ -45,8 +45,33 @@ func (e *Engine) Heartbeat(ctx context.Context, id string, success bool, descrip
 		record.Generation = runtime.Generation
 		now := e.now()
 		detail, _ := json.Marshal(map[string]string{"description": description})
-		round := store.Round{ID: domain.ID(), MonitorID: id, ConfigVersion: record.ConfigVersion, Generation: record.Generation, StartedAt: now, FinishedAt: now, Success: success, Attempts: []store.Attempt{{Number: 1, StartedAt: now, FinishedAt: now, Success: success, Detail: detail}}}
-		err = e.commit(ctx, record, m, runtime, round, probe.Result{Success: success}, true)
+		round := store.Round{
+			ID:            domain.ID(),
+			MonitorID:     id,
+			ConfigVersion: record.ConfigVersion,
+			Generation:    record.Generation,
+			StartedAt:     now,
+			FinishedAt:    now,
+			Success:       success,
+			Attempts: []store.Attempt{
+				{
+					Number:     1,
+					StartedAt:  now,
+					FinishedAt: now,
+					Success:    success,
+					Detail:     detail,
+				},
+			},
+		}
+		err = e.commit(
+			ctx,
+			record,
+			m,
+			runtime,
+			round,
+			probe.Result{Success: success},
+			true,
+		)
 		if errors.Is(err, ErrSuperseded) {
 			continue
 		}
@@ -55,10 +80,21 @@ func (e *Engine) Heartbeat(ctx context.Context, id string, success bool, descrip
 	return ErrSuperseded
 }
 
-func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m domain.Monitor, runtime store.Runtime, evaluationEpoch uint64) error {
+func (e *Engine) evaluateHeartbeat(
+	ctx context.Context,
+	record store.Monitor,
+	m domain.Monitor,
+	runtime store.Runtime,
+	evaluationEpoch uint64,
+) error {
 	now := e.now()
-	meta := Metadata{}
-	err := e.Store.Get(ctx, "engineMonitor", m.ID, &meta)
+	var meta Metadata
+	err := e.Store.Get(
+		ctx,
+		"engineMonitor",
+		m.ID,
+		&meta,
+	)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return err
 	}
@@ -86,7 +122,12 @@ func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m 
 				if err = e.finishUnknownMaintenanceEvaluation(ctx, m.ID); err != nil {
 					return err
 				}
-				e.clearPendingEvaluation(ctx, m.ID, record.ConfigVersion, evaluationEpoch)
+				e.clearPendingEvaluation(
+					ctx,
+					m.ID,
+					record.ConfigVersion,
+					evaluationEpoch,
+				)
 			}
 			return nil
 		}
@@ -99,17 +140,48 @@ func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m 
 			return nil
 		}
 	}
-	if now >= deadline && runtime.State == domain.StateDown && !exited && (m.ReminderSeconds == 0 || now-meta.LastReminderAt < int64(m.ReminderSeconds)*1000) {
+	expiredWhileDown := now >= deadline && runtime.State == domain.StateDown && !exited
+	reminderPending := m.ReminderSeconds == 0 || now-meta.LastReminderAt < int64(m.ReminderSeconds)*1000
+	if expiredWhileDown && reminderPending {
 		return nil
 	}
 	success := now < deadline && runtime.HeartbeatAt > 0
 	if meta.HasHeartbeatReport && !meta.HeartbeatSuccess {
 		success = false
 	}
-	round := store.Round{ID: domain.ID(), MonitorID: m.ID, ConfigVersion: record.ConfigVersion, Generation: record.Generation, StartedAt: now, FinishedAt: now, Success: success, Attempts: []store.Attempt{{Number: 1, StartedAt: now, FinishedAt: now, Success: success}}}
-	err = e.commit(ctx, record, m, runtime, round, probe.Result{Success: success}, false)
+	round := store.Round{
+		ID:            domain.ID(),
+		MonitorID:     m.ID,
+		ConfigVersion: record.ConfigVersion,
+		Generation:    record.Generation,
+		StartedAt:     now,
+		FinishedAt:    now,
+		Success:       success,
+		Attempts: []store.Attempt{
+			{
+				Number:     1,
+				StartedAt:  now,
+				FinishedAt: now,
+				Success:    success,
+			},
+		},
+	}
+	err = e.commit(
+		ctx,
+		record,
+		m,
+		runtime,
+		round,
+		probe.Result{Success: success},
+		false,
+	)
 	if err == nil {
-		e.clearPendingEvaluation(ctx, m.ID, record.ConfigVersion, evaluationEpoch)
+		e.clearPendingEvaluation(
+			ctx,
+			m.ID,
+			record.ConfigVersion,
+			evaluationEpoch,
+		)
 	}
 	return err
 }
@@ -117,11 +189,21 @@ func (e *Engine) evaluateHeartbeat(ctx context.Context, record store.Monitor, m 
 func (e *Engine) finishUnknownMaintenanceEvaluation(ctx context.Context, id string) error {
 	return e.Store.WithTx(ctx, func(tx *store.Tx) error {
 		var meta Metadata
-		if err := tx.Get(ctx, "engineMonitor", id, &meta); err != nil {
+		if err := tx.Get(
+			ctx,
+			"engineMonitor",
+			id,
+			&meta,
+		); err != nil {
 			return err
 		}
 		meta.MaintenanceActive = false
 		meta.EvaluationAfter = 0
-		return tx.Put(ctx, "engineMonitor", id, meta)
+		return tx.Put(
+			ctx,
+			"engineMonitor",
+			id,
+			meta,
+		)
 	})
 }

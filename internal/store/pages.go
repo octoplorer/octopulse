@@ -13,7 +13,12 @@ func (t *Tx) BindPage(ctx context.Context, b PageBinding) error {
 	if b.PageID == "" || b.Slug == "" || strings.ContainsAny(b.Slug, "/?#.") {
 		return fmt.Errorf("invalid page binding")
 	}
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO page_slugs(page_id,slug) VALUES(?,?) ON CONFLICT(page_id) DO UPDATE SET slug=excluded.slug`), b.PageID, b.Slug)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(`INSERT INTO page_slugs(page_id,slug) VALUES(?,?) ON CONFLICT(page_id) DO UPDATE SET slug=excluded.slug`),
+		b.PageID,
+		b.Slug,
+	)
 	if err != nil {
 		return mapError(err)
 	}
@@ -30,7 +35,12 @@ func (t *Tx) BindPage(ctx context.Context, b PageBinding) error {
 			continue
 		}
 		seen[domain] = true
-		_, err = t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO page_domains(domain,page_id) VALUES(?,?)`), domain, b.PageID)
+		_, err = t.tx.ExecContext(
+			ctx,
+			t.s.sql(`INSERT INTO page_domains(domain,page_id) VALUES(?,?)`),
+			domain,
+			b.PageID,
+		)
 		if err != nil {
 			return mapError(err)
 		}
@@ -44,7 +54,11 @@ func (s *Store) BindPage(ctx context.Context, b PageBinding) error {
 
 func (s *Store) PageIDBySlug(ctx context.Context, slug string) (string, error) {
 	var id string
-	err := s.read.QueryRowContext(ctx, s.sql(`SELECT page_id FROM page_slugs WHERE slug=?`), strings.ToLower(slug)).Scan(&id)
+	err := s.read.QueryRowContext(
+		ctx,
+		s.sql(`SELECT page_id FROM page_slugs WHERE slug=?`),
+		strings.ToLower(slug),
+	).Scan(&id)
 	return id, mapError(err)
 }
 
@@ -57,7 +71,11 @@ func (s *Store) PageIDByDomain(ctx context.Context, domain string) (string, erro
 
 func (s *Store) PageBinding(ctx context.Context, id string) (PageBinding, error) {
 	b := PageBinding{PageID: id, Domains: []string{}}
-	if err := s.read.QueryRowContext(ctx, s.sql(`SELECT slug FROM page_slugs WHERE page_id=?`), id).Scan(&b.Slug); err != nil {
+	if err := s.read.QueryRowContext(
+		ctx,
+		s.sql(`SELECT slug FROM page_slugs WHERE page_id=?`),
+		id,
+	).Scan(&b.Slug); err != nil {
 		return b, mapError(err)
 	}
 	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT domain FROM page_domains WHERE page_id=? ORDER BY domain`), id)

@@ -13,7 +13,7 @@ import (
 )
 
 func (x *execution) dns(ctx context.Context, c domain.DNSConfig) (Result, error) {
-	result := Result{}
+	var result Result
 	recordType := dns.StringToType[strings.ToUpper(c.RecordType)]
 	if recordType == 0 {
 		return result, errors.New("unsupported DNS record type")
@@ -71,7 +71,7 @@ func (x *execution) dns(ctx context.Context, c domain.DNSConfig) (Result, error)
 		return result, errors.New("DNS record set assertion failed")
 	}
 	for i, value := range expected {
-		matched := false
+		var matched bool
 		for _, actual := range values {
 			if normalizedDNSValue(recordType, value) == normalizedDNSValue(recordType, actual) {
 				matched = true
@@ -112,13 +112,33 @@ func dnsValue(answer dns.RR) string {
 	case *dns.NS:
 		return r.Ns
 	case *dns.SRV:
-		return fmt.Sprintf("%d %d %d %s", r.Priority, r.Weight, r.Port, r.Target)
+		return fmt.Sprintf(
+			"%d %d %d %s",
+			r.Priority,
+			r.Weight,
+			r.Port,
+			r.Target,
+		)
 	case *dns.PTR:
 		return r.Ptr
 	case *dns.SOA:
-		return fmt.Sprintf("%s %s %d %d %d %d %d", r.Ns, r.Mbox, r.Serial, r.Refresh, r.Retry, r.Expire, r.Minttl)
+		return fmt.Sprintf(
+			"%s %s %d %d %d %d %d",
+			r.Ns,
+			r.Mbox,
+			r.Serial,
+			r.Refresh,
+			r.Retry,
+			r.Expire,
+			r.Minttl,
+		)
 	case *dns.CAA:
-		return fmt.Sprintf("%d %s %s", r.Flag, r.Tag, r.Value)
+		return fmt.Sprintf(
+			"%d %s %s",
+			r.Flag,
+			r.Tag,
+			r.Value,
+		)
 	}
 	return ""
 }

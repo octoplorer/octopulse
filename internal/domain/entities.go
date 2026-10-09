@@ -147,7 +147,18 @@ type Settings struct {
 }
 
 func DefaultSettings() Settings {
-	return Settings{OrganizationName: "Octopulse", Timezone: "UTC", Locale: "zh-CN", Retention: Retention{RoundDays: 14, AttemptDays: 3, FiveMinuteDays: 90, HistoryMonths: 13}, AllowedDomains: []string{}}
+	return Settings{
+		OrganizationName: "Octopulse",
+		Timezone:         "UTC",
+		Locale:           "zh-CN",
+		Retention: Retention{
+			RoundDays:      14,
+			AttemptDays:    3,
+			FiveMinuteDays: 90,
+			HistoryMonths:  13,
+		},
+		AllowedDomains: []string{},
+	}
 }
 
 type Audit struct {
@@ -183,13 +194,14 @@ type LatencyPoint struct {
 	Success   bool    `json:"success"`
 }
 type PublicMonitor struct {
-	ID                string             `json:"id" readOnly:"true"`
-	Name              string             `json:"name"`
-	Type              string             `json:"type"`
-	State             string             `json:"state"`
-	Paused            bool               `json:"paused"`
-	Maintenance       bool               `json:"maintenance"`
-	Availability      Availability       `json:"availability"`
+	ID           string       `json:"id" readOnly:"true"`
+	Name         string       `json:"name"`
+	Type         string       `json:"type"`
+	State        string       `json:"state"`
+	Paused       bool         `json:"paused"`
+	Maintenance  bool         `json:"maintenance"`
+	Availability Availability `json:"availability"`
+	// Keep this tag on one line so reflection preserves the API description verbatim.
 	DailyAvailability []Availability     `json:"dailyAvailability" doc:"Daily availability for the last 90 UTC calendar days, including today. Public responses include history when showUptime is enabled; authenticated draft previews always include it."`
 	Latency           []LatencyPoint     `json:"latency"`
 	Certificate       *PublicCertificate `json:"certificate,omitempty"`

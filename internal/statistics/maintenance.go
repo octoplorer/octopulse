@@ -72,7 +72,12 @@ func (s *Service) RunMaintenance(ctx context.Context) error {
 			return err
 		}
 		var p progress
-		err = s.Store.Get(ctx, "statisticsMonitor", m.ID, &p)
+		err = s.Store.Get(
+			ctx,
+			"statisticsMonitor",
+			m.ID,
+			&p,
+		)
 		if err != nil && !errors.Is(err, store.ErrNotFound) {
 			return err
 		}
@@ -120,7 +125,15 @@ func (s *Service) RunMaintenance(ctx context.Context) error {
 			}
 			if start < end {
 				var committedHash string
-				committedHash, err = s.aggregate(ctx, record, start, end, width, retention, p)
+				committedHash, err = s.aggregate(
+					ctx,
+					record,
+					start,
+					end,
+					width,
+					retention,
+					p,
+				)
 				if err != nil {
 					return err
 				}
@@ -144,7 +157,12 @@ func (s *Service) RunMaintenance(ctx context.Context) error {
 			if _, err := tx.GetMonitor(ctx, m.ID); err != nil {
 				return err
 			}
-			return tx.Put(ctx, "statisticsMonitor", m.ID, p)
+			return tx.Put(
+				ctx,
+				"statisticsMonitor",
+				m.ID,
+				p,
+			)
 		}); err != nil {
 			return err
 		}
@@ -155,15 +173,40 @@ func (s *Service) RunMaintenance(ctx context.Context) error {
 		if err := tx.PutWatermark(ctx, "statistics", globalThrough); err != nil {
 			return err
 		}
-		if err := tx.PruneHistory(ctx, now.UnixMilli()-int64(retention.RoundDays)*dayMS, now.UnixMilli()-int64(retention.AttemptDays)*dayMS, globalThrough, 1000); err != nil {
+		if err := tx.PruneHistory(
+			ctx,
+			now.UnixMilli()-int64(retention.RoundDays)*dayMS,
+			now.UnixMilli()-int64(retention.AttemptDays)*dayMS,
+			globalThrough,
+			1000,
+		); err != nil {
 			return err
 		}
-		return tx.PruneSummaries(ctx, now.UnixMilli()-int64(retention.FiveMinuteDays)*dayMS, monthCutoff(now, retention.HistoryMonths).UnixMilli(), monthCutoff(now, retention.HistoryMonths).UnixMilli(), globalThrough, 1000)
+		return tx.PruneSummaries(
+			ctx,
+			now.UnixMilli()-int64(retention.FiveMinuteDays)*dayMS,
+			monthCutoff(now, retention.HistoryMonths).UnixMilli(),
+			monthCutoff(now, retention.HistoryMonths).UnixMilli(),
+			globalThrough,
+			1000,
+		)
 	})
 }
 
-func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to, width int64, retention domain.Retention, p progress) (string, error) {
-	snapshot, err := s.Store.ReadStatistics(ctx, record.ID, from, to, width)
+func (s *Service) aggregate(
+	ctx context.Context,
+	record store.Monitor,
+	from, to, width int64,
+	retention domain.Retention,
+	p progress,
+) (string, error) {
+	snapshot, err := s.Store.ReadStatistics(
+		ctx,
+		record.ID,
+		from,
+		to,
+		width,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +217,13 @@ func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to,
 	for _, bucket := range snapshot.Rounds {
 		raw[bucket.At] = bucket
 	}
-	existing, err := s.Store.Aggregates(ctx, record.ID, from, to, width)
+	existing, err := s.Store.Aggregates(
+		ctx,
+		record.ID,
+		from,
+		to,
+		width,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -188,7 +237,18 @@ func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to,
 	for at := from; at < to; at += width {
 		availability := prepared.calculate(at, at+width)
 		bucket := raw[at]
-		row := store.Aggregate{MonitorID: record.ID, BucketAt: at, WidthMS: width, UpMS: availability.UpMs, DownMS: availability.DownMs, UnknownMS: availability.UnknownMs, ExcludedMS: availability.ExcludedMs, LatencyTotalMS: bucket.LatencyTotalMS, RoundCount: bucket.Count, SuccessfulRoundCount: bucket.Successes}
+		row := store.Aggregate{
+			MonitorID:            record.ID,
+			BucketAt:             at,
+			WidthMS:              width,
+			UpMS:                 availability.UpMs,
+			DownMS:               availability.DownMs,
+			UnknownMS:            availability.UnknownMs,
+			ExcludedMS:           availability.ExcludedMs,
+			LatencyTotalMS:       bucket.LatencyTotalMS,
+			RoundCount:           bucket.Count,
+			SuccessfulRoundCount: bucket.Successes,
+		}
 		if at < rawBefore {
 			if old, ok := retained[at]; ok {
 				row.LatencyTotalMS = old.LatencyTotalMS
@@ -214,7 +274,12 @@ func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to,
 				return err
 			}
 		}
-		return tx.Put(ctx, "statisticsMonitor", record.ID, p)
+		return tx.Put(
+			ctx,
+			"statisticsMonitor",
+			record.ID,
+			p,
+		)
 	})
 	hash := p.HourSourceHash
 	if width == fiveMinuteMS {
@@ -223,9 +288,18 @@ func (s *Service) aggregate(ctx context.Context, record store.Monitor, from, to,
 	return hash, err
 }
 
-func (s *Service) invalidateMaintenance(ctx context.Context, current maintenanceSnapshot, monitors []store.Monitor) error {
+func (s *Service) invalidateMaintenance(
+	ctx context.Context,
+	current maintenanceSnapshot,
+	monitors []store.Monitor,
+) error {
 	var previous maintenanceSnapshot
-	err := s.Store.Get(ctx, "statisticsMaintenance", "snapshot", &previous)
+	err := s.Store.Get(
+		ctx,
+		"statisticsMaintenance",
+		"snapshot",
+		&previous,
+	)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return err
 	}
@@ -272,7 +346,12 @@ func (s *Service) invalidateMaintenance(ctx context.Context, current maintenance
 				return err
 			}
 			var p progress
-			err := tx.Get(ctx, "statisticsMonitor", record.ID, &p)
+			err := tx.Get(
+				ctx,
+				"statisticsMonitor",
+				record.ID,
+				&p,
+			)
 			if errors.Is(err, store.ErrNotFound) {
 				continue
 			}
@@ -295,11 +374,21 @@ func (s *Service) invalidateMaintenance(ctx context.Context, current maintenance
 			hash := maintenanceHash(data, record.ID)
 			p.FiveMinuteSourceHash = hash
 			p.HourSourceHash = hash
-			if err = tx.Put(ctx, "statisticsMonitor", record.ID, p); err != nil {
+			if err = tx.Put(
+				ctx,
+				"statisticsMonitor",
+				record.ID,
+				p,
+			); err != nil {
 				return err
 			}
 		}
-		return tx.Put(ctx, "statisticsMaintenance", "snapshot", current)
+		return tx.Put(
+			ctx,
+			"statisticsMaintenance",
+			"snapshot",
+			current,
+		)
 	})
 }
 
@@ -319,7 +408,7 @@ func maintenanceHash(raw []json.RawMessage, id string) string {
 		}
 		for _, monitorID := range m.MonitorIDs {
 			if monitorID == id {
-				items = append(items, value{m.ID, m.StartsAt, m.EndsAt})
+				items = append(items, value{ID: m.ID, From: m.StartsAt, To: m.EndsAt})
 				break
 			}
 		}
@@ -332,17 +421,49 @@ func maintenanceHash(raw []json.RawMessage, id string) string {
 
 func (s *Service) Progress(ctx context.Context, id string) (int64, int64, error) {
 	var p progress
-	err := s.Store.Get(ctx, "statisticsMonitor", id, &p)
+	err := s.Store.Get(
+		ctx,
+		"statisticsMonitor",
+		id,
+		&p,
+	)
 	return p.FiveMinuteThrough, p.HourThrough, err
 }
 
 func monthCutoff(now time.Time, months int) time.Time {
 	now = now.UTC()
-	first := time.Date(now.Year(), now.Month()-time.Month(months), 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
-	lastDay := time.Date(first.Year(), first.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	first := time.Date(
+		now.Year(),
+		now.Month()-time.Month(months),
+		1,
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
+		now.Nanosecond(),
+		time.UTC,
+	)
+	lastDay := time.Date(
+		first.Year(),
+		first.Month()+1,
+		0,
+		0,
+		0,
+		0,
+		0,
+		time.UTC,
+	).Day()
 	day := now.Day()
 	if day > lastDay {
 		day = lastDay
 	}
-	return time.Date(first.Year(), first.Month(), day, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+	return time.Date(
+		first.Year(),
+		first.Month(),
+		day,
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
+		now.Nanosecond(),
+		time.UTC,
+	)
 }

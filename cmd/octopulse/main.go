@@ -88,8 +88,20 @@ func run() error {
 		metrics.OperationError("collection")
 		telemetry.LogError(runtimeCtx, "collection", err)
 	}
-	metrics.Gauge("probe_active", "Currently executing probe rounds.", func() float64 { return float64(scheduler.Stats().Active) })
-	metrics.Gauge("probe_queued", "Probe rounds waiting for execution.", func() float64 { return float64(scheduler.Stats().Queued) })
+	metrics.Gauge(
+		"probe_active",
+		"Currently executing probe rounds.",
+		func() float64 {
+			return float64(scheduler.Stats().Active)
+		},
+	)
+	metrics.Gauge(
+		"probe_queued",
+		"Probe rounds waiting for execution.",
+		func() float64 {
+			return float64(scheduler.Stats().Queued)
+		},
+	)
 	if e = scheduler.Start(runtimeCtx); e != nil {
 		cancelRuntime()
 		return fmt.Errorf("start monitoring engine: %w", e)
@@ -113,13 +125,30 @@ func run() error {
 	deliveries.OnDelivery = metrics.Delivery
 	cleanup := retention.New(st)
 	cleanup.OperationHistoryDays = cfg.OperationHistoryDays
-	cleanup.OnError = func(err error) { metrics.OperationError("retention"); telemetry.LogError(runtimeCtx, "retention", err) }
+	cleanup.OnError = func(err error) {
+		metrics.OperationError("retention")
+		telemetry.LogError(runtimeCtx, "retention", err)
+	}
 	var workers sync.WaitGroup
 	workers.Add(3)
-	go func() { defer workers.Done(); deliveries.Start(runtimeCtx) }()
-	go func() { defer workers.Done(); cleanup.Start(runtimeCtx) }()
-	go func() { defer workers.Done(); s.Beszel.Start(runtimeCtx) }()
-	defer func() { cancelRuntime(); scheduler.Stop(); stats.Stop(); workers.Wait() }()
+	go func() {
+		defer workers.Done()
+		deliveries.Start(runtimeCtx)
+	}()
+	go func() {
+		defer workers.Done()
+		cleanup.Start(runtimeCtx)
+	}()
+	go func() {
+		defer workers.Done()
+		s.Beszel.Start(runtimeCtx)
+	}()
+	defer func() {
+		cancelRuntime()
+		scheduler.Stop()
+		stats.Stop()
+		workers.Wait()
+	}()
 	s.Check = scheduler.Check
 	s.NextCheck = scheduler.NextCheckAt
 	s.Changed = scheduler.NotifyConfigurationChanged
@@ -130,20 +159,58 @@ func run() error {
 	s.LatencyBatch = stats.LatencyBatch
 	s.Latency = stats.Latency
 	s.TestChannel = deliveries.TestChannel
-	s.Wake = func() { scheduler.Wake(); stats.Wake() }
-	srv := &http.Server{Addr: cfg.Address, Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
-	slog.Info("octopulse starting", "address", cfg.Address, "database", cfg.Driver)
-	var additional []*http.Server
+	s.Wake = func() {
+		scheduler.Wake()
+		stats.Wake()
+	}
+	srv := &http.Server{
+		Addr:              cfg.Address,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	slog.Info(
+		"octopulse starting",
+		"address",
+		cfg.Address,
+		"database",
+		cfg.Driver,
+	)
+	additional := []*http.Server{}
 	if cfg.MetricsAddress != "" {
 		mux := http.NewServeMux()
 		mux.Handle("GET /metrics", metrics.Handler())
-		additional = append(additional, &http.Server{Addr: cfg.MetricsAddress, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second})
+		additional = append(
+			additional,
+			&http.Server{
+				Addr:              cfg.MetricsAddress,
+				Handler:           mux,
+				ReadHeaderTimeout: 5 * time.Second,
+				ReadTimeout:       5 * time.Second,
+				WriteTimeout:      10 * time.Second,
+				IdleTimeout:       30 * time.Second,
+			},
+		)
 	}
-	return serveHTTP(ctx, stop, srv, st.LockLost(), additional...)
+	return serveHTTP(
+		ctx,
+		stop,
+		srv,
+		st.LockLost(),
+		additional...,
+	)
 }
 
 // Keep the database and workers alive until active HTTP handlers finish draining.
-func serveHTTP(ctx context.Context, cancel context.CancelFunc, srv *http.Server, lockLost <-chan struct{}, additional ...*http.Server) error {
+func serveHTTP(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	srv *http.Server,
+	lockLost <-chan struct{},
+	additional ...*http.Server,
+) error {
 	servers := append([]*http.Server{srv}, additional...)
 	listeners := make([]net.Listener, 0, len(servers))
 	for _, server := range servers {
@@ -157,7 +224,13 @@ func serveHTTP(ctx context.Context, cancel context.CancelFunc, srv *http.Server,
 		}
 		listeners = append(listeners, listener)
 	}
-	slog.Info("HTTP listeners ready", "address", srv.Addr, "additional_listeners", len(additional))
+	slog.Info(
+		"HTTP listeners ready",
+		"address",
+		srv.Addr,
+		"additional_listeners",
+		len(additional),
+	)
 	failures := make(chan error, len(servers))
 	for i, server := range servers {
 		go func() { failures <- server.Serve(listeners[i]) }()

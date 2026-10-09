@@ -23,7 +23,9 @@ func apiJSONFormats(formats map[string]huma.Format) map[string]huma.Format {
 	for _, contentType := range []string{"application/json", "json"} {
 		format := formats[contentType]
 		format.Marshal = func(w io.Writer, v any) error {
-			return jsonv2.MarshalWrite(w, v,
+			return jsonv2.MarshalWrite(
+				w,
+				v,
 				json.DefaultOptionsV1(),
 				jsonv2.FormatNilSliceAsNull(false),
 				jsontext.EscapeForHTML(false),

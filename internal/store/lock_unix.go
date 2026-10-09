@@ -59,7 +59,11 @@ func acquirePostgresLock(ctx context.Context, pool *sql.DB) (*instanceLock, erro
 			case <-ticker.C:
 				checkCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				var held bool
-				err := conn.QueryRowContext(checkCtx, "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=pg_backend_pid() AND classid=850087 AND objid=1 AND granted)").Scan(&held)
+				err := conn.QueryRowContext(
+					checkCtx,
+					"SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=pg_backend_pid() "+
+						"AND classid=850087 AND objid=1 AND granted)",
+				).Scan(&held)
 				cancel()
 				if err != nil || !held {
 					close(l.lost)
@@ -71,7 +75,8 @@ func acquirePostgresLock(ctx context.Context, pool *sql.DB) (*instanceLock, erro
 	return l, nil
 }
 
-func (l *instanceLock) close() (err error) {
+func (l *instanceLock) close() error {
+	var err error
 	l.once.Do(func() {
 		if l.conn != nil {
 			close(l.stop)
@@ -86,5 +91,5 @@ func (l *instanceLock) close() (err error) {
 			err = l.file.Close()
 		}
 	})
-	return
+	return err
 }

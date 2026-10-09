@@ -61,7 +61,14 @@ func (x *execution) certificate(ctx context.Context, c domain.CertificateConfig)
 		if now.After(leaf.NotAfter) {
 			verifyAt = leaf.NotAfter.Add(-time.Second)
 		}
-		if _, err = leaf.Verify(x509.VerifyOptions{DNSName: config.ServerName, Roots: config.RootCAs, Intermediates: intermediates, CurrentTime: verifyAt}); err != nil {
+		if _, err = leaf.Verify(
+			x509.VerifyOptions{
+				DNSName:       config.ServerName,
+				Roots:         config.RootCAs,
+				Intermediates: intermediates,
+				CurrentTime:   verifyAt,
+			},
+		); err != nil {
 			return result, errors.New("certificate trust or validity validation failed")
 		}
 	}

@@ -19,7 +19,11 @@ func startManagedEngine(t *testing.T, h *harness) {
 	t.Helper()
 	// The fixture starts with its first periodic check in the future so the
 	// explicit manual request owns this round. Startup itself still runs normally.
-	h.e.schedules[h.m.ID] = schedule{version: h.m.ConfigVersion, enabled: true, next: h.clock.Load() + int64(h.m.IntervalSeconds)*1000}
+	h.e.schedules[h.m.ID] = schedule{
+		version: h.m.ConfigVersion,
+		enabled: true,
+		next:    h.clock.Load() + int64(h.m.IntervalSeconds)*1000,
+	}
 	h.e.PollInterval = time.Hour
 	if err := h.e.Start(context.Background()); err != nil {
 		t.Fatal(err)
@@ -65,7 +69,12 @@ func TestManualCheckCallerDeadlineDoesNotShortenProbeOrReleaseOverlap(t *testing
 	if runtime := h.state(t); runtime.State != domain.StateUnknown {
 		t.Fatalf("short caller deadline changed the target state: %+v", runtime)
 	}
-	if rows, err := h.s.ListRounds(context.Background(), h.m.ID, 0, 10); err != nil || len(rows) != 0 {
+	if rows, err := h.s.ListRounds(
+		context.Background(),
+		h.m.ID,
+		0,
+		10,
+	); err != nil || len(rows) != 0 {
 		t.Fatalf("caller deadline persisted a synthetic result: %+v %v", rows, err)
 	}
 	if err := h.e.Check(context.Background(), h.m.ID); !errors.Is(err, ErrBusy) {
@@ -79,9 +88,19 @@ func TestManualCheckCallerDeadlineDoesNotShortenProbeOrReleaseOverlap(t *testing
 	if h.state(t).State != domain.StateUp {
 		t.Fatal("accepted round did not record the real successful response")
 	}
-	rows, err := h.s.ListRounds(context.Background(), h.m.ID, 0, 10)
+	rows, err := h.s.ListRounds(
+		context.Background(),
+		h.m.ID,
+		0,
+		10,
+	)
 	if err != nil || len(rows) != 1 || !rows[0].Success || calls.Load() != 1 {
-		t.Fatalf("accepted round results=%+v calls=%d error=%v", rows, calls.Load(), err)
+		t.Fatalf(
+			"accepted round results=%+v calls=%d error=%v",
+			rows,
+			calls.Load(),
+			err,
+		)
 	}
 }
 
@@ -115,29 +134,59 @@ func TestStopCancelsAcceptedManualRoundAndWaitsForProbe(t *testing.T) {
 	if h.state(t).State != domain.StateUnknown {
 		t.Fatal("shutdown cancellation was recorded as target Down")
 	}
-	rows, err := h.s.ListRounds(context.Background(), h.m.ID, 0, 10)
+	rows, err := h.s.ListRounds(
+		context.Background(),
+		h.m.ID,
+		0,
+		10,
+	)
 	if err != nil || len(rows) != 0 {
 		t.Fatalf("shutdown recorded an incomplete round: %+v %v", rows, err)
 	}
-	if err := h.e.Check(context.Background(), h.m.ID); !errors.Is(err, context.Canceled) || errors.Is(err, ErrCheckAccepted) {
+	err = h.e.Check(context.Background(), h.m.ID)
+	if !errors.Is(err, context.Canceled) || errors.Is(err, ErrCheckAccepted) {
 		t.Fatalf("stopped engine accepted a new check: %v", err)
 	}
 }
 
 func TestHeartbeatDescriptionUsesCharacterLimitAndPersistsLastReport(t *testing.T) {
-	h := newHarness(t, domain.Monitor{Type: domain.MonitorHeartbeat, Heartbeat: &domain.HeartbeatConfig{PeriodSeconds: 30, GraceSeconds: 10}})
+	h := newHarness(
+		t,
+		domain.Monitor{
+			Type: domain.MonitorHeartbeat,
+			Heartbeat: &domain.HeartbeatConfig{
+				PeriodSeconds: 30,
+				GraceSeconds:  10,
+			},
+		},
+	)
 	description := strings.Repeat("监", 999) + "🙂"
-	if err := h.e.Heartbeat(context.Background(), h.m.ID, true, description); err != nil {
+	if err := h.e.Heartbeat(
+		context.Background(),
+		h.m.ID,
+		true,
+		description,
+	); err != nil {
 		t.Fatal(err)
 	}
 	var meta Metadata
-	if err := h.s.Get(context.Background(), "engineMonitor", h.m.ID, &meta); err != nil {
+	if err := h.s.Get(
+		context.Background(),
+		"engineMonitor",
+		h.m.ID,
+		&meta,
+	); err != nil {
 		t.Fatal(err)
 	}
 	if !meta.HasHeartbeatReport || !meta.HeartbeatSuccess || meta.HeartbeatDescription != description {
 		t.Fatalf("last report was not persisted: %+v", meta)
 	}
-	if err := h.e.Heartbeat(context.Background(), h.m.ID, false, description+"额"); err == nil {
+	if err := h.e.Heartbeat(
+		context.Background(),
+		h.m.ID,
+		false,
+		description+"额",
+	); err == nil {
 		t.Fatal("accepted more than 1000 characters")
 	}
 	if h.state(t).State != domain.StateUp {
@@ -145,13 +194,28 @@ func TestHeartbeatDescriptionUsesCharacterLimitAndPersistsLastReport(t *testing.
 	}
 	h.clock.Add(40001)
 	h.check(t)
-	if err := h.s.Get(context.Background(), "engineMonitor", h.m.ID, &meta); err != nil || meta.HeartbeatDescription != description || !meta.HeartbeatSuccess {
+	if err := h.s.Get(
+		context.Background(),
+		"engineMonitor",
+		h.m.ID,
+		&meta,
+	); err != nil || meta.HeartbeatDescription != description || !meta.HeartbeatSuccess {
 		t.Fatal("expiry replaced the last actual report description/outcome", meta, err)
 	}
-	if err := h.e.Heartbeat(context.Background(), h.m.ID, false, "  服务故障  "); err != nil {
+	if err := h.e.Heartbeat(
+		context.Background(),
+		h.m.ID,
+		false,
+		"  服务故障  ",
+	); err != nil {
 		t.Fatal(err)
 	}
-	if err := h.s.Get(context.Background(), "engineMonitor", h.m.ID, &meta); err != nil || meta.HeartbeatSuccess || meta.HeartbeatDescription != "服务故障" {
+	if err := h.s.Get(
+		context.Background(),
+		"engineMonitor",
+		h.m.ID,
+		&meta,
+	); err != nil || meta.HeartbeatSuccess || meta.HeartbeatDescription != "服务故障" {
 		t.Fatal("explicit failed report did not replace the last report", meta, err)
 	}
 }
@@ -195,10 +259,32 @@ func TestCommittedStartupRoundClearsItsPendingEvaluationAfterPollCancelsOldGener
 	roundContext, cancelRound := context.WithCancel(context.Background())
 	defer cancelRound()
 	h.e.evaluationEpoch = 1
-	h.e.schedules[h.m.ID] = schedule{version: record.ConfigVersion, enabled: true, next: h.clock.Load() + 30000, pendingEvaluation: true, evaluationEpoch: 1}
+	h.e.schedules[h.m.ID] = schedule{
+		version:           record.ConfigVersion,
+		enabled:           true,
+		next:              h.clock.Load() + 30000,
+		pendingEvaluation: true,
+		evaluationEpoch:   1,
+	}
 	h.e.running[h.m.ID] = inFlight{cancel: cancelRound, version: record.ConfigVersion, generation: previous.Generation}
-	round := store.Round{ID: domain.ID(), MonitorID: h.m.ID, ConfigVersion: record.ConfigVersion, Generation: previous.Generation, StartedAt: h.clock.Load(), FinishedAt: h.clock.Load(), Success: true}
-	if err := h.e.commit(roundContext, record, h.m, previous, round, probe.Result{Success: true}, false); err != nil {
+	round := store.Round{
+		ID:            domain.ID(),
+		MonitorID:     h.m.ID,
+		ConfigVersion: record.ConfigVersion,
+		Generation:    previous.Generation,
+		StartedAt:     h.clock.Load(),
+		FinishedAt:    h.clock.Load(),
+		Success:       true,
+	}
+	if err := h.e.commit(
+		roundContext,
+		record,
+		h.m,
+		previous,
+		round,
+		probe.Result{Success: true},
+		false,
+	); err != nil {
 		t.Fatal(err)
 	}
 	// Force the precise interleaving from the capacity failure: commit advanced
@@ -210,7 +296,12 @@ func TestCommittedStartupRoundClearsItsPendingEvaluationAfterPollCancelsOldGener
 	if !errors.Is(roundContext.Err(), context.Canceled) {
 		t.Fatal("fixture did not cancel the already committed round")
 	}
-	h.e.clearPendingEvaluation(roundContext, h.m.ID, record.ConfigVersion, 1)
+	h.e.clearPendingEvaluation(
+		roundContext,
+		h.m.ID,
+		record.ConfigVersion,
+		1,
+	)
 	h.e.mu.Lock()
 	pending := h.e.schedules[h.m.ID].pendingEvaluation
 	delete(h.e.running, h.m.ID)
@@ -222,9 +313,19 @@ func TestCommittedStartupRoundClearsItsPendingEvaluationAfterPollCancelsOldGener
 		t.Fatal(err)
 	}
 	h.e.wg.Wait()
-	rows, err := h.s.ListRounds(context.Background(), h.m.ID, 0, 10)
+	rows, err := h.s.ListRounds(
+		context.Background(),
+		h.m.ID,
+		0,
+		10,
+	)
 	if err != nil || len(rows) != 1 || calls.Load() != 0 {
-		t.Fatalf("startup completion triggered an extra early round: rows=%+v calls=%d err=%v", rows, calls.Load(), err)
+		t.Fatalf(
+			"startup completion triggered an extra early round: rows=%+v calls=%d err=%v",
+			rows,
+			calls.Load(),
+			err,
+		)
 	}
 }
 
@@ -234,12 +335,28 @@ func TestOldRoundCannotClearLaterMaintenanceOrConfigurationEvaluation(t *testing
 	// A maintenance-exit request is already present in the in-memory plan,
 	// while its metadata write has not happened yet. EvaluationAfter is still
 	// zero, so only ownership of the epoch can prevent the old round clearing it.
-	h.e.schedules[h.m.ID] = schedule{version: h.m.ConfigVersion, enabled: true, next: h.clock.Load() + 30000, pendingEvaluation: true, evaluationEpoch: 2}
-	h.e.clearPendingEvaluation(context.Background(), h.m.ID, h.m.ConfigVersion, 1)
+	h.e.schedules[h.m.ID] = schedule{
+		version:           h.m.ConfigVersion,
+		enabled:           true,
+		next:              h.clock.Load() + 30000,
+		pendingEvaluation: true,
+		evaluationEpoch:   2,
+	}
+	h.e.clearPendingEvaluation(
+		context.Background(),
+		h.m.ID,
+		h.m.ConfigVersion,
+		1,
+	)
 	if !h.e.schedules[h.m.ID].pendingEvaluation {
 		t.Fatal("old round erased a newer maintenance-exit evaluation")
 	}
-	h.e.clearPendingEvaluation(context.Background(), h.m.ID, h.m.ConfigVersion, 2)
+	h.e.clearPendingEvaluation(
+		context.Background(),
+		h.m.ID,
+		h.m.ConfigVersion,
+		2,
+	)
 	if h.e.schedules[h.m.ID].pendingEvaluation {
 		t.Fatal("owning round could not clear its completed evaluation")
 	}
@@ -248,8 +365,19 @@ func TestOldRoundCannotClearLaterMaintenanceOrConfigurationEvaluation(t *testing
 	if err := h.e.NotifyConfigurationChanged(context.Background(), h.m.ID); err != nil {
 		t.Fatal(err)
 	}
-	h.e.schedules[h.m.ID] = schedule{version: h.m.ConfigVersion, enabled: true, next: h.clock.Load() + 30000, pendingEvaluation: true, evaluationEpoch: 3}
-	h.e.clearPendingEvaluation(context.Background(), h.m.ID, h.m.ConfigVersion-1, 3)
+	h.e.schedules[h.m.ID] = schedule{
+		version:           h.m.ConfigVersion,
+		enabled:           true,
+		next:              h.clock.Load() + 30000,
+		pendingEvaluation: true,
+		evaluationEpoch:   3,
+	}
+	h.e.clearPendingEvaluation(
+		context.Background(),
+		h.m.ID,
+		h.m.ConfigVersion-1,
+		3,
+	)
 	if !h.e.schedules[h.m.ID].pendingEvaluation {
 		t.Fatal("old configuration erased the new configuration's first evaluation")
 	}

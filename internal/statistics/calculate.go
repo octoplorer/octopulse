@@ -61,7 +61,7 @@ func subtract(s span, excluded []span) []span {
 			if end > s.to {
 				end = s.to
 			}
-			result = append(result, span{cursor, end})
+			result = append(result, span{from: cursor, to: end})
 		}
 		if block.to > cursor {
 			cursor = block.to
@@ -71,7 +71,7 @@ func subtract(s span, excluded []span) []span {
 		}
 	}
 	if cursor < s.to {
-		result = append(result, span{cursor, s.to})
+		result = append(result, span{from: cursor, to: s.to})
 	}
 	return result
 }
@@ -88,7 +88,7 @@ func maintenanceSpans(raw []json.RawMessage) map[string][]span {
 		seen := map[string]bool{}
 		for _, id := range maintenance.MonitorIDs {
 			if !seen[id] {
-				result[id] = append(result[id], span{maintenance.StartsAt, maintenance.EndsAt})
+				result[id] = append(result[id], span{from: maintenance.StartsAt, to: maintenance.EndsAt})
 				seen[id] = true
 			}
 		}
@@ -123,7 +123,14 @@ func prepareAvailability(snapshot store.StatisticsSnapshot, maintenance []span) 
 		end = max(end, current)
 		ends[i] = end
 	}
-	return availabilityInput{created: monitor.CreatedAt, intervals: intervals, intervalEnds: ends, maintenance: maintenance, collectionThrough: snapshot.CollectionThrough, hasCollectionWatermark: snapshot.HasCollectionWatermark}
+	return availabilityInput{
+		created:                monitor.CreatedAt,
+		intervals:              intervals,
+		intervalEnds:           ends,
+		maintenance:            maintenance,
+		collectionThrough:      snapshot.CollectionThrough,
+		hasCollectionWatermark: snapshot.HasCollectionWatermark,
+	}
 }
 
 func calculate(snapshot store.StatisticsSnapshot, from, to int64) domain.Availability {
@@ -159,7 +166,7 @@ func (input availabilityInput) calculate(from, to int64) domain.Availability {
 		if interval.EndedAt != nil {
 			end = *interval.EndedAt
 		}
-		if interval, ok := clip(span{interval.StartedAt, end}, created, to); ok {
+		if interval, ok := clip(span{from: interval.StartedAt, to: end}, created, to); ok {
 			excluded = append(excluded, interval)
 		}
 	}
@@ -177,7 +184,7 @@ func (input availabilityInput) calculate(from, to int64) domain.Availability {
 		} else if input.hasCollectionWatermark && input.collectionThrough < end {
 			end = input.collectionThrough
 		}
-		source, ok := clip(span{interval.StartedAt, end}, created, to)
+		source, ok := clip(span{from: interval.StartedAt, to: end}, created, to)
 		if !ok {
 			continue
 		}

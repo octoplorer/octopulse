@@ -21,7 +21,17 @@ func BenchmarkRoundBatch100(b *testing.B) {
 	for index := 0; index < 100; index++ {
 		id := fmt.Sprintf("monitor-%03d", index)
 		if err = s.WithTx(ctx, func(tx *Tx) error {
-			if err := tx.PutMonitor(ctx, Monitor{ID: id, ConfigVersion: 1, Generation: 1, Kind: "http", Enabled: true, IntervalMS: 30000}); err != nil {
+			if err := tx.PutMonitor(
+				ctx,
+				Monitor{
+					ID:            id,
+					ConfigVersion: 1,
+					Generation:    1,
+					Kind:          "http",
+					Enabled:       true,
+					IntervalMS:    30000,
+				},
+			); err != nil {
 				return err
 			}
 			if err := tx.PutRuntime(ctx, Runtime{MonitorID: id, ConfigVersion: 1, Generation: 1, State: "unknown"}); err != nil {
@@ -43,14 +53,24 @@ func BenchmarkRoundBatch100(b *testing.B) {
 				return
 			default:
 			}
-			if _, err := s.ListRounds(ctx, "monitor-050", 0, 20); err != nil {
+			if _, err := s.ListRounds(
+				ctx,
+				"monitor-050",
+				0,
+				20,
+			); err != nil {
 				select {
 				case readError <- err:
 				default:
 				}
 				return
 			}
-			if _, err := s.Intervals(ctx, "monitor-050", 0, 1<<62); err != nil {
+			if _, err := s.Intervals(
+				ctx,
+				"monitor-050",
+				0,
+				1<<62,
+			); err != nil {
 				select {
 				case readError <- err:
 				default:
@@ -59,14 +79,47 @@ func BenchmarkRoundBatch100(b *testing.B) {
 			}
 		}
 	}()
-	defer func() { close(done); <-readStopped }()
+	defer func() {
+		close(done)
+		<-readStopped
+	}()
 	b.ResetTimer()
 	for batch := 0; batch < b.N; batch++ {
 		for index := 0; index < 100; index++ {
 			id := fmt.Sprintf("monitor-%03d", index)
 			roundID := fmt.Sprintf("%s/round/%d", id, batch)
 			at := int64(batch+1) * 30000
-			r := Round{ID: roundID, MonitorID: id, ConfigVersion: 1, Generation: 1, StartedAt: at, FinishedAt: at + 100, Success: batch%2 == 0, LatencyMS: 100, Attempts: []Attempt{{Number: 1, StartedAt: at, FinishedAt: at + 30, LatencyMS: 30}, {Number: 2, StartedAt: at + 30, FinishedAt: at + 60, LatencyMS: 30}, {Number: 3, StartedAt: at + 60, FinishedAt: at + 100, LatencyMS: 40, Success: batch%2 == 0}}}
+			r := Round{
+				ID:            roundID,
+				MonitorID:     id,
+				ConfigVersion: 1,
+				Generation:    1,
+				StartedAt:     at,
+				FinishedAt:    at + 100,
+				Success:       batch%2 == 0,
+				LatencyMS:     100,
+				Attempts: []Attempt{
+					{
+						Number:     1,
+						StartedAt:  at,
+						FinishedAt: at + 30,
+						LatencyMS:  30,
+					},
+					{
+						Number:     2,
+						StartedAt:  at + 30,
+						FinishedAt: at + 60,
+						LatencyMS:  30,
+					},
+					{
+						Number:     3,
+						StartedAt:  at + 60,
+						FinishedAt: at + 100,
+						LatencyMS:  40,
+						Success:    batch%2 == 0,
+					},
+				},
+			}
 			state := "down"
 			if r.Success {
 				state = "up"
@@ -75,17 +128,54 @@ func BenchmarkRoundBatch100(b *testing.B) {
 				if err := tx.PutRound(ctx, r); err != nil {
 					return err
 				}
-				if err := tx.PutRuntime(ctx, Runtime{MonitorID: id, ConfigVersion: 1, Generation: 1, State: state, LastRoundID: r.ID, LastCollectedAt: r.FinishedAt}); err != nil {
+				if err := tx.PutRuntime(
+					ctx,
+					Runtime{
+						MonitorID:       id,
+						ConfigVersion:   1,
+						Generation:      1,
+						State:           state,
+						LastRoundID:     r.ID,
+						LastCollectedAt: r.FinishedAt,
+					},
+				); err != nil {
 					return err
 				}
-				if err := tx.ReplaceInterval(ctx, Interval{ID: roundID + "/interval", MonitorID: id, State: state, StartedAt: r.FinishedAt}); err != nil {
+				if err := tx.ReplaceInterval(
+					ctx,
+					Interval{
+						ID:        roundID + "/interval",
+						MonitorID: id,
+						State:     state,
+						StartedAt: r.FinishedAt,
+					},
+				); err != nil {
 					return err
 				}
-				if err := tx.PutEvent(ctx, Event{ID: roundID + "/event", MonitorID: id, Generation: 1, Kind: state, CreatedAt: r.FinishedAt, Payload: json.RawMessage(`{"message":"probe state"}`)}); err != nil {
+				if err := tx.PutEvent(
+					ctx,
+					Event{
+						ID:         roundID + "/event",
+						MonitorID:  id,
+						Generation: 1,
+						Kind:       state,
+						CreatedAt:  r.FinishedAt,
+						Payload:    json.RawMessage(`{"message":"probe state"}`),
+					},
+				); err != nil {
 					return err
 				}
 				for channel := 0; channel < 3; channel++ {
-					if err := tx.PutDelivery(ctx, Delivery{ID: fmt.Sprintf("%s/delivery/%d", roundID, channel), EventID: roundID + "/event", ChannelID: fmt.Sprint(channel), Generation: 1, DueAt: r.FinishedAt}); err != nil {
+					if err := tx.PutDelivery(
+						ctx,
+						Delivery{
+							ID:         fmt.Sprintf("%s/delivery/%d", roundID, channel),
+							EventID:    roundID + "/event",
+							ChannelID:  fmt.Sprint(channel),
+							Generation: 1,
+							DueAt:      r.FinishedAt,
+						},
+					); err != nil {
 						return err
 					}
 				}
@@ -96,13 +186,28 @@ func BenchmarkRoundBatch100(b *testing.B) {
 			}
 		}
 		if err = s.WithTx(ctx, func(tx *Tx) error {
-			if err := tx.PutAggregate(ctx, Aggregate{MonitorID: "monitor-050", BucketAt: 0, WidthMS: 300000, UpMS: int64(batch+1) * 30000, RoundCount: int64(batch + 1)}); err != nil {
+			if err := tx.PutAggregate(
+				ctx,
+				Aggregate{
+					MonitorID:  "monitor-050",
+					BucketAt:   0,
+					WidthMS:    300000,
+					UpMS:       int64(batch+1) * 30000,
+					RoundCount: int64(batch + 1),
+				},
+			); err != nil {
 				return err
 			}
 			if err := tx.PutWatermark(ctx, "load", int64(batch+1)*30000); err != nil {
 				return err
 			}
-			return tx.PruneHistory(ctx, 0, 0, 0, 1000)
+			return tx.PruneHistory(
+				ctx,
+				0,
+				0,
+				0,
+				1000,
+			)
 		}); err != nil {
 			b.Fatal(err)
 		}

@@ -19,8 +19,10 @@ import (
 )
 
 var (
-	ErrDisabled    = errors.New("Beszel integration is disabled")
-	ErrAuth        = errors.New("Beszel password authentication failed; verify the account or disable MFA for this integration account")
+	ErrDisabled = errors.New("Beszel integration is disabled")
+	ErrAuth     = errors.New(
+		"Beszel password authentication failed; verify the account or disable MFA for this integration account",
+	)
 	ErrPermission  = errors.New("Beszel account cannot access the requested records")
 	ErrUnavailable = errors.New("Beszel Hub is unavailable")
 	ErrSchema      = errors.New("Beszel response does not match the supported schema")
@@ -28,6 +30,14 @@ var (
 	ErrNotFound    = errors.New("Beszel system is unavailable to this account")
 )
 var systemID = regexp.MustCompile(`^[a-zA-Z0-9]{1,100}$`)
+
+type requestOptions struct {
+	method string
+	path   string
+	query  url.Values
+	body   any
+	token  string
+}
 
 func ValidateConfig(cfg *domain.BeszelConfig) error {
 	if cfg.PollSeconds == 0 {
@@ -40,7 +50,14 @@ func ValidateConfig(cfg *domain.BeszelConfig) error {
 		return nil
 	}
 	u, err := url.Parse(strings.TrimSpace(cfg.URL))
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil {
+		return errors.New("Beszel URL must be an HTTP(S) Hub URL without embedded credentials or query")
+	}
+	validScheme := u.Scheme == "http" || u.Scheme == "https"
+	hasHost := u.Hostname() != ""
+	hasCredentials := u.User != nil
+	hasURLSuffix := u.RawQuery != "" || u.Fragment != ""
+	if !validScheme || !hasHost || hasCredentials || hasURLSuffix {
 		return errors.New("Beszel URL must be an HTTP(S) Hub URL without embedded credentials or query")
 	}
 	cfg.URL = strings.TrimRight(u.String(), "/")
@@ -50,29 +67,34 @@ func ValidateConfig(cfg *domain.BeszelConfig) error {
 	return nil
 }
 
-func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, path string, query url.Values, body any, out any, token string) error {
+func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, options requestOptions, out any) error {
 	var data []byte
 	var err error
-	if body != nil {
-		data, err = json.Marshal(body)
+	if options.body != nil {
+		data, err = json.Marshal(options.body)
 		if err != nil {
 			return ErrSchema
 		}
 	}
-	address := cfg.URL + path
-	if len(query) > 0 {
-		address += "?" + query.Encode()
+	address := cfg.URL + options.path
+	if len(options.query) > 0 {
+		address += "?" + options.query.Encode()
 	}
-	req, err := http.NewRequestWithContext(ctx, method, address, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		options.method,
+		address,
+		bytes.NewReader(data),
+	)
 	if err != nil {
 		return ErrUnavailable
 	}
 	req.Header.Set("Accept", "application/json")
-	if body != nil {
+	if options.body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if token != "" {
-		req.Header.Set("Authorization", token)
+	if options.token != "" {
+		req.Header.Set("Authorization", options.token)
 	}
 	select {
 	case c.remote <- struct{}{}:
@@ -88,7 +110,7 @@ func (c *Client) request(ctx context.Context, cfg domain.BeszelConfig, method, p
 		return ErrUnavailable
 	}
 	defer response.Body.Close()
-	if response.StatusCode == 401 || response.StatusCode == 400 && strings.Contains(path, "auth-") {
+	if response.StatusCode == 401 || response.StatusCode == 400 && strings.Contains(options.path, "auth-") {
 		return ErrAuth
 	}
 	if response.StatusCode == 403 {
@@ -120,40 +142,64 @@ func (c *Client) authenticate(ctx context.Context, session *clientSession) (stri
 	if token != "" && until > c.Now().Add(5*time.Minute).Unix() {
 		return token, nil
 	}
-	value, err := c.sharedWork(ctx, session, &session.auth, "", func(ctx context.Context) (any, error) {
-		session.mu.Lock()
-		token, until := session.token, session.tokenUntil
-		session.mu.Unlock()
-		if token != "" && until > c.Now().Add(5*time.Minute).Unix() {
-			return token, nil
-		}
-		cfg := session.config
-		var result struct {
-			Token  string `json:"token"`
-			Record struct {
-				CollectionName string `json:"collectionName"`
-			} `json:"record"`
-		}
-		if token != "" {
-			if err := c.request(ctx, cfg, "POST", "/api/collections/users/auth-refresh", nil, nil, &result, token); err == nil && result.Token != "" {
-				c.installToken(session, result.Token)
-				return result.Token, nil
+	value, err := c.sharedWork(
+		ctx,
+		session,
+		&session.auth,
+		"",
+		func(ctx context.Context) (any, error) {
+			session.mu.Lock()
+			token, until := session.token, session.tokenUntil
+			session.mu.Unlock()
+			if token != "" && until > c.Now().Add(5*time.Minute).Unix() {
+				return token, nil
 			}
-			c.clearToken(session, token)
-		}
-		password, err := c.Secrets.ResolveSecret(ctx, cfg.PasswordSecretID)
-		if err != nil {
-			return nil, ErrAuth
-		}
-		if err = c.request(ctx, cfg, "POST", "/api/collections/users/auth-with-password", nil, map[string]string{"identity": cfg.Email, "password": password}, &result, ""); err != nil {
-			return nil, err
-		}
-		if result.Token == "" || result.Record.CollectionName != "users" {
-			return nil, ErrAuth
-		}
-		c.installToken(session, result.Token)
-		return result.Token, nil
-	})
+			cfg := session.config
+			var result struct {
+				Token  string `json:"token"`
+				Record struct {
+					CollectionName string `json:"collectionName"`
+				} `json:"record"`
+			}
+			if token != "" {
+				if err := c.request(
+					ctx,
+					cfg,
+					requestOptions{
+						method: "POST",
+						path:   "/api/collections/users/auth-refresh",
+						token:  token,
+					},
+					&result,
+				); err == nil && result.Token != "" {
+					c.installToken(session, result.Token)
+					return result.Token, nil
+				}
+				c.clearToken(session, token)
+			}
+			password, err := c.Secrets.ResolveSecret(ctx, cfg.PasswordSecretID)
+			if err != nil {
+				return nil, ErrAuth
+			}
+			if err = c.request(
+				ctx,
+				cfg,
+				requestOptions{
+					method: "POST",
+					path:   "/api/collections/users/auth-with-password",
+					body:   map[string]string{"identity": cfg.Email, "password": password},
+				},
+				&result,
+			); err != nil {
+				return nil, err
+			}
+			if result.Token == "" || result.Record.CollectionName != "users" {
+				return nil, ErrAuth
+			}
+			c.installToken(session, result.Token)
+			return result.Token, nil
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +232,13 @@ func (c *Client) installToken(session *clientSession, token string) {
 	session.mu.Unlock()
 }
 
-func listRecords[T any](ctx context.Context, c *Client, session *clientSession, collection string, query url.Values) ([]T, error) {
+func listRecords[T any](
+	ctx context.Context,
+	c *Client,
+	session *clientSession,
+	collection string,
+	query url.Values,
+) ([]T, error) {
 	token, err := c.authenticate(ctx, session)
 	if err != nil {
 		return nil, err
@@ -199,13 +251,30 @@ func listRecords[T any](ctx context.Context, c *Client, session *clientSession, 
 			Items      []T `json:"items"`
 			TotalPages int `json:"totalPages"`
 		}
-		err := c.request(ctx, session.config, "GET", "/api/collections/"+collection+"/records", query, nil, &response, token)
+		options := requestOptions{
+			method: "GET",
+			path:   "/api/collections/" + collection + "/records",
+			query:  query,
+			token:  token,
+		}
+		err := c.request(
+			ctx,
+			session.config,
+			options,
+			&response,
+		)
 		if errors.Is(err, ErrAuth) {
 			c.clearToken(session, token)
 			if token, err = c.authenticate(ctx, session); err != nil {
 				return nil, err
 			}
-			err = c.request(ctx, session.config, "GET", "/api/collections/"+collection+"/records", query, nil, &response, token)
+			options.token = token
+			err = c.request(
+				ctx,
+				session.config,
+				options,
+				&response,
+			)
 		}
 		if err != nil {
 			return nil, err
@@ -227,7 +296,12 @@ func timestamp(raw json.RawMessage) (int64, error) {
 	if json.Unmarshal(raw, &text) != nil {
 		return 0, ErrSchema
 	}
-	for _, format := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999Z", "2006-01-02 15:04:05.999", "2006-01-02 15:04:05"} {
+	for _, format := range []string{
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999Z",
+		"2006-01-02 15:04:05.999",
+		"2006-01-02 15:04:05",
+	} {
 		if parsed, err := time.Parse(format, text); err == nil {
 			return parsed.UnixMilli(), nil
 		}

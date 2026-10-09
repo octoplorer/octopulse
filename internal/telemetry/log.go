@@ -60,5 +60,10 @@ func LogError(ctx context.Context, operation string, err error) {
 	default:
 		attrs = append(attrs, slog.String("error_class", "operation_failed"))
 	}
-	slog.LogAttrs(ctx, level, message, attrs...)
+	slog.LogAttrs(
+		ctx,
+		level,
+		message,
+		attrs...,
+	)
 }

@@ -22,13 +22,32 @@ func TestMutationOriginChecks(t *testing.T) {
 		{name: "different host", origin: "http://untrusted.example", wantStatus: 403},
 		{name: "different port", origin: "http://127.0.0.1:5173", wantStatus: 403},
 		{name: "opaque origin", origin: "null", wantStatus: 403},
-		{name: "forwarded host cannot authorize origin", origin: "http://untrusted.example", forwarded: "untrusted.example", wantStatus: 403},
+		{
+			name:       "forwarded host cannot authorize origin",
+			origin:     "http://untrusted.example",
+			forwarded:  "untrusted.example",
+			wantStatus: 403,
+		},
 		{name: "secure cookie rejects HTTP origin", origin: ts.URL, secure: true, wantStatus: 403},
-		{name: "secure cookie accepts HTTPS origin", origin: strings.Replace(ts.URL, "http://", "https://", 1), secure: true, wantStatus: 422},
+		{
+			name: "secure cookie accepts HTTPS origin",
+			origin: strings.Replace(
+				ts.URL,
+				"http://",
+				"https://",
+				1,
+			),
+			secure:     true,
+			wantStatus: 422,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s.Config.CookieSecure = tc.secure
-			req, err := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/session", strings.NewReader(`{"username":"","password":""}`))
+			req, err := http.NewRequest(
+				http.MethodPost,
+				ts.URL+"/api/v1/session",
+				strings.NewReader(`{"username":"","password":""}`),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -45,7 +64,12 @@ func TestMutationOriginChecks(t *testing.T) {
 				t.Fatal(err)
 			}
 			if res.StatusCode != tc.wantStatus {
-				t.Fatalf("status %d, want %d: %s", res.StatusCode, tc.wantStatus, body)
+				t.Fatalf(
+					"status %d, want %d: %s",
+					res.StatusCode,
+					tc.wantStatus,
+					body,
+				)
 			}
 			if tc.wantStatus == 403 {
 				var problem struct{ Detail string }

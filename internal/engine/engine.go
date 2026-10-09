@@ -89,7 +89,18 @@ type Metadata struct {
 type NotificationPayload = domain.NotificationPayload
 
 func New(st *store.Store, runner *probe.Runner) *Engine {
-	e := &Engine{Store: st, Runner: runner, Now: time.Now, PollInterval: time.Second, Concurrency: 100, queueChanged: make(chan struct{}), running: map[string]inFlight{}, schedules: map[string]schedule{}, semaphore: make(chan struct{}, 100), wake: make(chan struct{}, 1)}
+	e := &Engine{
+		Store:        st,
+		Runner:       runner,
+		Now:          time.Now,
+		PollInterval: time.Second,
+		Concurrency:  100,
+		queueChanged: make(chan struct{}),
+		running:      map[string]inFlight{},
+		schedules:    map[string]schedule{},
+		semaphore:    make(chan struct{}, 100),
+		wake:         make(chan struct{}, 1),
+	}
 	if runner != nil {
 		e.Attempt = runner.Run
 	}
@@ -102,9 +113,15 @@ func (e *Engine) now() int64 {
 	return e.Now().UTC().UnixMilli()
 }
 func (e *Engine) report(err error) {
-	if err != nil && !errors.Is(err, ErrBusy) && !errors.Is(err, ErrPaused) && !errors.Is(err, ErrSuperseded) && !errors.Is(err, context.Canceled) && e.OnError != nil {
-		e.OnError(err)
+	if err == nil {
+		return
 	}
+	expected := errors.Is(err, ErrBusy) || errors.Is(err, ErrPaused) ||
+		errors.Is(err, ErrSuperseded) || errors.Is(err, context.Canceled)
+	if expected || e.OnError == nil {
+		return
+	}
+	e.OnError(err)
 }
 
 func (e *Engine) Start(ctx context.Context) error {
@@ -128,7 +145,7 @@ func (e *Engine) Start(ctx context.Context) error {
 		concurrency = 100
 	}
 	e.wg.Add(concurrency + 1)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go e.worker()
 	}
 	go func() {
@@ -227,18 +244,36 @@ func (e *Engine) initialize(ctx context.Context) error {
 			if err = tx.PutMonitor(ctx, current); err != nil {
 				return err
 			}
-			next := store.Runtime{MonitorID: m.ID, ConfigVersion: current.ConfigVersion, Generation: current.Generation, State: domain.StateUnknown, HeartbeatVersion: previous.HeartbeatVersion + 1, HeartbeatAt: previous.HeartbeatAt}
+			next := store.Runtime{
+				MonitorID:        m.ID,
+				ConfigVersion:    current.ConfigVersion,
+				Generation:       current.Generation,
+				State:            domain.StateUnknown,
+				HeartbeatVersion: previous.HeartbeatVersion + 1,
+				HeartbeatAt:      previous.HeartbeatAt,
+			}
 			if !current.Enabled {
 				next.State = StatePaused
 			}
 			if err = tx.PutRuntime(ctx, next); err != nil {
 				return err
 			}
-			meta, err := getMetadata(ctx, tx, m, current, now)
+			meta, err := getMetadata(
+				ctx,
+				tx,
+				m,
+				current,
+				now,
+			)
 			if err != nil {
 				return err
 			}
-			if err = tx.Put(ctx, "engineMonitor", m.ID, meta); err != nil {
+			if err = tx.Put(
+				ctx,
+				"engineMonitor",
+				m.ID,
+				meta,
+			); err != nil {
 				return err
 			}
 			if m.IsAvailability() {
@@ -249,7 +284,15 @@ func (e *Engine) initialize(ctx context.Context) error {
 				if m.CreatedAt > start {
 					start = m.CreatedAt
 				}
-				if err = tx.PutInterval(ctx, store.Interval{ID: domain.ID(), MonitorID: m.ID, State: next.State, StartedAt: start}); err != nil {
+				if err = tx.PutInterval(
+					ctx,
+					store.Interval{
+						ID:        domain.ID(),
+						MonitorID: m.ID,
+						State:     next.State,
+						StartedAt: start,
+					},
+				); err != nil {
 					return err
 				}
 			}
@@ -288,9 +331,20 @@ func decodeMonitor(record store.Monitor) (domain.Monitor, error) {
 	return m, nil
 }
 
-func getMetadata(ctx context.Context, tx *store.Tx, m domain.Monitor, record store.Monitor, now int64) (Metadata, error) {
+func getMetadata(
+	ctx context.Context,
+	tx *store.Tx,
+	m domain.Monitor,
+	record store.Monitor,
+	now int64,
+) (Metadata, error) {
 	var meta Metadata
-	err := tx.Get(ctx, "engineMonitor", m.ID, &meta)
+	err := tx.Get(
+		ctx,
+		"engineMonitor",
+		m.ID,
+		&meta,
+	)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return meta, err
 	}
@@ -304,7 +358,13 @@ func getMetadata(ctx context.Context, tx *store.Tx, m domain.Monitor, record sto
 }
 
 func runtimeMatches(runtime store.Runtime, record store.Monitor) bool {
-	return runtime.ConfigVersion == record.ConfigVersion && runtime.Generation == record.Generation && ((record.Enabled && runtime.State != StatePaused) || (!record.Enabled && runtime.State == StatePaused))
+	if runtime.ConfigVersion != record.ConfigVersion || runtime.Generation != record.Generation {
+		return false
+	}
+	if record.Enabled {
+		return runtime.State != StatePaused
+	}
+	return runtime.State == StatePaused
 }
 
 func (e *Engine) ensureRuntime(ctx context.Context, record store.Monitor, m domain.Monitor) (store.Runtime, error) {
@@ -328,7 +388,7 @@ func (e *Engine) ensureRuntime(ctx context.Context, record store.Monitor, m doma
 		if !current.Enabled {
 			state = StatePaused
 		}
-		if err == nil && previous.ConfigVersion == current.ConfigVersion && previous.Generation == current.Generation && ((current.Enabled && previous.State != StatePaused) || (!current.Enabled && previous.State == StatePaused)) {
+		if err == nil && runtimeMatches(previous, current) {
 			runtime = previous
 			return nil
 		}
@@ -336,15 +396,33 @@ func (e *Engine) ensureRuntime(ctx context.Context, record store.Monitor, m doma
 		if err = tx.PutMonitor(ctx, current); err != nil {
 			return err
 		}
-		runtime = store.Runtime{MonitorID: m.ID, ConfigVersion: current.ConfigVersion, Generation: current.Generation, State: state, HeartbeatVersion: previous.HeartbeatVersion + 1, HeartbeatAt: previous.HeartbeatAt}
+		runtime = store.Runtime{
+			MonitorID:        m.ID,
+			ConfigVersion:    current.ConfigVersion,
+			Generation:       current.Generation,
+			State:            state,
+			HeartbeatVersion: previous.HeartbeatVersion + 1,
+			HeartbeatAt:      previous.HeartbeatAt,
+		}
 		if err = tx.PutRuntime(ctx, runtime); err != nil {
 			return err
 		}
-		meta, err := getMetadata(ctx, tx, m, record, e.now())
+		meta, err := getMetadata(
+			ctx,
+			tx,
+			m,
+			record,
+			e.now(),
+		)
 		if err != nil {
 			return err
 		}
-		if err = tx.Put(ctx, "engineMonitor", m.ID, meta); err != nil {
+		if err = tx.Put(
+			ctx,
+			"engineMonitor",
+			m.ID,
+			meta,
+		); err != nil {
 			return err
 		}
 		if m.IsAvailability() {
@@ -383,15 +461,33 @@ func (e *Engine) NotifyConfigurationChanged(ctx context.Context, id string) erro
 		if !record.Enabled {
 			state = StatePaused
 		}
-		next := store.Runtime{MonitorID: id, ConfigVersion: record.ConfigVersion, Generation: record.Generation, State: state, HeartbeatVersion: old.HeartbeatVersion + 1, HeartbeatAt: old.HeartbeatAt}
+		next := store.Runtime{
+			MonitorID:        id,
+			ConfigVersion:    record.ConfigVersion,
+			Generation:       record.Generation,
+			State:            state,
+			HeartbeatVersion: old.HeartbeatVersion + 1,
+			HeartbeatAt:      old.HeartbeatAt,
+		}
 		if err = tx.PutRuntime(ctx, next); err != nil {
 			return err
 		}
-		meta, err := getMetadata(ctx, tx, m, record, e.now())
+		meta, err := getMetadata(
+			ctx,
+			tx,
+			m,
+			record,
+			e.now(),
+		)
 		if err != nil {
 			return err
 		}
-		if err = tx.Put(ctx, "engineMonitor", id, meta); err != nil {
+		if err = tx.Put(
+			ctx,
+			"engineMonitor",
+			id,
+			meta,
+		); err != nil {
 			return err
 		}
 		if m.IsAvailability() {
@@ -432,7 +528,13 @@ func (e *Engine) poll(ctx context.Context) error {
 				continue
 			}
 		}
-		runtime, err = e.expireCollection(ctx, record, m, runtime, now)
+		runtime, err = e.expireCollection(
+			ctx,
+			record,
+			m,
+			runtime,
+			now,
+		)
 		if err != nil {
 			e.report(err)
 			continue
@@ -441,12 +543,23 @@ func (e *Engine) poll(ctx context.Context) error {
 		activeMaintenance := inMaintenance(maintenance, m.ID, now)
 		e.mu.Lock()
 		plan, present := e.schedules[m.ID]
-		if active, ok := e.running[m.ID]; ok && (active.version != record.ConfigVersion || active.generation != record.Generation || !record.Enabled) {
-			active.cancel()
+		if active, ok := e.running[m.ID]; ok {
+			staleRound := active.version != record.ConfigVersion || active.generation != record.Generation || !record.Enabled
+			if staleRound {
+				active.cancel()
+			}
 		}
-		if !present || plan.version != record.ConfigVersion || plan.enabled != record.Enabled {
+		configurationChanged := plan.version != record.ConfigVersion || plan.enabled != record.Enabled
+		if !present || configurationChanged {
 			e.evaluationEpoch++
-			plan = schedule{version: record.ConfigVersion, next: now, enabled: record.Enabled, maintenance: activeMaintenance, pendingEvaluation: true, evaluationEpoch: e.evaluationEpoch}
+			plan = schedule{
+				version:           record.ConfigVersion,
+				next:              now,
+				enabled:           record.Enabled,
+				maintenance:       activeMaintenance,
+				pendingEvaluation: true,
+				evaluationEpoch:   e.evaluationEpoch,
+			}
 		}
 		maintenanceEnded := plan.maintenance && !activeMaintenance
 		maintenanceEntered := !plan.maintenance && activeMaintenance
@@ -470,10 +583,8 @@ func (e *Engine) poll(ctx context.Context) error {
 			if plan.next <= now {
 				plan.next += ((now-plan.next)/interval + 1) * interval
 			}
-			e.schedules[m.ID] = plan
-		} else {
-			e.schedules[m.ID] = plan
 		}
+		e.schedules[m.ID] = plan
 		e.mu.Unlock()
 		if maintenanceEntered {
 			e.report(e.markMaintenance(ctx, m.ID))
@@ -482,7 +593,12 @@ func (e *Engine) poll(ctx context.Context) error {
 			e.report(e.markMaintenanceExit(ctx, m.ID, now))
 		}
 		if due {
-			task, err := e.acceptRound(ctx, record, m, false)
+			task, err := e.acceptRound(
+				ctx,
+				record,
+				m,
+				false,
+			)
 			if err != nil {
 				e.report(err)
 			} else if !task.managed {
@@ -522,7 +638,12 @@ func inMaintenance(raw []json.RawMessage, id string, now int64) bool {
 	return false
 }
 
-func (e *Engine) checkRound(lifetime, roundContext context.Context, record store.Monitor, m domain.Monitor, evaluationEpoch uint64) error {
+func (e *Engine) checkRound(
+	lifetime, roundContext context.Context,
+	record store.Monitor,
+	m domain.Monitor,
+	evaluationEpoch uint64,
+) error {
 	id := record.ID
 	if err := roundContext.Err(); err != nil {
 		return err
@@ -538,13 +659,26 @@ func (e *Engine) checkRound(lifetime, roundContext context.Context, record store
 	e.running[id] = active
 	e.mu.Unlock()
 	if m.Type == domain.MonitorHeartbeat {
-		return e.evaluateHeartbeat(roundContext, record, m, runtime, evaluationEpoch)
+		return e.evaluateHeartbeat(
+			roundContext,
+			record,
+			m,
+			runtime,
+			evaluationEpoch,
+		)
 	}
 	if e.Attempt == nil {
 		return errors.New("probe runner unavailable")
 	}
 	started := e.now()
-	round := store.Round{ID: domain.ID(), MonitorID: id, ConfigVersion: record.ConfigVersion, Generation: record.Generation, StartedAt: started, Attempts: []store.Attempt{}}
+	round := store.Round{
+		ID:            domain.ID(),
+		MonitorID:     id,
+		ConfigVersion: record.ConfigVersion,
+		Generation:    record.Generation,
+		StartedAt:     started,
+		Attempts:      []store.Attempt{},
+	}
 	deadline, _ := roundContext.Deadline()
 	probeDeadline := deadline.Add(-100 * time.Millisecond)
 	attemptContext, stopAttempts := context.WithDeadline(roundContext, probeDeadline)
@@ -558,7 +692,18 @@ func (e *Engine) checkRound(lifetime, roundContext context.Context, record store
 		result = e.Attempt(attemptContext, m)
 		finished := e.now()
 		details, _ := json.Marshal(result)
-		round.Attempts = append(round.Attempts, store.Attempt{Number: int64(number + 1), StartedAt: attemptStart, FinishedAt: finished, Success: result.Success, LatencyMS: result.LatencyMs, Error: result.Error, Detail: details})
+		round.Attempts = append(
+			round.Attempts,
+			store.Attempt{
+				Number:     int64(number + 1),
+				StartedAt:  attemptStart,
+				FinishedAt: finished,
+				Success:    result.Success,
+				LatencyMS:  result.LatencyMs,
+				Error:      result.Error,
+				Detail:     details,
+			},
+		)
 		if result.Success {
 			round.Success = true
 			break
@@ -588,9 +733,22 @@ func (e *Engine) checkRound(lifetime, roundContext context.Context, record store
 	}
 	round.FinishedAt = e.now()
 	round.LatencyMS = round.FinishedAt - started
-	err = e.commit(roundContext, record, m, runtime, round, result, false)
+	err = e.commit(
+		roundContext,
+		record,
+		m,
+		runtime,
+		round,
+		result,
+		false,
+	)
 	if err == nil {
-		e.clearPendingEvaluation(lifetime, id, record.ConfigVersion, evaluationEpoch)
+		e.clearPendingEvaluation(
+			lifetime,
+			id,
+			record.ConfigVersion,
+			evaluationEpoch,
+		)
 	}
 	return err
 }
@@ -598,7 +756,8 @@ func (e *Engine) checkRound(lifetime, roundContext context.Context, record store
 func (e *Engine) clearPendingEvaluation(ctx context.Context, id string, version int64, evaluationEpoch uint64) {
 	e.mu.Lock()
 	plan, present := e.schedules[id]
-	if !present || plan.version != version || plan.evaluationEpoch != evaluationEpoch {
+	stalePlan := plan.version != version || plan.evaluationEpoch != evaluationEpoch
+	if !present || stalePlan {
 		e.mu.Unlock()
 		return
 	}
@@ -610,13 +769,23 @@ func (e *Engine) clearPendingEvaluation(ctx context.Context, id string, version 
 	}
 	e.mu.Unlock()
 	var meta Metadata
-	if e.Store.Get(ctx, "engineMonitor", id, &meta) == nil && meta.ConfigVersion == version && meta.EvaluationAfter == 0 {
-		e.mu.Lock()
-		plan, present := e.schedules[id]
-		if present && plan.version == version && plan.evaluationEpoch == evaluationEpoch {
-			plan.pendingEvaluation = false
-			e.schedules[id] = plan
-		}
-		e.mu.Unlock()
+	if err := e.Store.Get(
+		ctx,
+		"engineMonitor",
+		id,
+		&meta,
+	); err != nil {
+		return
+	}
+	if meta.ConfigVersion != version || meta.EvaluationAfter != 0 {
+		return
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	plan, present = e.schedules[id]
+	currentPlan := plan.version == version && plan.evaluationEpoch == evaluationEpoch
+	if present && currentPlan {
+		plan.pendingEvaluation = false
+		e.schedules[id] = plan
 	}
 }

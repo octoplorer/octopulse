@@ -71,32 +71,71 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 	}))
 	defer webhook.Close()
 	var secret domain.Secret
-	capacityCreate(t, admin, httpServer.URL, csrf, "secrets", map[string]any{
-		"name": "capacity webhook", "value": "generic://" + strings.TrimPrefix(webhook.URL, "http://") + "?disabletls=yes",
-	}, &secret)
+	capacityCreate(
+		t,
+		admin,
+		httpServer.URL,
+		csrf,
+		"secrets",
+		map[string]any{
+			"name": "capacity webhook", "value": "generic://" + strings.TrimPrefix(webhook.URL, "http://") + "?disabletls=yes",
+		},
+		&secret,
+	)
 	var channel domain.Channel
-	capacityCreate(t, admin, httpServer.URL, csrf, "channels", domain.Channel{
-		Name: "capacity webhook", ServiceURLSecretID: secret.ID, Enabled: true,
-	}, &channel)
+	capacityCreate(
+		t,
+		admin,
+		httpServer.URL,
+		csrf,
+		"channels",
+		domain.Channel{
+			Name: "capacity webhook", ServiceURLSecretID: secret.ID, Enabled: true,
+		},
+		&channel,
+	)
 	monitors := make([]domain.Monitor, 100)
 	refs := make([]domain.PageMonitor, 100)
 	for i := range monitors {
-		capacityCreate(t, admin, httpServer.URL, csrf, "monitors", map[string]any{
-			"name": fmt.Sprintf("capacity-%03d", i), "type": "http", "intervalSeconds": 30,
-			"timeoutSeconds": 5, "retries": 2, "retryDelaySeconds": 1,
-			"failureThreshold": 1, "recoveryThreshold": 1, "notificationChannelIds": []string{channel.ID},
-			"http": map[string]any{"url": fmt.Sprintf("%s/monitor/%d", target.URL, i), "method": "GET"},
-		}, &monitors[i])
+		capacityCreate(
+			t,
+			admin,
+			httpServer.URL,
+			csrf,
+			"monitors",
+			map[string]any{
+				"name": fmt.Sprintf("capacity-%03d", i), "type": "http", "intervalSeconds": 30,
+				"timeoutSeconds": 5, "retries": 2, "retryDelaySeconds": 1,
+				"failureThreshold": 1, "recoveryThreshold": 1, "notificationChannelIds": []string{channel.ID},
+				"http": map[string]any{"url": fmt.Sprintf("%s/monitor/%d", target.URL, i), "method": "GET"},
+			},
+			&monitors[i],
+		)
 		refs[i] = domain.PageMonitor{MonitorID: monitors[i].ID, ShowUptime: true, ShowLatency: true}
 	}
 	var page domain.Page
-	capacityCreate(t, admin, httpServer.URL, csrf, "pages", domain.Page{
-		Name: "Capacity status", Slug: "capacity-status", Draft: domain.PageConfig{
-			Title: "Capacity status", BrandColor: "#2563eb", ColorScheme: "system", Links: []domain.Link{},
-			Groups: []domain.PageGroup{{ID: "services", Name: "Services", Monitors: refs}},
+	capacityCreate(
+		t,
+		admin,
+		httpServer.URL,
+		csrf,
+		"pages",
+		domain.Page{
+			Name: "Capacity status", Slug: "capacity-status", Draft: domain.PageConfig{
+				Title: "Capacity status", BrandColor: "#2563eb", ColorScheme: "system", Links: []domain.Link{},
+				Groups: []domain.PageGroup{{ID: "services", Name: "Services", Monitors: refs}},
+			},
 		},
-	}, &page)
-	if status, body := request(t, admin, "POST", httpServer.URL+"/api/v1/pages/"+page.ID+"/publish", csrf, nil); status != 200 {
+		&page,
+	)
+	if status, body := request(
+		t,
+		admin,
+		"POST",
+		httpServer.URL+"/api/v1/pages/"+page.ID+"/publish",
+		csrf,
+		nil,
+	); status != 200 {
 		t.Fatalf("publish: %d %s", status, body)
 	}
 	// Seed retained, already-processed history plus three kinds of source rows:
@@ -104,7 +143,12 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 	// 15-day round which expires entirely. This exercises actual housekeeping
 	// while the service is handling live probes and public requests.
 	seedAt := time.Now().UnixMilli()
-	oldRound, attemptsRound := capacitySeedHistory(t, s.Store, monitors, seedAt)
+	oldRound, attemptsRound := capacitySeedHistory(
+		t,
+		s.Store,
+		monitors,
+		seedAt,
+	)
 	ctx, cancel := context.WithCancel(context.Background())
 	scheduler := engine.New(s.Store, probe.NewRunner(s))
 	stats := statistics.New(s.Store)
@@ -117,7 +161,10 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 	s.Stats, s.Latency, s.TestChannel = stats.Availability, stats.Latency, worker.TestChannel
 	s.StatsBatch, s.LatencyBatch = stats.AvailabilityBatch, stats.LatencyBatch
 	s.DailyStatsBatch = stats.DailyAvailabilityBatch
-	s.Wake = func() { scheduler.Wake(); stats.Wake() }
+	s.Wake = func() {
+		scheduler.Wake()
+		stats.Wake()
+	}
 	start := time.Now()
 	if err := scheduler.Start(ctx); err != nil {
 		cancel()
@@ -130,7 +177,10 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 	}
 	var workers sync.WaitGroup
 	workers.Add(1)
-	go func() { defer workers.Done(); worker.Start(ctx) }()
+	go func() {
+		defer workers.Done()
+		worker.Start(ctx)
+	}()
 	stop := func() {
 		cancel()
 		scheduler.Stop()
@@ -154,7 +204,12 @@ func TestServiceCapacity100Monitors(t *testing.T) {
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					measure.query(ctx, client, httpServer.URL+path, index < 4)
+					measure.query(
+						ctx,
+						client,
+						httpServer.URL+path,
+						index < 4,
+					)
 				}
 			}
 		}(i)
@@ -177,7 +232,12 @@ run:
 	var roundCount, attemptCount int
 	var maxLateness, maxRoundMS int64
 	for i, m := range monitors {
-		rounds, err := s.Store.ListRounds(context.Background(), m.ID, start.UnixMilli(), 10)
+		rounds, err := s.Store.ListRounds(
+			context.Background(),
+			m.ID,
+			start.UnixMilli(),
+			10,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,7 +246,15 @@ run:
 			for n, round := range rounds {
 				starts[n], generations[n], attempts[n] = round.StartedAt-start.UnixMilli(), round.Generation, len(round.Attempts)
 			}
-			t.Fatalf("monitor %d collected %d rounds, want 3; startOffsetsMs=%v generations=%v attempts=%v actualRequests=%d", i, len(rounds), starts, generations, attempts, requests[i].Load())
+			t.Fatalf(
+				"monitor %d collected %d rounds, want 3; startOffsetsMs=%v generations=%v attempts=%v actualRequests=%d",
+				i,
+				len(rounds),
+				starts,
+				generations,
+				attempts,
+				requests[i].Load(),
+			)
 		}
 		sort.Slice(rounds, func(a, b int) bool { return rounds[a].StartedAt < rounds[b].StartedAt })
 		for n, round := range rounds {
@@ -195,7 +263,13 @@ run:
 				wantAttempts = 3
 			}
 			if len(round.Attempts) != wantAttempts || round.Success != !(i >= 90 && n < 2) {
-				t.Fatalf("monitor %d round %d: attempts=%d success=%v", i, n, len(round.Attempts), round.Success)
+				t.Fatalf(
+					"monitor %d round %d: attempts=%d success=%v",
+					i,
+					n,
+					len(round.Attempts),
+					round.Success,
+				)
 			}
 			if n > 0 && round.StartedAt < rounds[n-1].FinishedAt {
 				t.Fatalf("monitor %d has overlapping rounds", i)
@@ -216,7 +290,12 @@ run:
 		}() {
 			t.Fatalf("monitor %d HTTP request count mismatch: %d", i, requests[i].Load())
 		}
-		intervals, err := s.Store.Intervals(context.Background(), m.ID, start.UnixMilli(), time.Now().UnixMilli())
+		intervals, err := s.Store.Intervals(
+			context.Background(),
+			m.ID,
+			start.UnixMilli(),
+			time.Now().UnixMilli(),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -227,19 +306,33 @@ run:
 		}
 	}
 	if overlaps.Load() != 0 || roundCount != 300 || attemptCount != 460 {
-		t.Fatalf("overlap=%d rounds=%d attempts=%d", overlaps.Load(), roundCount, attemptCount)
+		t.Fatalf(
+			"overlap=%d rounds=%d attempts=%d",
+			overlaps.Load(),
+			roundCount,
+			attemptCount,
+		)
 	}
 	deliveries, err := s.Store.ListDeliveries(context.Background(), 1000)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(deliveries) != 20 || webhooks.Load() != 20 {
-		t.Fatalf("deliveries=%d actual webhook sends=%d, want 20 down/recovery notifications", len(deliveries), webhooks.Load())
+		t.Fatalf(
+			"deliveries=%d actual webhook sends=%d, want 20 down/recovery notifications",
+			len(deliveries),
+			webhooks.Load(),
+		)
 	}
 	deliveredKinds := map[string]int{}
 	for _, delivery := range deliveries {
 		if delivery.State != "sent" || delivery.Attempts != 1 {
-			t.Fatalf("delivery %s state=%s attempts=%d", delivery.ID, delivery.State, delivery.Attempts)
+			t.Fatalf(
+				"delivery %s state=%s attempts=%d",
+				delivery.ID,
+				delivery.State,
+				delivery.Attempts,
+			)
 		}
 		var payload domain.NotificationPayload
 		if err := json.Unmarshal(delivery.Payload, &payload); err != nil {
@@ -248,7 +341,12 @@ run:
 		deliveredKinds[payload.Kind]++
 		if payload.Kind == "up" {
 			var marker domain.DeliveryMarker
-			if err := s.Store.Get(context.Background(), "deliveryMarkers", domain.DeliveryMarkerID(payload.MonitorID, channel.ID, payload.CycleID), &marker); err != nil {
+			if err := s.Store.Get(
+				context.Background(),
+				"deliveryMarkers",
+				domain.DeliveryMarkerID(payload.MonitorID, channel.ID, payload.CycleID),
+				&marker,
+			); err != nil {
 				t.Fatal(err)
 			}
 			if marker.DownSentAt <= 0 || marker.RecoverySentAt < marker.DownSentAt {
@@ -262,7 +360,12 @@ run:
 	if exists, err := s.Store.RoundExists(context.Background(), oldRound); err != nil || exists {
 		t.Fatalf("15-day history retention not applied: exists=%v err=%v", exists, err)
 	}
-	history, err := s.Store.ListRounds(context.Background(), monitors[0].ID, 0, 100)
+	history, err := s.Store.ListRounds(
+		context.Background(),
+		monitors[0].ID,
+		0,
+		100,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +380,13 @@ run:
 	}
 	aggregatedRounds := int64(0)
 	for _, m := range monitors {
-		rows, err := s.Store.Aggregates(context.Background(), m.ID, (seedAt-10*60000)/300000*300000, time.Now().UnixMilli(), 300000)
+		rows, err := s.Store.Aggregates(
+			context.Background(),
+			m.ID,
+			(seedAt-10*60000)/300000*300000,
+			time.Now().UnixMilli(),
+			300000,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -298,23 +407,59 @@ run:
 	// latency distribution rather than treating an instrumented run as a
 	// production performance SLA; still require enough successful samples.
 	if len(measure.publicLatency) < 20 || len(measure.adminLatency) < 20 {
-		t.Fatalf("insufficient request samples: public=%d admin=%d public p95=%s", len(measure.publicLatency), len(measure.adminLatency), p95)
+		t.Fatalf(
+			"insufficient request samples: public=%d admin=%d public p95=%s",
+			len(measure.publicLatency),
+			len(measure.adminLatency),
+			p95,
+		)
 	}
 	driver := os.Getenv("OCTOPULSE_TEST_DB_DRIVER")
 	if driver == "" {
 		driver = "sqlite"
 	}
-	t.Logf("capacity driver=%s duration=%s monitors=100 interval=30s rounds=%d attempts=%d overlapping=0 max_schedule_lateness_ms=%d max_round_ms=%d public_requests=%d public_p95_ms=%.2f admin_requests=%d admin_p95_ms=%.2f max_goroutines=%d peak_heap_mib=%.2f peak_go_sys_mib=%.2f peak_pending_or_sending=%d notifications_sent=%d aggregated_rounds=%d retention=rounds_and_attempts_verified",
-		driver, elapsed.Round(time.Millisecond), roundCount, attemptCount, maxLateness, maxRoundMS,
-		len(measure.publicLatency), float64(p95.Microseconds())/1000, len(measure.adminLatency), float64(capacityPercentile(measure.adminLatency, .95).Microseconds())/1000,
-		measure.maxGoroutines, float64(measure.peakHeap)/1048576, float64(measure.peakSys)/1048576, measure.peakQueue, webhooks.Load(), aggregatedRounds)
+	t.Logf(
+		"capacity driver=%s duration=%s monitors=100 interval=30s rounds=%d attempts=%d overlapping=0 "+
+			"max_schedule_lateness_ms=%d max_round_ms=%d public_requests=%d public_p95_ms=%.2f "+
+			"admin_requests=%d admin_p95_ms=%.2f max_goroutines=%d peak_heap_mib=%.2f peak_go_sys_mib=%.2f "+
+			"peak_pending_or_sending=%d notifications_sent=%d aggregated_rounds=%d "+
+			"retention=rounds_and_attempts_verified",
+		driver,
+		elapsed.Round(time.Millisecond),
+		roundCount,
+		attemptCount,
+		maxLateness,
+		maxRoundMS,
+		len(measure.publicLatency),
+		float64(p95.Microseconds())/1000,
+		len(measure.adminLatency),
+		float64(capacityPercentile(measure.adminLatency, .95).Microseconds())/1000,
+		measure.maxGoroutines,
+		float64(measure.peakHeap)/1048576,
+		float64(measure.peakSys)/1048576,
+		measure.peakQueue,
+		webhooks.Load(),
+		aggregatedRounds,
+	)
 }
 
 func capacityCreate(t *testing.T, client *http.Client, base, csrf, kind string, body, out any) {
 	t.Helper()
-	status, response := request(t, client, http.MethodPost, base+"/api/v1/"+kind, csrf, body)
+	status, response := request(
+		t,
+		client,
+		http.MethodPost,
+		base+"/api/v1/"+kind,
+		csrf,
+		body,
+	)
 	if status != 200 {
-		t.Fatalf("create %s: %d %s", kind, status, response)
+		t.Fatalf(
+			"create %s: %d %s",
+			kind,
+			status,
+			response,
+		)
 	}
 	if err := json.Unmarshal(response, out); err != nil {
 		t.Fatal(err)
@@ -338,20 +483,51 @@ func capacitySeedHistory(t *testing.T, st *store.Store, monitors []domain.Monito
 			if err = tx.PutMonitor(context.Background(), record); err != nil {
 				return err
 			}
-			if err = tx.Put(context.Background(), "monitors", m.ID, m); err != nil {
+			if err = tx.Put(
+				context.Background(),
+				"monitors",
+				m.ID,
+				m,
+			); err != nil {
 				return err
 			}
-			if err = tx.Put(context.Background(), "statisticsMonitor", m.ID, map[string]any{
-				"fiveMinuteThrough": (now - 10*60000) / 300000 * 300000, "hourThrough": (now - 10*60000) / 3600000 * 3600000,
-			}); err != nil {
+			if err = tx.Put(
+				context.Background(),
+				"statisticsMonitor",
+				m.ID,
+				map[string]any{
+					"fiveMinuteThrough": (now - 10*60000) / 300000 * 300000, "hourThrough": (now - 10*60000) / 3600000 * 3600000,
+				},
+			); err != nil {
 				return err
 			}
 			end := now - 5*60000
-			if err = tx.PutInterval(context.Background(), store.Interval{ID: domain.ID(), MonitorID: m.ID, State: domain.StateUp, StartedAt: now - 10*60000, EndedAt: &end}); err != nil {
+			if err = tx.PutInterval(
+				context.Background(),
+				store.Interval{
+					ID:        domain.ID(),
+					MonitorID: m.ID,
+					State:     domain.StateUp,
+					StartedAt: now - 10*60000,
+					EndedAt:   &end,
+				},
+			); err != nil {
 				return err
 			}
 			at := now - 8*60000
-			if err = tx.PutRound(context.Background(), store.Round{ID: domain.ID(), MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: at, FinishedAt: at + 20, Success: true, LatencyMS: 20}); err != nil {
+			if err = tx.PutRound(
+				context.Background(),
+				store.Round{
+					ID:            domain.ID(),
+					MonitorID:     m.ID,
+					ConfigVersion: 1,
+					Generation:    1,
+					StartedAt:     at,
+					FinishedAt:    at + 20,
+					Success:       true,
+					LatencyMS:     20,
+				},
+			); err != nil {
 				return err
 			}
 			if i != 0 {
@@ -360,9 +536,30 @@ func capacitySeedHistory(t *testing.T, st *store.Store, monitors []domain.Monito
 			for _, item := range []struct {
 				id   string
 				days int64
-			}{{old, 15}, {attempts, 4}} {
+			}{{id: old, days: 15}, {id: attempts, days: 4}} {
 				at = now - item.days*86400000
-				if err = tx.PutRound(context.Background(), store.Round{ID: item.id, MonitorID: m.ID, ConfigVersion: 1, Generation: 1, StartedAt: at, FinishedAt: at + 20, Success: true, LatencyMS: 20, Attempts: []store.Attempt{{Number: 1, StartedAt: at, FinishedAt: at + 20, Success: true, LatencyMS: 20}}}); err != nil {
+				if err = tx.PutRound(
+					context.Background(),
+					store.Round{
+						ID:            item.id,
+						MonitorID:     m.ID,
+						ConfigVersion: 1,
+						Generation:    1,
+						StartedAt:     at,
+						FinishedAt:    at + 20,
+						Success:       true,
+						LatencyMS:     20,
+						Attempts: []store.Attempt{
+							{
+								Number:     1,
+								StartedAt:  at,
+								FinishedAt: at + 20,
+								Success:    true,
+								LatencyMS:  20,
+							},
+						},
+					},
+				); err != nil {
 					return err
 				}
 			}
@@ -394,7 +591,12 @@ func (m *capacityMeasurements) backgroundError(err error) {
 
 func (m *capacityMeasurements) query(ctx context.Context, client *http.Client, url string, public bool) {
 	start := time.Now()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		url,
+		nil,
+	)
 	if err != nil {
 		m.backgroundError(err)
 		return

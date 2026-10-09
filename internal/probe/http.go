@@ -108,72 +108,90 @@ func (x *execution) body(ctx context.Context, c domain.HTTPBody) ([]byte, string
 			}
 			values.Add(string(encodedName), string(encodedValue))
 		}
-		return []byte(values.Encode()), mime.FormatMediaType("application/x-www-form-urlencoded", map[string]string{"charset": charset}), nil
+		return []byte(values.Encode()), mime.FormatMediaType(
+			"application/x-www-form-urlencoded",
+			map[string]string{
+				"charset": charset,
+			},
+		), nil
 	case "multipart":
-		var buffer bytes.Buffer
-		writer := multipart.NewWriter(&buffer)
-		for _, field := range c.Fields {
-			value, err := x.value(ctx, field)
-			if err != nil {
-				return nil, "", err
-			}
-			data, err := encodeText(value, charset)
-			if err != nil {
-				return nil, "", err
-			}
-			header := textproto.MIMEHeader{}
-			header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": field.Name}))
-			header.Set("Content-Type", mime.FormatMediaType("text/plain", map[string]string{"charset": charset}))
-			part, err := writer.CreatePart(header)
-			if err != nil {
-				return nil, "", err
-			}
-			if _, err = part.Write(data); err != nil {
-				return nil, "", err
-			}
-		}
-		for _, file := range c.Files {
-			var data []byte
-			var err error
-			if file.SecretRef != "" {
-				value, e := x.secret(ctx, file.SecretRef)
-				data = []byte(value)
-				err = e
-			} else {
-				data, err = base64.StdEncoding.DecodeString(file.Base64)
-			}
-			if err != nil {
-				return nil, "", err
-			}
-			header := textproto.MIMEHeader{}
-			header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": file.Field, "filename": file.Filename}))
-			contentType := file.ContentType
-			if contentType == "" {
-				contentType = "application/octet-stream"
-			}
-			if strings.ContainsAny(contentType, "\r\n") {
-				return nil, "", errors.New("invalid multipart content type")
-			}
-			header.Set("Content-Type", contentType)
-			part, err := writer.CreatePart(header)
-			if err != nil {
-				return nil, "", err
-			}
-			if _, err = part.Write(data); err != nil {
-				return nil, "", err
-			}
-		}
-		if err := writer.Close(); err != nil {
-			return nil, "", err
-		}
-		return buffer.Bytes(), writer.FormDataContentType(), nil
+		return x.multipartBody(ctx, c, charset)
 	}
 	return nil, "", errors.New("unsupported request body")
 }
 
+func (x *execution) multipartBody(ctx context.Context, c domain.HTTPBody, charset string) ([]byte, string, error) {
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
+	for _, field := range c.Fields {
+		value, err := x.value(ctx, field)
+		if err != nil {
+			return nil, "", err
+		}
+		data, err := encodeText(value, charset)
+		if err != nil {
+			return nil, "", err
+		}
+		header := textproto.MIMEHeader{}
+		header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": field.Name}))
+		header.Set("Content-Type", mime.FormatMediaType("text/plain", map[string]string{"charset": charset}))
+		part, err := writer.CreatePart(header)
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err = part.Write(data); err != nil {
+			return nil, "", err
+		}
+	}
+	for _, file := range c.Files {
+		var data []byte
+		var err error
+		if file.SecretRef != "" {
+			value, e := x.secret(ctx, file.SecretRef)
+			data = []byte(value)
+			err = e
+		} else {
+			data, err = base64.StdEncoding.DecodeString(file.Base64)
+		}
+		if err != nil {
+			return nil, "", err
+		}
+		header := textproto.MIMEHeader{}
+		header.Set(
+			"Content-Disposition",
+			mime.FormatMediaType(
+				"form-data",
+				map[string]string{
+					"name":     file.Field,
+					"filename": file.Filename,
+				},
+			),
+		)
+		contentType := file.ContentType
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		if strings.ContainsAny(contentType, "\r\n") {
+			return nil, "", errors.New("invalid multipart content type")
+		}
+		header.Set("Content-Type", contentType)
+		part, err := writer.CreatePart(header)
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err = part.Write(data); err != nil {
+			return nil, "", err
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+	return buffer.Bytes(), writer.FormDataContentType(), nil
+}
+
 func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, error) {
 	start := time.Now()
-	result := Result{}
+	var result Result
 	u, err := url.Parse(c.URL)
 	if err != nil {
 		return result, errors.New("invalid target URL")
@@ -205,7 +223,12 @@ func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, erro
 		}
 		body = buffer.Bytes()
 	}
-	req, err := http.NewRequestWithContext(ctx, c.Method, u.String(), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		c.Method,
+		u.String(),
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return result, errors.New("invalid HTTP request")
 	}
@@ -266,9 +289,22 @@ func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, erro
 	if err != nil {
 		return result, err
 	}
-	transport := &http.Transport{TLSClientConfig: tlsConfig, DisableCompression: true, ForceAttemptHTTP2: true, MaxIdleConns: 2, IdleConnTimeout: 5 * time.Second, ResponseHeaderTimeout: 0, DialContext: func(dctx context.Context, network, address string) (net.Conn, error) {
-		return dialDirect(dctx, c.Connection, network, address)
-	}}
+	transport := &http.Transport{
+		TLSClientConfig:       tlsConfig,
+		DisableCompression:    true,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          2,
+		IdleConnTimeout:       5 * time.Second,
+		ResponseHeaderTimeout: 0,
+		DialContext: func(dctx context.Context, network, address string) (net.Conn, error) {
+			return dialDirect(
+				dctx,
+				c.Connection,
+				network,
+				address,
+			)
+		},
+	}
 	if proxyURL != nil {
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
@@ -319,19 +355,31 @@ func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, erro
 	}}
 	var traceMu sync.Mutex
 	var dnsStart, connectStart, tlsStart time.Time
-	trace := &httptrace.ClientTrace{DNSStart: func(httptrace.DNSStartInfo) { traceMu.Lock(); dnsStart = time.Now(); traceMu.Unlock() }, DNSDone: func(httptrace.DNSDoneInfo) {
+	trace := &httptrace.ClientTrace{DNSStart: func(httptrace.DNSStartInfo) {
+		traceMu.Lock()
+		dnsStart = time.Now()
+		traceMu.Unlock()
+	}, DNSDone: func(httptrace.DNSDoneInfo) {
 		traceMu.Lock()
 		if !dnsStart.IsZero() {
 			result.Diagnostics.DNSMs += time.Since(dnsStart).Milliseconds()
 		}
 		traceMu.Unlock()
-	}, ConnectStart: func(string, string) { traceMu.Lock(); connectStart = time.Now(); traceMu.Unlock() }, ConnectDone: func(string, string, error) {
+	}, ConnectStart: func(string, string) {
+		traceMu.Lock()
+		connectStart = time.Now()
+		traceMu.Unlock()
+	}, ConnectDone: func(string, string, error) {
 		traceMu.Lock()
 		if !connectStart.IsZero() {
 			result.Diagnostics.ConnectMs += time.Since(connectStart).Milliseconds()
 		}
 		traceMu.Unlock()
-	}, TLSHandshakeStart: func() { traceMu.Lock(); tlsStart = time.Now(); traceMu.Unlock() }, TLSHandshakeDone: func(tls.ConnectionState, error) {
+	}, TLSHandshakeStart: func() {
+		traceMu.Lock()
+		tlsStart = time.Now()
+		traceMu.Unlock()
+	}, TLSHandshakeDone: func(tls.ConnectionState, error) {
 		traceMu.Lock()
 		if !tlsStart.IsZero() {
 			result.Diagnostics.TLSMs += time.Since(tlsStart).Milliseconds()
@@ -390,7 +438,12 @@ func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, erro
 	if int64(len(text)) > c.MaxResponseBytes {
 		return result, errors.New("response exceeds decoded size limit")
 	}
-	if err = httpAssertions(response, text, time.Since(start).Milliseconds(), c.Assertions); err != nil {
+	if err = httpAssertions(
+		response,
+		text,
+		time.Since(start).Milliseconds(),
+		c.Assertions,
+	); err != nil {
 		return result, err
 	}
 	result.Success = true
@@ -398,7 +451,7 @@ func (x *execution) http(ctx context.Context, c domain.HTTPConfig) (Result, erro
 }
 
 func httpAssertions(response *http.Response, text string, latency int64, a domain.HTTPAssertions) error {
-	statusOK := false
+	var statusOK bool
 	if len(a.StatusCodes) == 0 && len(a.StatusRanges) == 0 {
 		statusOK = response.StatusCode >= 200 && response.StatusCode < 400
 	} else {
@@ -424,7 +477,7 @@ func httpAssertions(response *http.Response, text string, latency int64, a domai
 			}
 			continue
 		}
-		matched := false
+		var matched bool
 		for _, v := range values {
 			if valueMatches(v, assertion.Operator, assertion.Value) {
 				matched = true
@@ -485,7 +538,7 @@ func httpAssertions(response *http.Response, text string, latency int64, a domai
 			if err := decoder.Decode(&expected); err != nil {
 				return assertionError("JSON", i)
 			}
-			matched := false
+			var matched bool
 			switch assertion.Operator {
 			case "equals":
 				matched = equalJSON(actual, expected)
@@ -616,7 +669,7 @@ func equalJSON(a, b any) bool {
 // decimal exponent are sufficient for exact equality.
 func canonicalNumber(number json.Number) (string, string, bool) {
 	value := string(number)
-	sign := ""
+	var sign string
 	if strings.HasPrefix(value, "-") {
 		sign = "-"
 		value = value[1:]
@@ -633,7 +686,7 @@ func canonicalNumber(number json.Number) (string, string, bool) {
 	}
 	coefficient := parts[0]
 	decimal := strings.IndexByte(coefficient, '.')
-	fractional := 0
+	var fractional int
 	if decimal >= 0 {
 		fractional = len(coefficient) - decimal - 1
 		coefficient = coefficient[:decimal] + coefficient[decimal+1:]

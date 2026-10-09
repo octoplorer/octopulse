@@ -8,12 +8,43 @@ import (
 )
 
 func (t *Tx) PutAggregate(ctx context.Context, a Aggregate) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO aggregates(monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count,successful_round_count) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(monitor_id,bucket_at,width_ms) DO UPDATE SET up_ms=excluded.up_ms,down_ms=excluded.down_ms,unknown_ms=excluded.unknown_ms,excluded_ms=excluded.excluded_ms,latency_total_ms=excluded.latency_total_ms,round_count=excluded.round_count,successful_round_count=excluded.successful_round_count`), a.MonitorID, a.BucketAt, a.WidthMS, a.UpMS, a.DownMS, a.UnknownMS, a.ExcludedMS, a.LatencyTotalMS, a.RoundCount, a.SuccessfulRoundCount)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`INSERT INTO aggregates(monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,`+
+				`latency_total_ms,round_count,successful_round_count) VALUES(?,?,?,?,?,?,?,?,?,?) `+
+				`ON CONFLICT(monitor_id,bucket_at,width_ms) `+
+				`DO UPDATE SET up_ms=excluded.up_ms,down_ms=excluded.down_ms,unknown_ms=excluded.unknown_ms,`+
+				`excluded_ms=excluded.excluded_ms,latency_total_ms=excluded.latency_total_ms,`+
+				`round_count=excluded.round_count,successful_round_count=excluded.successful_round_count`,
+		),
+		a.MonitorID,
+		a.BucketAt,
+		a.WidthMS,
+		a.UpMS,
+		a.DownMS,
+		a.UnknownMS,
+		a.ExcludedMS,
+		a.LatencyTotalMS,
+		a.RoundCount,
+		a.SuccessfulRoundCount,
+	)
 	return mapError(err)
 }
 
 func (s *Store) Aggregates(ctx context.Context, monitorID string, start, end, widthMS int64) ([]Aggregate, error) {
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,round_count,successful_round_count FROM aggregates WHERE monitor_id=? AND bucket_at>=? AND bucket_at<? AND width_ms=? ORDER BY bucket_at`), monitorID, start, end, widthMS)
+	rows, err := s.read.QueryContext(
+		ctx,
+		s.sql(
+			`SELECT monitor_id,bucket_at,width_ms,up_ms,down_ms,unknown_ms,excluded_ms,latency_total_ms,`+
+				`round_count,successful_round_count FROM aggregates WHERE monitor_id=? AND bucket_at>=? `+
+				`AND bucket_at<? AND width_ms=? ORDER BY bucket_at`,
+		),
+		monitorID,
+		start,
+		end,
+		widthMS,
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -21,7 +52,18 @@ func (s *Store) Aggregates(ctx context.Context, monitorID string, start, end, wi
 	result := []Aggregate{}
 	for rows.Next() {
 		var a Aggregate
-		if err = rows.Scan(&a.MonitorID, &a.BucketAt, &a.WidthMS, &a.UpMS, &a.DownMS, &a.UnknownMS, &a.ExcludedMS, &a.LatencyTotalMS, &a.RoundCount, &a.SuccessfulRoundCount); err != nil {
+		if err = rows.Scan(
+			&a.MonitorID,
+			&a.BucketAt,
+			&a.WidthMS,
+			&a.UpMS,
+			&a.DownMS,
+			&a.UnknownMS,
+			&a.ExcludedMS,
+			&a.LatencyTotalMS,
+			&a.RoundCount,
+			&a.SuccessfulRoundCount,
+		); err != nil {
 			return nil, err
 		}
 		result = append(result, a)
@@ -30,12 +72,23 @@ func (s *Store) Aggregates(ctx context.Context, monitorID string, start, end, wi
 }
 
 func (t *Tx) DeleteAggregates(ctx context.Context, monitorID string, start, end int64) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`DELETE FROM aggregates WHERE monitor_id=? AND bucket_at<? AND bucket_at+width_ms>?`), monitorID, end, start)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(`DELETE FROM aggregates WHERE monitor_id=? AND bucket_at<? AND bucket_at+width_ms>?`),
+		monitorID,
+		end,
+		start,
+	)
 	return mapError(err)
 }
 
 func (t *Tx) PutWatermark(ctx context.Context, name string, at int64) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO watermarks(name,at_ms) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET at_ms=excluded.at_ms`), name, at)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(`INSERT INTO watermarks(name,at_ms) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET at_ms=excluded.at_ms`),
+		name,
+		at,
+	)
 	return mapError(err)
 }
 
@@ -57,27 +110,80 @@ func (t *Tx) PruneHistory(ctx context.Context, roundBefore, attemptBefore, water
 	if batch <= 0 || batch > 10000 {
 		batch = 1000
 	}
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`DELETE FROM attempts WHERE (round_id,number) IN (SELECT a.round_id,a.number FROM attempts a JOIN rounds r ON r.id=a.round_id WHERE a.finished_at<? AND r.finished_at<=? ORDER BY a.finished_at,a.round_id,a.number LIMIT ?)`), attemptBefore, watermark, batch)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`DELETE FROM attempts WHERE (round_id,number) IN (SELECT a.round_id,a.number FROM attempts a `+
+				`JOIN rounds r ON r.id=a.round_id WHERE a.finished_at<? AND r.finished_at<=? `+
+				`ORDER BY a.finished_at,a.round_id,a.number LIMIT ?)`,
+		),
+		attemptBefore,
+		watermark,
+		batch,
+	)
 	if err != nil {
 		return mapError(err)
 	}
-	_, err = t.tx.ExecContext(ctx, t.s.sql(`DELETE FROM rounds WHERE id IN (SELECT id FROM rounds WHERE finished_at<? AND finished_at<=? ORDER BY finished_at,id LIMIT ?)`), roundBefore, watermark, batch)
+	_, err = t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`DELETE FROM rounds WHERE id IN (SELECT id FROM rounds WHERE finished_at<? `+
+				`AND finished_at<=? ORDER BY finished_at,id LIMIT ?)`,
+		),
+		roundBefore,
+		watermark,
+		batch,
+	)
 	return mapError(err)
 }
 
 // PruneSummaries applies the two aggregate retention windows and closed-state
 // interval retention in bounded batches, behind the reliable aggregate boundary.
-func (t *Tx) PruneSummaries(ctx context.Context, fiveMinuteBefore, hourlyBefore, intervalBefore, watermark int64, batch int) error {
+func (t *Tx) PruneSummaries(
+	ctx context.Context,
+	fiveMinuteBefore, hourlyBefore, intervalBefore, watermark int64,
+	batch int,
+) error {
 	if batch <= 0 || batch > 10000 {
 		batch = 1000
 	}
-	for _, window := range []struct{ width, before int64 }{{300000, fiveMinuteBefore}, {3600000, hourlyBefore}} {
-		_, err := t.tx.ExecContext(ctx, t.s.sql(`DELETE FROM aggregates WHERE (monitor_id,bucket_at,width_ms) IN (SELECT monitor_id,bucket_at,width_ms FROM aggregates WHERE width_ms=? AND bucket_at+width_ms<? AND bucket_at+width_ms<=? ORDER BY bucket_at,monitor_id,width_ms LIMIT ?)`), window.width, window.before, watermark, batch)
+	for _, window := range []struct{ width, before int64 }{
+		{
+			width:  300000,
+			before: fiveMinuteBefore,
+		},
+		{
+			width:  3600000,
+			before: hourlyBefore,
+		},
+	} {
+		_, err := t.tx.ExecContext(
+			ctx,
+			t.s.sql(
+				`DELETE FROM aggregates WHERE (monitor_id,bucket_at,width_ms) IN (`+
+					`SELECT monitor_id,bucket_at,width_ms FROM aggregates `+
+					`WHERE width_ms=? AND bucket_at+width_ms<? AND bucket_at+width_ms<=? `+
+					`ORDER BY bucket_at,monitor_id,width_ms LIMIT ?)`,
+			),
+			window.width,
+			window.before,
+			watermark,
+			batch,
+		)
 		if err != nil {
 			return mapError(err)
 		}
 	}
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`DELETE FROM state_intervals WHERE id IN (SELECT id FROM state_intervals WHERE ended_at IS NOT NULL AND ended_at<? AND ended_at<=? ORDER BY ended_at,id LIMIT ?)`), intervalBefore, watermark, batch)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`DELETE FROM state_intervals WHERE id IN (SELECT id FROM state_intervals `+
+				`WHERE ended_at IS NOT NULL AND ended_at<? AND ended_at<=? ORDER BY ended_at,id LIMIT ?)`,
+		),
+		intervalBefore,
+		watermark,
+		batch,
+	)
 	return mapError(err)
 }
 

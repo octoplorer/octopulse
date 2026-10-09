@@ -2,7 +2,7 @@ package beszel
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -124,11 +124,29 @@ func (c *Client) Close() {
 
 // Each caller can leave independently. Shared work has its own deadline and is
 // cancelled on configuration changes; one departing caller cannot cancel peers.
-func (c *Client) fetch(ctx context.Context, session *clientSession, key string, fn func(context.Context) (any, error)) (any, error) {
-	return c.sharedWork(ctx, session, &c.flights, fmt.Sprintf("%d:%s", session.generation, key), fn)
+func (c *Client) fetch(
+	ctx context.Context,
+	session *clientSession,
+	key string,
+	fn func(context.Context) (any, error),
+) (any, error) {
+	cacheKey := strconv.FormatUint(session.generation, 10) + ":" + key
+	return c.sharedWork(
+		ctx,
+		session,
+		&c.flights,
+		cacheKey,
+		fn,
+	)
 }
 
-func (c *Client) sharedWork(ctx context.Context, session *clientSession, group *singleflight.Group, key string, fn func(context.Context) (any, error)) (any, error) {
+func (c *Client) sharedWork(
+	ctx context.Context,
+	session *clientSession,
+	group *singleflight.Group,
+	key string,
+	fn func(context.Context) (any, error),
+) (any, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

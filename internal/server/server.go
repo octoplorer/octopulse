@@ -26,6 +26,8 @@ import (
 	"github.com/octoplorer/octopulse/internal/telemetry"
 )
 
+const sessionLifetime = time.Hour * 24 * 7
+
 type Server struct {
 	Store           *store.Store
 	Vault           *security.Vault
@@ -53,7 +55,10 @@ type Server struct {
 type contextKey struct{}
 type hostContextKey struct{}
 
-func requestHost(ctx context.Context) string { v, _ := ctx.Value(hostContextKey{}).(string); return v }
+func requestHost(ctx context.Context) string {
+	v, _ := ctx.Value(hostContextKey{}).(string)
+	return v
+}
 
 type identity struct {
 	User    domain.User
@@ -127,14 +132,24 @@ func (s *Server) authenticate(ctx context.Context, token string) (identity, erro
 	if token == "" {
 		return identity{}, store.ErrNotFound
 	}
-	if e := s.Store.Get(ctx, "sessions", security.HashToken(token), &session); e != nil {
+	if e := s.Store.Get(
+		ctx,
+		"sessions",
+		security.HashToken(token),
+		&session,
+	); e != nil {
 		return identity{}, e
 	}
 	if session.ExpiresAt <= domain.Now() {
 		return identity{}, store.ErrNotFound
 	}
 	var user domain.UserRecord
-	if e := s.Store.Get(ctx, "users", session.UserID, &user); e != nil {
+	if e := s.Store.Get(
+		ctx,
+		"users",
+		session.UserID,
+		&user,
+	); e != nil {
 		return identity{}, e
 	}
 	if !user.Enabled {
@@ -151,7 +166,14 @@ func (s *Server) dispatch(w http.ResponseWriter, r *http.Request) {
 	w = response
 	if s.Metrics != nil {
 		s.Metrics.BeginRequest()
-		defer func() { s.Metrics.EndRequest(r.Pattern, r.Method, response.status, time.Since(started)) }()
+		defer func() {
+			s.Metrics.EndRequest(
+				r.Pattern,
+				r.Method,
+				response.status,
+				time.Since(started),
+			)
+		}()
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
@@ -160,17 +182,27 @@ func (s *Server) dispatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "same-origin")
 	w.Header().Set("X-Frame-Options", "DENY")
 	path := r.URL.Path
-	managed := strings.HasPrefix(path, "/api/v1/") || path == "/app" || strings.HasPrefix(path, "/app/") || strings.HasPrefix(path, "/api/docs") || strings.HasPrefix(path, "/api/openapi") || strings.HasPrefix(path, "/api/schemas")
+	isManagementAPI := strings.HasPrefix(path, "/api/v1/")
+	isAdminApp := path == "/app" || strings.HasPrefix(path, "/app/")
+	isAPIDocumentation := strings.HasPrefix(path, "/api/docs") ||
+		strings.HasPrefix(path, "/api/openapi") || strings.HasPrefix(path, "/api/schemas")
+	managed := isManagementAPI || isAdminApp || isAPIDocumentation
 	if managed && !s.adminHost(r.Host) {
 		writeProblem(w, 404, "Unknown management host")
 		return
 	}
-	if strings.HasPrefix(path, "/api/v1/") {
+	if isManagementAPI {
 		w.Header().Set("Cache-Control", "no-store")
-		if r.Method != "GET" && r.Method != "HEAD" {
+		isMutatingRequest := r.Method != "GET" && r.Method != "HEAD"
+		if isMutatingRequest {
 			if origin := r.Header.Get("Origin"); origin != "" {
 				u, e := url.Parse(origin)
-				if e != nil || u.Host != r.Host || (s.Config.CookieSecure && u.Scheme != "https") {
+				if e != nil {
+					writeProblem(w, 403, "Untrusted request origin")
+					return
+				}
+				requiresHTTPS := s.Config.CookieSecure && u.Scheme != "https"
+				if u.Host != r.Host || requiresHTTPS {
 					writeProblem(w, 403, "Untrusted request origin")
 					return
 				}
@@ -193,7 +225,7 @@ func (s *Server) dispatch(w http.ResponseWriter, r *http.Request) {
 				writeProblem(w, 401, "Authentication required")
 				return
 			}
-			if r.Method != "GET" && r.Method != "HEAD" {
+			if isMutatingRequest {
 				if !security.Equal(r.Header.Get("X-CSRF-Token"), ident.Session.CSRFToken) {
 					writeProblem(w, 403, "Invalid CSRF token")
 					return
@@ -284,8 +316,21 @@ func list[T any](ctx context.Context, s *store.Store, kind string) ([]T, error) 
 }
 func audit(ctx context.Context, t *store.Tx, action, kind, id string) error {
 	u := CurrentUser(ctx)
-	a := domain.Audit{ID: domain.ID(), UserID: u.ID, Username: u.Username, Action: action, ResourceType: kind, ResourceID: id, CreatedAt: domain.Now()}
-	return t.Put(ctx, "audit", a.ID, a)
+	a := domain.Audit{
+		ID:           domain.ID(),
+		UserID:       u.ID,
+		Username:     u.Username,
+		Action:       action,
+		ResourceType: kind,
+		ResourceID:   id,
+		CreatedAt:    domain.Now(),
+	}
+	return t.Put(
+		ctx,
+		"audit",
+		a.ID,
+		a,
+	)
 }
 func (s *Server) ResolveSecret(ctx context.Context, id string) (string, error) {
 	return s.Secrets.ResolveSecret(ctx, id)
@@ -300,7 +345,8 @@ func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
 		p := filepath.Join(s.Config.StaticDir, filepath.Clean(r.URL.Path))
 		if strings.HasPrefix(r.URL.Path, "/assets/uploads/") {
 			name := strings.TrimPrefix(r.URL.Path, "/assets/uploads/")
-			if name == "" || strings.ContainsAny(name, "/\\") || strings.Contains(name, "..") {
+			containsPath := strings.ContainsAny(name, "/\\") || strings.Contains(name, "..")
+			if name == "" || containsPath {
 				writeProblem(w, 404, "Asset not found")
 				return
 			}
@@ -314,6 +360,7 @@ func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, 404, "Asset not found")
 		return
 	}
+	isAdminPath := r.URL.Path == "/" || r.URL.Path == "/app" || strings.HasPrefix(r.URL.Path, "/app/")
 	if !s.adminHost(r.Host) {
 		if s.Store == nil {
 			writeProblem(w, 404, "Page not found")
@@ -325,15 +372,37 @@ func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var p domain.Page
-		if s.Store.Get(r.Context(), "pages", id, &p) != nil || p.Published == nil || !validPublicPath(r.URL.Path, "") {
+		if e := s.Store.Get(
+			r.Context(),
+			"pages",
+			id,
+			&p,
+		); e != nil {
 			writeProblem(w, 404, "Page not found")
 			return
 		}
-	} else if r.URL.Path != "/" && r.URL.Path != "/app" && !strings.HasPrefix(r.URL.Path, "/app/") {
+		if p.Published == nil || !validPublicPath(r.URL.Path, "") {
+			writeProblem(w, 404, "Page not found")
+			return
+		}
+	} else if !isAdminPath {
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
 		id, e := s.Store.PageIDBySlug(r.Context(), parts[0])
+		if e != nil {
+			writeProblem(w, 404, "Page not found")
+			return
+		}
 		var p domain.Page
-		if e != nil || s.Store.Get(r.Context(), "pages", id, &p) != nil || p.Published == nil || !validPublicPath(r.URL.Path, "/"+parts[0]) {
+		if e := s.Store.Get(
+			r.Context(),
+			"pages",
+			id,
+			&p,
+		); e != nil {
+			writeProblem(w, 404, "Page not found")
+			return
+		}
+		if p.Published == nil || !validPublicPath(r.URL.Path, "/"+parts[0]) {
 			writeProblem(w, 404, "Page not found")
 			return
 		}
@@ -344,7 +413,12 @@ func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
+	w.Header().Set(
+		"Content-Security-Policy",
+		"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "+
+			"img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "+
+			"frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+	)
 	http.ServeFile(w, r, p)
 }
 func validPublicPath(path, base string) bool {
@@ -361,9 +435,6 @@ func hostname(h string) string {
 	}
 	return strings.ToLower(strings.TrimSuffix(h, "."))
 }
-
-// Keep time.Duration in this package for fixed cookie/session lifetime.
-const sessionLifetime = time.Hour * 24 * 7
 
 // Unwrap lets ResponseController retain support for the underlying writer.
 type responseStatus struct {

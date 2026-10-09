@@ -11,14 +11,37 @@ func (t *Tx) PutEvent(ctx context.Context, e Event) error {
 	if err != nil {
 		return err
 	}
-	_, err = t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO events(id,monitor_id,generation,kind,created_at,payload) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`), e.ID, e.MonitorID, e.Generation, e.Kind, e.CreatedAt, payload)
+	_, err = t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`INSERT INTO events(id,monitor_id,generation,kind,created_at,payload) VALUES(?,?,?,?,?,?) `+
+				`ON CONFLICT(id) DO NOTHING`,
+		),
+		e.ID,
+		e.MonitorID,
+		e.Generation,
+		e.Kind,
+		e.CreatedAt,
+		payload,
+	)
 	return mapError(err)
 }
 
 func (s *Store) GetEvent(ctx context.Context, id string) (Event, error) {
 	var e Event
 	var payload string
-	err := s.read.QueryRowContext(ctx, s.sql(`SELECT id,monitor_id,generation,kind,created_at,payload FROM events WHERE id=?`), id).Scan(&e.ID, &e.MonitorID, &e.Generation, &e.Kind, &e.CreatedAt, &payload)
+	err := s.read.QueryRowContext(
+		ctx,
+		s.sql(`SELECT id,monitor_id,generation,kind,created_at,payload FROM events WHERE id=?`),
+		id,
+	).Scan(
+		&e.ID,
+		&e.MonitorID,
+		&e.Generation,
+		&e.Kind,
+		&e.CreatedAt,
+		&payload,
+	)
 	e.Payload = json.RawMessage(payload)
 	return e, mapError(err)
 }
@@ -27,7 +50,16 @@ func (s *Store) ListEvents(ctx context.Context, monitorID string, since int64, l
 	if limit <= 0 || limit > 10000 {
 		limit = 1000
 	}
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT id,monitor_id,generation,kind,created_at,payload FROM events WHERE monitor_id=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT ?`), monitorID, since, limit)
+	rows, err := s.read.QueryContext(
+		ctx,
+		s.sql(
+			`SELECT id,monitor_id,generation,kind,created_at,payload FROM events WHERE monitor_id=? `+
+				`AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT ?`,
+		),
+		monitorID,
+		since,
+		limit,
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -36,7 +68,14 @@ func (s *Store) ListEvents(ctx context.Context, monitorID string, since int64, l
 	for rows.Next() {
 		var e Event
 		var payload string
-		if err = rows.Scan(&e.ID, &e.MonitorID, &e.Generation, &e.Kind, &e.CreatedAt, &payload); err != nil {
+		if err = rows.Scan(
+			&e.ID,
+			&e.MonitorID,
+			&e.Generation,
+			&e.Kind,
+			&e.CreatedAt,
+			&payload,
+		); err != nil {
 			return nil, err
 		}
 		e.Payload = json.RawMessage(payload)
@@ -53,16 +92,47 @@ func (t *Tx) PutDelivery(ctx context.Context, d Delivery) error {
 	if d.State == "" {
 		d.State = "pending"
 	}
-	_, err = t.tx.ExecContext(ctx, t.s.sql(`INSERT INTO deliveries(id,event_id,channel_id,generation,state,due_at,attempts,lease_token,lease_until,last_error,payload) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(event_id,channel_id) DO NOTHING`), d.ID, d.EventID, d.ChannelID, d.Generation, d.State, d.DueAt, d.Attempts, d.LeaseToken, d.LeaseUntil, d.LastError, payload)
+	_, err = t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`INSERT INTO deliveries(id,event_id,channel_id,generation,state,due_at,attempts,lease_token,`+
+				`lease_until,last_error,payload) VALUES(?,?,?,?,?,?,?,?,?,?,?) `+
+				`ON CONFLICT(event_id,channel_id) DO NOTHING`,
+		),
+		d.ID,
+		d.EventID,
+		d.ChannelID,
+		d.Generation,
+		d.State,
+		d.DueAt,
+		d.Attempts,
+		d.LeaseToken,
+		d.LeaseUntil,
+		d.LastError,
+		payload,
+	)
 	return mapError(err)
 }
 
-const deliveryColumns = `id,event_id,channel_id,generation,state,due_at,attempts,lease_token,lease_until,last_error,payload`
+const deliveryColumns = `id,event_id,channel_id,generation,state,due_at,attempts,lease_token,lease_until,last_error,` +
+	`payload`
 
 func scanDelivery(row interface{ Scan(...any) error }) (Delivery, error) {
 	var d Delivery
 	var payload string
-	err := row.Scan(&d.ID, &d.EventID, &d.ChannelID, &d.Generation, &d.State, &d.DueAt, &d.Attempts, &d.LeaseToken, &d.LeaseUntil, &d.LastError, &payload)
+	err := row.Scan(
+		&d.ID,
+		&d.EventID,
+		&d.ChannelID,
+		&d.Generation,
+		&d.State,
+		&d.DueAt,
+		&d.Attempts,
+		&d.LeaseToken,
+		&d.LeaseUntil,
+		&d.LastError,
+		&payload,
+	)
 	d.Payload = json.RawMessage(payload)
 	return d, mapError(err)
 }
@@ -75,7 +145,11 @@ func (s *Store) ListDeliveries(ctx context.Context, limit int) ([]Delivery, erro
 	if limit <= 0 || limit > 10000 {
 		limit = 1000
 	}
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT `+deliveryColumns+` FROM deliveries ORDER BY due_at DESC,id DESC LIMIT ?`), limit)
+	rows, err := s.read.QueryContext(
+		ctx,
+		s.sql(`SELECT `+deliveryColumns+` FROM deliveries ORDER BY due_at DESC,id DESC LIMIT ?`),
+		limit,
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -95,7 +169,16 @@ func (s *Store) ListDeliveries(ctx context.Context, limit int) ([]Delivery, erro
 // The worker interprets the cycle payload and lease deadline; this query does
 // not truncate the list or infer notification policy from JSON in the database.
 func (s *Store) InFlightDeliveries(ctx context.Context, monitorID, channelID string) ([]Delivery, error) {
-	rows, err := s.read.QueryContext(ctx, s.sql(`SELECT d.id,d.event_id,d.channel_id,d.generation,d.state,d.due_at,d.attempts,d.lease_token,d.lease_until,d.last_error,d.payload FROM deliveries d JOIN events e ON e.id=d.event_id WHERE e.monitor_id=? AND d.channel_id=? AND d.state='sending' ORDER BY d.due_at,d.id`), monitorID, channelID)
+	rows, err := s.read.QueryContext(
+		ctx,
+		s.sql(
+			`SELECT d.id,d.event_id,d.channel_id,d.generation,d.state,d.due_at,d.attempts,d.lease_token,`+
+				`d.lease_until,d.last_error,d.payload FROM deliveries d JOIN events e ON e.id=d.event_id `+
+				`WHERE e.monitor_id=? AND d.channel_id=? AND d.state='sending' ORDER BY d.due_at,d.id`,
+		),
+		monitorID,
+		channelID,
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -122,15 +205,23 @@ func (s *Store) ClaimDeliveries(ctx context.Context, now, leaseMS int64, limit i
 	}
 	result := []Delivery{}
 	err := s.WithTx(ctx, func(t *Tx) error {
-		query := `SELECT ` + deliveryColumns + ` FROM deliveries WHERE (state='pending' AND due_at<=?) OR (state='sending' AND lease_until<=?) ORDER BY due_at,id LIMIT ?`
+		query := `SELECT ` + deliveryColumns +
+			` FROM deliveries WHERE (state='pending' AND due_at<=?) ` +
+			`OR (state='sending' AND lease_until<=?) ORDER BY due_at,id LIMIT ?`
 		if s.driver == "postgres" {
 			query += ` FOR UPDATE SKIP LOCKED`
 		}
-		rows, err := t.tx.QueryContext(ctx, s.sql(query), now, now, limit)
+		rows, err := t.tx.QueryContext(
+			ctx,
+			s.sql(query),
+			now,
+			now,
+			limit,
+		)
 		if err != nil {
 			return mapError(err)
 		}
-		var candidates []Delivery
+		candidates := make([]Delivery, 0, limit)
 		for rows.Next() {
 			d, e := scanDelivery(rows)
 			if e != nil {
@@ -145,7 +236,18 @@ func (s *Store) ClaimDeliveries(ctx context.Context, now, leaseMS int64, limit i
 		}
 		rows.Close()
 		for _, d := range candidates {
-			r, err := t.tx.ExecContext(ctx, s.sql(`UPDATE deliveries SET state='sending',lease_token=?,lease_until=?,attempts=attempts+1 WHERE id=? AND ((state='pending' AND due_at<=?) OR (state='sending' AND lease_until<=?))`), token, now+leaseMS, d.ID, now, now)
+			r, err := t.tx.ExecContext(
+				ctx,
+				s.sql(
+					`UPDATE deliveries SET state='sending',lease_token=?,lease_until=?,attempts=attempts+1 `+
+						`WHERE id=? AND ((state='pending' AND due_at<=?) OR (state='sending' AND lease_until<=?))`,
+				),
+				token,
+				now+leaseMS,
+				d.ID,
+				now,
+				now,
+			)
 			if err != nil {
 				return mapError(err)
 			}
@@ -169,11 +271,30 @@ func (s *Store) ClaimDeliveries(ctx context.Context, now, leaseMS int64, limit i
 
 // CompleteDelivery can share a transaction with the notification policy's
 // durable delivery marker, so a restart cannot lose the recovery prerequisite.
-func (t *Tx) CompleteDelivery(ctx context.Context, id, token string, now int64, state string, nextDue int64, lastError string) error {
+func (t *Tx) CompleteDelivery(
+	ctx context.Context,
+	id, token string,
+	now int64,
+	state string,
+	nextDue int64,
+	lastError string,
+) error {
 	if state != "sent" && state != "pending" && state != "failed" && state != "cancelled" {
 		return fmt.Errorf("invalid delivery completion state")
 	}
-	result, err := t.tx.ExecContext(ctx, t.s.sql(`UPDATE deliveries SET state=?,due_at=?,last_error=?,lease_token='',lease_until=0 WHERE id=? AND state='sending' AND lease_token=? AND lease_until>?`), state, nextDue, lastError, id, token, now)
+	result, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`UPDATE deliveries SET state=?,due_at=?,last_error=?,lease_token='',lease_until=0 WHERE id=? `+
+				`AND state='sending' AND lease_token=? AND lease_until>?`,
+		),
+		state,
+		nextDue,
+		lastError,
+		id,
+		token,
+		now,
+	)
 	if err != nil {
 		return mapError(err)
 	}
@@ -187,11 +308,35 @@ func (t *Tx) CompleteDelivery(ctx context.Context, id, token string, now int64, 
 	return nil
 }
 
-func (s *Store) CompleteDelivery(ctx context.Context, id, token string, now int64, state string, nextDue int64, lastError string) error {
-	return s.WithTx(ctx, func(t *Tx) error { return t.CompleteDelivery(ctx, id, token, now, state, nextDue, lastError) })
+func (s *Store) CompleteDelivery(
+	ctx context.Context,
+	id, token string,
+	now int64,
+	state string,
+	nextDue int64,
+	lastError string,
+) error {
+	return s.WithTx(ctx, func(t *Tx) error {
+		return t.CompleteDelivery(
+			ctx,
+			id,
+			token,
+			now,
+			state,
+			nextDue,
+			lastError,
+		)
+	})
 }
 
 func (t *Tx) CancelDeliveries(ctx context.Context, eventID string) error {
-	_, err := t.tx.ExecContext(ctx, t.s.sql(`UPDATE deliveries SET state='cancelled',lease_token='',lease_until=0 WHERE event_id=? AND state IN('pending','sending')`), eventID)
+	_, err := t.tx.ExecContext(
+		ctx,
+		t.s.sql(
+			`UPDATE deliveries SET state='cancelled',lease_token='',lease_until=0 WHERE event_id=? `+
+				`AND state IN('pending','sending')`,
+		),
+		eventID,
+	)
 	return mapError(err)
 }

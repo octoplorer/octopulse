@@ -16,7 +16,7 @@ import (
 )
 
 func (x *execution) tcp(ctx context.Context, c domain.TCPConfig) (Result, error) {
-	result := Result{}
+	var result Result
 	start := time.Now()
 	conn, err := x.dial(ctx, c.Connection, net.JoinHostPort(c.Host, strconv.Itoa(c.Port)))
 	if err != nil {
@@ -55,17 +55,15 @@ func (x *execution) tcp(ctx context.Context, c domain.TCPConfig) (Result, error)
 	if err != nil {
 		return result, err
 	}
-	if len(payload) > 0 {
-		for len(payload) > 0 {
-			n, e := conn.Write(payload)
-			if e != nil {
-				return result, e
-			}
-			if n == 0 {
-				return result, io.ErrNoProgress
-			}
-			payload = payload[n:]
+	for len(payload) > 0 {
+		n, e := conn.Write(payload)
+		if e != nil {
+			return result, e
 		}
+		if n == 0 {
+			return result, io.ErrNoProgress
+		}
+		payload = payload[n:]
 	}
 	if c.ReceiveContains == "" && c.ReceiveRegex == "" {
 		result.Success = true
@@ -99,7 +97,8 @@ func (x *execution) tcp(ctx context.Context, c domain.TCPConfig) (Result, error)
 			return result, decodeErr
 		}
 		result.Diagnostics.ResponseBytes = int64(len(data))
-		if (c.ReceiveContains == "" || strings.Contains(text, c.ReceiveContains)) && (expression == nil || expression.MatchString(text)) {
+		matchesContent := c.ReceiveContains == "" || strings.Contains(text, c.ReceiveContains)
+		if matchesContent && (expression == nil || expression.MatchString(text)) {
 			result.Success = true
 			return result, nil
 		}

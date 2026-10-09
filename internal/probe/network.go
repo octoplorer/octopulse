@@ -70,7 +70,10 @@ func (x *execution) tlsConfig(ctx context.Context, c domain.TLSConfig, host stri
 func makeDialer(c domain.ConnectionConfig) *net.Dialer {
 	d := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
 	if c.DNSServer != "" {
-		d.Resolver = &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+		d.Resolver = &net.Resolver{PreferGo: true, Dial: func(
+			ctx context.Context,
+			network, address string,
+		) (net.Conn, error) {
 			var nd net.Dialer
 			return nd.DialContext(ctx, network, c.DNSServer)
 		}}
@@ -124,7 +127,12 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 		return nil, err
 	}
 	if p == nil {
-		return dialDirect(ctx, c, "tcp", address)
+		return dialDirect(
+			ctx,
+			c,
+			"tcp",
+			address,
+		)
 	}
 	if p.Scheme == "socks5" || p.Scheme == "socks5h" {
 		dialer, err := proxy.FromURL(p, makeDialer(c))
@@ -154,7 +162,7 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 	if err != nil {
 		return nil, err
 	}
-	success := false
+	var success bool
 	defer func() {
 		if !success {
 			_ = conn.Close()
@@ -169,7 +177,14 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 		}
 		conn = secured
 	}
-	req := &http.Request{Method: http.MethodConnect, URL: &url.URL{Opaque: address}, Host: address, Header: make(http.Header)}
+	req := &http.Request{
+		Method: http.MethodConnect,
+		URL: &url.URL{
+			Opaque: address,
+		},
+		Host:   address,
+		Header: make(http.Header),
+	}
 	if p.User != nil {
 		password, _ := p.User.Password()
 		req.SetBasicAuth(p.User.Username(), password)
@@ -178,7 +193,7 @@ func (x *execution) dial(ctx context.Context, c domain.ConnectionConfig, address
 	}
 	if err = req.Write(conn); err == nil {
 		var response *http.Response
-		var reader = bufio.NewReader(conn)
+		reader := bufio.NewReader(conn)
 		response, err = http.ReadResponse(reader, req)
 		if err == nil {
 			if response.StatusCode != 200 {

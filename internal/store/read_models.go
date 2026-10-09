@@ -18,9 +18,30 @@ type MonitorSnapshot struct {
 }
 
 func monitorSnapshot(r sqlitequery.ListMonitorSnapshotsRow) MonitorSnapshot {
-	result := MonitorSnapshot{Monitor: Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)}}
+	result := MonitorSnapshot{
+		Monitor: Monitor{
+			ID:            r.ID,
+			ConfigVersion: r.ConfigVersion,
+			Generation:    r.Generation,
+			Kind:          r.Kind,
+			Enabled:       r.Enabled != 0,
+			IntervalMS:    r.IntervalMs,
+			ConfigJSON:    json.RawMessage(r.ConfigJson),
+		},
+	}
 	if r.RuntimeMonitorID.Valid {
-		result.Runtime = &Runtime{r.RuntimeMonitorID.String, r.RuntimeConfigVersion.Int64, r.RuntimeGeneration.Int64, r.State.String, r.Failures.Int64, r.Successes.Int64, r.LastRoundID.String, r.LastCollectedAt.Int64, r.HeartbeatVersion.Int64, r.HeartbeatAt.Int64}
+		result.Runtime = &Runtime{
+			MonitorID:        r.RuntimeMonitorID.String,
+			ConfigVersion:    r.RuntimeConfigVersion.Int64,
+			Generation:       r.RuntimeGeneration.Int64,
+			State:            r.State.String,
+			Failures:         r.Failures.Int64,
+			Successes:        r.Successes.Int64,
+			LastRoundID:      r.LastRoundID.String,
+			LastCollectedAt:  r.LastCollectedAt.Int64,
+			HeartbeatVersion: r.HeartbeatVersion.Int64,
+			HeartbeatAt:      r.HeartbeatAt.Int64,
+		}
 	}
 	if r.EngineJson.Valid {
 		result.EngineJSON = json.RawMessage(r.EngineJson.String)
@@ -123,7 +144,10 @@ func forMonitorBatches(ids []string, fn func([]string) error) error {
 
 // PostgreSQL accepts one JSON array parameter without depending on a second
 // PostgreSQL driver solely to encode sqlc's database/sql text[] arguments.
-func monitorIDsJSON(ids []string) json.RawMessage { data, _ := json.Marshal(ids); return data }
+func monitorIDsJSON(ids []string) json.RawMessage {
+	data, _ := json.Marshal(ids)
+	return data
+}
 
 func (s *Store) readMonitors(ctx context.Context, q dbtx, ids []string) ([]Monitor, error) {
 	result := []Monitor{}
@@ -133,7 +157,18 @@ func (s *Store) readMonitors(ctx context.Context, q dbtx, ids []string) ([]Monit
 			return nil, mapError(err)
 		}
 		for _, r := range rows {
-			result = append(result, Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)})
+			result = append(
+				result,
+				Monitor{
+					ID:            r.ID,
+					ConfigVersion: r.ConfigVersion,
+					Generation:    r.Generation,
+					Kind:          r.Kind,
+					Enabled:       r.Enabled != 0,
+					IntervalMS:    r.IntervalMs,
+					ConfigJSON:    json.RawMessage(r.ConfigJson),
+				},
+			)
 		}
 	} else {
 		rows, err := postgresquery.New(q).ReadMonitors(ctx, monitorIDsJSON(ids))
@@ -141,7 +176,18 @@ func (s *Store) readMonitors(ctx context.Context, q dbtx, ids []string) ([]Monit
 			return nil, mapError(err)
 		}
 		for _, r := range rows {
-			result = append(result, Monitor{r.ID, r.ConfigVersion, r.Generation, r.Kind, r.Enabled != 0, r.IntervalMs, json.RawMessage(r.ConfigJson)})
+			result = append(
+				result,
+				Monitor{
+					ID:            r.ID,
+					ConfigVersion: r.ConfigVersion,
+					Generation:    r.Generation,
+					Kind:          r.Kind,
+					Enabled:       r.Enabled != 0,
+					IntervalMS:    r.IntervalMs,
+					ConfigJSON:    json.RawMessage(r.ConfigJson),
+				},
+			)
 		}
 	}
 	return result, nil
@@ -157,32 +203,91 @@ func (s *Store) readStatisticsIntervals(ctx context.Context, q dbtx, ids []strin
 		result = append(result, row)
 	}
 	if s.driver == "sqlite" {
-		rows, err := sqlitequery.New(q).ReadStatisticsIntervals(ctx, sqlitequery.ReadStatisticsIntervalsParams{Ids: ids, FromMs: sql.NullInt64{Int64: from, Valid: true}, ToMs: to})
+		rows, err := sqlitequery.New(q).ReadStatisticsIntervals(
+			ctx,
+			sqlitequery.ReadStatisticsIntervalsParams{
+				Ids: ids,
+				FromMs: sql.NullInt64{
+					Int64: from,
+					Valid: true,
+				},
+				ToMs: to,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}
 		for _, r := range rows {
-			appendInterval(r.ID, r.MonitorID, r.State, r.StartedAt, r.EndedAt)
+			appendInterval(
+				r.ID,
+				r.MonitorID,
+				r.State,
+				r.StartedAt,
+				r.EndedAt,
+			)
 		}
 	} else {
-		rows, err := postgresquery.New(q).ReadStatisticsIntervals(ctx, postgresquery.ReadStatisticsIntervalsParams{IdsJson: monitorIDsJSON(ids), FromMs: sql.NullInt64{Int64: from, Valid: true}, ToMs: to})
+		rows, err := postgresquery.New(q).ReadStatisticsIntervals(
+			ctx,
+			postgresquery.ReadStatisticsIntervalsParams{
+				IdsJson: monitorIDsJSON(ids),
+				FromMs: sql.NullInt64{
+					Int64: from,
+					Valid: true,
+				},
+				ToMs: to,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}
 		for _, r := range rows {
-			appendInterval(r.ID, r.MonitorID, r.State, r.StartedAt, r.EndedAt)
+			appendInterval(
+				r.ID,
+				r.MonitorID,
+				r.State,
+				r.StartedAt,
+				r.EndedAt,
+			)
 		}
 	}
 	return result, nil
 }
 
-func (s *Store) readLatencyAggregates(ctx context.Context, q dbtx, ids []string, from, to, width int64) ([]Aggregate, error) {
+func (s *Store) readLatencyAggregates(
+	ctx context.Context,
+	q dbtx,
+	ids []string,
+	from, to, width int64,
+) ([]Aggregate, error) {
 	result := []Aggregate{}
 	appendAggregate := func(r sqlitequery.Aggregate) {
-		result = append(result, Aggregate{r.MonitorID, r.BucketAt, r.WidthMs, r.UpMs, r.DownMs, r.UnknownMs, r.ExcludedMs, r.LatencyTotalMs, r.RoundCount, r.SuccessfulRoundCount})
+		result = append(
+			result,
+			Aggregate{
+				MonitorID:            r.MonitorID,
+				BucketAt:             r.BucketAt,
+				WidthMS:              r.WidthMs,
+				UpMS:                 r.UpMs,
+				DownMS:               r.DownMs,
+				UnknownMS:            r.UnknownMs,
+				ExcludedMS:           r.ExcludedMs,
+				LatencyTotalMS:       r.LatencyTotalMs,
+				RoundCount:           r.RoundCount,
+				SuccessfulRoundCount: r.SuccessfulRoundCount,
+			},
+		)
 	}
 	if s.driver == "sqlite" {
-		rows, err := sqlitequery.New(q).ReadLatencyAggregates(ctx, sqlitequery.ReadLatencyAggregatesParams{Ids: ids, FromMs: from, ToMs: to, WidthMs: width})
+		rows, err := sqlitequery.New(q).ReadLatencyAggregates(
+			ctx,
+			sqlitequery.ReadLatencyAggregatesParams{
+				Ids:     ids,
+				FromMs:  from,
+				ToMs:    to,
+				WidthMs: width,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}
@@ -190,7 +295,15 @@ func (s *Store) readLatencyAggregates(ctx context.Context, q dbtx, ids []string,
 			appendAggregate(r)
 		}
 	} else {
-		rows, err := postgresquery.New(q).ReadLatencyAggregates(ctx, postgresquery.ReadLatencyAggregatesParams{IdsJson: monitorIDsJSON(ids), FromMs: from, ToMs: to, WidthMs: width})
+		rows, err := postgresquery.New(q).ReadLatencyAggregates(
+			ctx,
+			postgresquery.ReadLatencyAggregatesParams{
+				IdsJson: monitorIDsJSON(ids),
+				FromMs:  from,
+				ToMs:    to,
+				WidthMs: width,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}
@@ -201,13 +314,34 @@ func (s *Store) readLatencyAggregates(ctx context.Context, q dbtx, ids []string,
 	return result, nil
 }
 
-func (s *Store) readRoundBuckets(ctx context.Context, q dbtx, ids []string, from, to, width int64) (map[string][]RoundBucket, error) {
+func (s *Store) readRoundBuckets(
+	ctx context.Context,
+	q dbtx,
+	ids []string,
+	from, to, width int64,
+) (map[string][]RoundBucket, error) {
 	result := map[string][]RoundBucket{}
 	appendBucket := func(r sqlitequery.ReadRoundBucketsRow) {
-		result[r.MonitorID] = append(result[r.MonitorID], RoundBucket{r.BucketAt, r.LatencyTotalMs, r.RoundCount, r.SuccessfulRoundCount})
+		result[r.MonitorID] = append(
+			result[r.MonitorID],
+			RoundBucket{
+				At:             r.BucketAt,
+				LatencyTotalMS: r.LatencyTotalMs,
+				Count:          r.RoundCount,
+				Successes:      r.SuccessfulRoundCount,
+			},
+		)
 	}
 	if s.driver == "sqlite" {
-		rows, err := sqlitequery.New(q).ReadRoundBuckets(ctx, sqlitequery.ReadRoundBucketsParams{Ids: ids, FromMs: from, ToMs: to, WidthMs: width})
+		rows, err := sqlitequery.New(q).ReadRoundBuckets(
+			ctx,
+			sqlitequery.ReadRoundBucketsParams{
+				Ids:     ids,
+				FromMs:  from,
+				ToMs:    to,
+				WidthMs: width,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}
@@ -215,7 +349,15 @@ func (s *Store) readRoundBuckets(ctx context.Context, q dbtx, ids []string, from
 			appendBucket(r)
 		}
 	} else {
-		rows, err := postgresquery.New(q).ReadRoundBuckets(ctx, postgresquery.ReadRoundBucketsParams{IdsJson: monitorIDsJSON(ids), FromMs: from, ToMs: to, WidthMs: width})
+		rows, err := postgresquery.New(q).ReadRoundBuckets(
+			ctx,
+			postgresquery.ReadRoundBucketsParams{
+				IdsJson: monitorIDsJSON(ids),
+				FromMs:  from,
+				ToMs:    to,
+				WidthMs: width,
+			},
+		)
 		if err != nil {
 			return nil, mapError(err)
 		}

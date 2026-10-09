@@ -37,9 +37,29 @@ type Client struct {
 }
 
 func New(s *store.Store, secrets SecretResolver) *Client {
-	c := &Client{Store: s, Secrets: secrets, HTTP: &http.Client{Timeout: 12 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, Now: time.Now, history: map[string]HistoryResponse{}, containers: map[string]ContainersResponse{}, wake: make(chan struct{}, 1), commit: make(chan struct{}, 1), remote: make(chan struct{}, 4)}
+	c := &Client{
+		Store:   s,
+		Secrets: secrets,
+		HTTP: &http.Client{
+			Timeout: 12 * time.Second,
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		Now:        time.Now,
+		history:    map[string]HistoryResponse{},
+		containers: map[string]ContainersResponse{},
+		wake:       make(chan struct{}, 1),
+		commit:     make(chan struct{}, 1),
+		remote:     make(chan struct{}, 4),
+	}
 	if s != nil {
-		_ = s.Get(context.Background(), "beszelSnapshots", "systems", &c.systems)
+		_ = s.Get(
+			context.Background(),
+			"beszelSnapshots",
+			"systems",
+			&c.systems,
+		)
 		if c.systems.SyncedAt > 0 {
 			c.systems.Stale = true
 			c.systems.Error = "Awaiting initial Beszel synchronization"
@@ -49,7 +69,12 @@ func New(s *store.Store, secrets SecretResolver) *Client {
 }
 func (c *Client) loadConfig(ctx context.Context) (domain.BeszelConfig, error) {
 	var cfg domain.BeszelConfig
-	if err := c.Store.Get(ctx, "beszel", "config", &cfg); err != nil {
+	if err := c.Store.Get(
+		ctx,
+		"beszel",
+		"config",
+		&cfg,
+	); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return cfg, ErrDisabled
 		}
@@ -64,26 +89,41 @@ func (c *Client) loadConfig(ctx context.Context) (domain.BeszelConfig, error) {
 	return cfg, nil
 }
 func (c *Client) prepare(ctx context.Context, session *clientSession) (string, error) {
-	value, err := c.sharedWork(ctx, session, &session.prepare, "", func(ctx context.Context) (any, error) {
-		token, err := c.authenticate(ctx, session)
-		if err != nil {
-			return nil, err
-		}
-		var info struct {
-			Version string `json:"v"`
-		}
-		if err := c.request(ctx, session.config, "GET", "/api/beszel/info", nil, nil, &info, token); err != nil {
-			return nil, err
-		}
-		version := info.Version
-		if len(version) > 0 && version[0] == 'v' {
-			version = version[1:]
-		}
-		if len(version) < 5 || version[:5] != "0.20." {
-			return nil, ErrVersion
-		}
-		return version, nil
-	})
+	value, err := c.sharedWork(
+		ctx,
+		session,
+		&session.prepare,
+		"",
+		func(ctx context.Context) (any, error) {
+			token, err := c.authenticate(ctx, session)
+			if err != nil {
+				return nil, err
+			}
+			var info struct {
+				Version string `json:"v"`
+			}
+			if err := c.request(
+				ctx,
+				session.config,
+				requestOptions{
+					method: "GET",
+					path:   "/api/beszel/info",
+					token:  token,
+				},
+				&info,
+			); err != nil {
+				return nil, err
+			}
+			version := info.Version
+			if len(version) > 0 && version[0] == 'v' {
+				version = version[1:]
+			}
+			if len(version) < 5 || version[:5] != "0.20." {
+				return nil, ErrVersion
+			}
+			return version, nil
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -138,13 +178,18 @@ func (c *Client) Poll(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.fetch(ctx, session, "systems", func(ctx context.Context) (any, error) {
-		err := c.poll(ctx, session)
-		if err != nil {
-			c.fail(session, err)
-		}
-		return nil, err
-	})
+	_, err = c.fetch(
+		ctx,
+		session,
+		"systems",
+		func(ctx context.Context) (any, error) {
+			err := c.poll(ctx, session)
+			if err != nil {
+				c.fail(session, err)
+			}
+			return nil, err
+		},
+	)
 	return err
 }
 
@@ -155,7 +200,13 @@ func (c *Client) poll(ctx context.Context, session *clientSession) error {
 		return err
 	}
 	query := url.Values{"sort": {"name,id"}, "fields": {"id,name,host,status,updated,info"}}
-	records, err := listRecords[rawSystem](ctx, c, session, "systems", query)
+	records, err := listRecords[rawSystem](
+		ctx,
+		c,
+		session,
+		"systems",
+		query,
+	)
 	if err != nil {
 		return err
 	}
@@ -166,7 +217,29 @@ func (c *Client) poll(ctx context.Context, session *clientSession) error {
 		if err != nil || r.ID == "" {
 			return ErrSchema
 		}
-		result.Items = append(result.Items, System{ID: r.ID, Name: r.Name, Host: r.Host, Status: r.Status, CPU: r.Info.CPU, Memory: r.Info.Memory, Disk: r.Info.Disk, UpdatedAt: updated, Stale: r.Status != "up" || now-updated > int64(max(cfg.PollSeconds*2, 120))*1000, Info: SystemInfo{Hostname: r.Info.Hostname, Kernel: r.Info.Kernel, CPUModel: r.Info.CPUModel, Cores: r.Info.Cores, Threads: r.Info.Threads, UptimeSeconds: r.Info.Uptime, AgentVersion: r.Info.Version}})
+		result.Items = append(
+			result.Items,
+			System{
+				ID:        r.ID,
+				Name:      r.Name,
+				Host:      r.Host,
+				Status:    r.Status,
+				CPU:       r.Info.CPU,
+				Memory:    r.Info.Memory,
+				Disk:      r.Info.Disk,
+				UpdatedAt: updated,
+				Stale:     r.Status != "up" || now-updated > int64(max(cfg.PollSeconds*2, 120))*1000,
+				Info: SystemInfo{
+					Hostname:      r.Info.Hostname,
+					Kernel:        r.Info.Kernel,
+					CPUModel:      r.Info.CPUModel,
+					Cores:         r.Info.Cores,
+					Threads:       r.Info.Threads,
+					UptimeSeconds: r.Info.Uptime,
+					AgentVersion:  r.Info.Version,
+				},
+			},
+		)
 	}
 	select {
 	case c.commit <- struct{}{}:
@@ -177,7 +250,12 @@ func (c *Client) poll(ctx context.Context, session *clientSession) error {
 	if err := session.ctx.Err(); err != nil {
 		return err
 	}
-	if err = c.Store.Put(ctx, "beszelSnapshots", "systems", result); err != nil {
+	if err = c.Store.Put(
+		ctx,
+		"beszelSnapshots",
+		"systems",
+		result,
+	); err != nil {
 		return err
 	}
 	c.mu.Lock()
@@ -251,7 +329,13 @@ var ranges = map[string]struct {
 	duration time.Duration
 	kind     string
 	width    int64
-}{"1h": {time.Hour, "1m", 60000}, "12h": {12 * time.Hour, "10m", 600000}, "24h": {24 * time.Hour, "20m", 1200000}, "1w": {7 * 24 * time.Hour, "120m", 7200000}, "30d": {30 * 24 * time.Hour, "480m", 28800000}}
+}{
+	"1h":  {duration: time.Hour, kind: "1m", width: 60000},
+	"12h": {duration: 12 * time.Hour, kind: "10m", width: 600000},
+	"24h": {duration: 24 * time.Hour, kind: "20m", width: 1200000},
+	"1w":  {duration: 7 * 24 * time.Hour, kind: "120m", width: 7200000},
+	"30d": {duration: 30 * 24 * time.Hour, kind: "480m", width: 28800000},
+}
 
 func (c *Client) History(ctx context.Context, id, rangeName string) (HistoryResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
@@ -272,13 +356,25 @@ func (c *Client) History(ctx context.Context, id, rangeName string) (HistoryResp
 	if err := session.ctx.Err(); err != nil {
 		return HistoryResponse{}, err
 	}
-	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+	hasCurrentCache := cached.Source == cfg.URL && cached.SyncedAt > 0
+	if hasCurrentCache && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		cached.Items = append([]HistoryPoint{}, cached.Items...)
 		return cached, nil
 	}
-	value, err := c.fetch(ctx, session, "history:"+key, func(ctx context.Context) (any, error) {
-		return c.historyResult(ctx, session, id, rangeName, key)
-	})
+	value, err := c.fetch(
+		ctx,
+		session,
+		"history:"+key,
+		func(ctx context.Context) (any, error) {
+			return c.historyResult(
+				ctx,
+				session,
+				id,
+				rangeName,
+				key,
+			)
+		},
+	)
 	if err != nil {
 		return HistoryResponse{}, err
 	}
@@ -287,7 +383,11 @@ func (c *Client) History(ctx context.Context, id, rangeName string) (HistoryResp
 	return result, nil
 }
 
-func (c *Client) historyResult(ctx context.Context, session *clientSession, id, rangeName, key string) (HistoryResponse, error) {
+func (c *Client) historyResult(
+	ctx context.Context,
+	session *clientSession,
+	id, rangeName, key string,
+) (HistoryResponse, error) {
 	cfg := session.config
 	window := ranges[rangeName]
 	c.mu.RLock()
@@ -296,14 +396,26 @@ func (c *Client) historyResult(ctx context.Context, session *clientSession, id, 
 	if err := session.ctx.Err(); err != nil {
 		return HistoryResponse{}, err
 	}
-	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+	hasCurrentCache := cached.Source == cfg.URL && cached.SyncedAt > 0
+	if hasCurrentCache && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		return cached, nil
 	}
 	var err error
 	result := HistoryResponse{Items: []HistoryPoint{}, Source: cfg.URL, Range: rangeName, IntervalMS: window.width}
 	if _, err = c.prepare(ctx, session); err == nil {
-		filter := `system="` + id + `" && created > "` + c.Now().UTC().Add(-window.duration).Format("2006-01-02 15:04:05.000Z") + `" && type="` + window.kind + `"`
-		records, fetchErr := listRecords[rawHistory](ctx, c, session, "system_stats", url.Values{"filter": {filter}, "sort": {"created,id"}, "fields": {"created,stats"}})
+		since := c.Now().UTC().Add(-window.duration).Format("2006-01-02 15:04:05.000Z")
+		filter := `system="` + id + `" && created > "` + since + `" && type="` + window.kind + `"`
+		records, fetchErr := listRecords[rawHistory](
+			ctx,
+			c,
+			session,
+			"system_stats",
+			url.Values{
+				"filter": {filter},
+				"sort":   {"created,id"},
+				"fields": {"created,stats"},
+			},
+		)
 		err = fetchErr
 		if err == nil {
 			for _, r := range records {
@@ -316,7 +428,17 @@ func (c *Client) historyResult(ctx context.Context, session *clientSession, id, 
 				if len(r.Stats.Bytes) == 2 {
 					outgoing, incoming = r.Stats.Bytes[0], r.Stats.Bytes[1]
 				}
-				result.Items = append(result.Items, HistoryPoint{At: at, CPU: r.Stats.CPU, Memory: r.Stats.Memory, Disk: r.Stats.Disk, NetworkIn: incoming, NetworkOut: outgoing})
+				result.Items = append(
+					result.Items,
+					HistoryPoint{
+						At:         at,
+						CPU:        r.Stats.CPU,
+						Memory:     r.Stats.Memory,
+						Disk:       r.Stats.Disk,
+						NetworkIn:  incoming,
+						NetworkOut: outgoing,
+					},
+				)
 			}
 		}
 	}
@@ -379,13 +501,19 @@ func (c *Client) Containers(ctx context.Context, id string) (ContainersResponse,
 	if err := session.ctx.Err(); err != nil {
 		return ContainersResponse{}, err
 	}
-	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+	hasCurrentCache := cached.Source == cfg.URL && cached.SyncedAt > 0
+	if hasCurrentCache && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		cached.Items = append([]Container{}, cached.Items...)
 		return cached, nil
 	}
-	value, err := c.fetch(ctx, session, "containers:"+id, func(ctx context.Context) (any, error) {
-		return c.containersResult(ctx, session, id)
-	})
+	value, err := c.fetch(
+		ctx,
+		session,
+		"containers:"+id,
+		func(ctx context.Context) (any, error) {
+			return c.containersResult(ctx, session, id)
+		},
+	)
 	if err != nil {
 		return ContainersResponse{}, err
 	}
@@ -402,13 +530,24 @@ func (c *Client) containersResult(ctx context.Context, session *clientSession, i
 	if err := session.ctx.Err(); err != nil {
 		return ContainersResponse{}, err
 	}
-	if cached.Source == cfg.URL && cached.SyncedAt > 0 && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
+	hasCurrentCache := cached.Source == cfg.URL && cached.SyncedAt > 0
+	if hasCurrentCache && c.Now().UnixMilli()-cached.SyncedAt < int64(cfg.PollSeconds)*1000 {
 		return cached, nil
 	}
 	var err error
 	result := ContainersResponse{Items: []Container{}, Source: cfg.URL}
 	if _, err = c.prepare(ctx, session); err == nil {
-		records, fetchErr := listRecords[rawContainer](ctx, c, session, "containers", url.Values{"filter": {`system="` + id + `"`}, "sort": {"name,id"}, "fields": {"id,name,image,status,cpu,memory,updated"}})
+		records, fetchErr := listRecords[rawContainer](
+			ctx,
+			c,
+			session,
+			"containers",
+			url.Values{
+				"filter": {`system="` + id + `"`},
+				"sort":   {"name,id"},
+				"fields": {"id,name,image,status,cpu,memory,updated"},
+			},
+		)
 		err = fetchErr
 		if err == nil {
 			for _, r := range records {
@@ -417,7 +556,18 @@ func (c *Client) containersResult(ctx context.Context, session *clientSession, i
 					err = e
 					break
 				}
-				result.Items = append(result.Items, Container{ID: r.ID, Name: r.Name, Image: r.Image, Status: r.Status, CPU: r.CPU, Memory: r.Memory, UpdatedAt: updated})
+				result.Items = append(
+					result.Items,
+					Container{
+						ID:        r.ID,
+						Name:      r.Name,
+						Image:     r.Image,
+						Status:    r.Status,
+						CPU:       r.CPU,
+						Memory:    r.Memory,
+						UpdatedAt: updated,
+					},
+				)
 			}
 		}
 	}

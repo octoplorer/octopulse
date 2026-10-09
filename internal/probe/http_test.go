@@ -19,7 +19,17 @@ import (
 )
 
 func httpMonitor(target string) domain.Monitor {
-	m := domain.Monitor{Name: "test", Type: domain.MonitorHTTP, Enabled: true, IntervalSeconds: 30, TimeoutSeconds: 2, Retries: 2, HTTP: &domain.HTTPConfig{URL: target}}
+	m := domain.Monitor{
+		Name:            "test",
+		Type:            domain.MonitorHTTP,
+		Enabled:         true,
+		IntervalSeconds: 30,
+		TimeoutSeconds:  2,
+		Retries:         2,
+		HTTP: &domain.HTTPConfig{
+			URL: target,
+		},
+	}
 	m.Defaults()
 	return m
 }
@@ -34,8 +44,17 @@ func runMonitor(t *testing.T, runner *Runner, m domain.Monitor) Result {
 
 func TestHTTPQueryHeadersHostJSONAndAssertions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" || r.Host != "api.example.test" || strings.Join(r.URL.Query()["tag"], ",") != "original,a,b" || strings.Join(r.Header.Values("X-Repeated"), ",") != "one,two" {
-			t.Errorf("request settings lost: method=%s host=%s query=%v headers=%v", r.Method, r.Host, r.URL.Query(), r.Header)
+		if r.Method != "POST" || r.Host != "api.example.test" || strings.Join(
+			r.URL.Query()["tag"],
+			",",
+		) != "original,a,b" || strings.Join(r.Header.Values("X-Repeated"), ",") != "one,two" {
+			t.Errorf(
+				"request settings lost: method=%s host=%s query=%v headers=%v",
+				r.Method,
+				r.Host,
+				r.URL.Query(),
+				r.Header,
+			)
 		}
 		if r.Header.Get("Authorization") != "Bearer bearer-secret" {
 			t.Error("bearer authentication missing")
@@ -54,20 +73,79 @@ func TestHTTPQueryHeadersHostJSONAndAssertions(t *testing.T) {
 	m := httpMonitor(server.URL + "?tag=original")
 	m.HTTP.Method = "POST"
 	m.HTTP.Host = "api.example.test"
-	m.HTTP.Query = []domain.NameValue{{Name: "tag", Value: "a"}, {Name: "tag", Value: "b"}, {Name: "token", SecretRef: "token"}}
+	m.HTTP.Query = []domain.NameValue{
+		{
+			Name:  "tag",
+			Value: "a",
+		},
+		{
+			Name:  "tag",
+			Value: "b",
+		},
+		{
+			Name:      "token",
+			SecretRef: "token",
+		},
+	}
 	m.HTTP.Headers = []domain.NameValue{{Name: "X-Repeated", Value: "one"}, {Name: "X-Repeated", Value: "two"}}
 	m.HTTP.Body = domain.HTTPBody{Format: "json", Text: `{"check":true}`}
 	m.HTTP.Auth = domain.HTTPAuth{Type: "bearer", SecretRef: "token"}
-	m.HTTP.Assertions = domain.HTTPAssertions{StatusCodes: []int{201}, Headers: []domain.ValueAssertion{{Name: "X-Test", Operator: "equals", Value: "second"}}, TextContains: []string{"available"}, TextNotContains: []string{"unavailable"}, Regex: []string{`"ready":true`}, JSON: []domain.JSONAssertion{{Pointer: "/nested/a~1b/1", Operator: "equals", Value: json.RawMessage("3")}, {Pointer: "/ready", Operator: "equals", Value: json.RawMessage("true")}, {Pointer: "/status", Operator: "regex", Value: json.RawMessage(`"^avail"`)}}}
-	result := runMonitor(t, NewRunner(SecretResolverFunc(func(context.Context, string) (string, error) { return "bearer-secret", nil })), m)
-	if strings.Contains(result.Diagnostics.FinalURL, "token") || strings.Contains(result.Diagnostics.FinalURL, "bearer-secret") {
+	m.HTTP.Assertions = domain.HTTPAssertions{
+		StatusCodes: []int{201},
+		Headers: []domain.ValueAssertion{
+			{
+				Name:     "X-Test",
+				Operator: "equals",
+				Value:    "second",
+			},
+		},
+		TextContains:    []string{"available"},
+		TextNotContains: []string{"unavailable"},
+		Regex:           []string{`"ready":true`},
+		JSON: []domain.JSONAssertion{
+			{
+				Pointer:  "/nested/a~1b/1",
+				Operator: "equals",
+				Value:    json.RawMessage("3"),
+			},
+			{
+				Pointer:  "/ready",
+				Operator: "equals",
+				Value:    json.RawMessage("true"),
+			},
+			{
+				Pointer:  "/status",
+				Operator: "regex",
+				Value:    json.RawMessage(`"^avail"`),
+			},
+		},
+	}
+	result := runMonitor(
+		t,
+		NewRunner(
+			SecretResolverFunc(
+				func(context.Context, string) (string, error) {
+					return "bearer-secret", nil
+				},
+			),
+		),
+		m,
+	)
+	finalURL := result.Diagnostics.FinalURL
+	if strings.Contains(finalURL, "token") || strings.Contains(finalURL, "bearer-secret") {
 		t.Fatal("diagnostics leaked query credentials")
 	}
 	if result.Diagnostics.StatusCode != 201 {
 		t.Fatal(result.Diagnostics)
 	}
 	m.HTTP.Assertions.JSON[0].Value = json.RawMessage("4")
-	result = NewRunner(SecretResolverFunc(func(context.Context, string) (string, error) { return "bearer-secret", nil })).Run(context.Background(), m)
+	result = NewRunner(
+		SecretResolverFunc(
+			func(context.Context, string) (string, error) {
+				return "bearer-secret", nil
+			},
+		),
+	).Run(context.Background(), m)
 	if result.Success || !strings.Contains(result.Error, "JSON assertion") {
 		t.Fatalf("failed assertion accepted: %+v", result)
 	}
@@ -110,7 +188,12 @@ func TestHTTPBodyFormatsAndRequestCompression(t *testing.T) {
 					}
 					text, e := decodeText([]byte(values.Get("name")), "gbk")
 					if e != nil || text != "服务在线" || len(values["name"]) != 2 {
-						t.Errorf("form=%v text=%q err=%v", values, text, e)
+						t.Errorf(
+							"form=%v text=%q err=%v",
+							values,
+							text,
+							e,
+						)
 					}
 				case "multipart":
 					r.Body = io.NopCloser(bytes.NewReader(data))
@@ -151,7 +234,13 @@ func TestHTTPBodyFormatsAndRequestCompression(t *testing.T) {
 				m.HTTP.Body.Base64 = base64.StdEncoding.EncodeToString([]byte{0, 1, 2, 255})
 			case "multipart":
 				m.HTTP.Body.Fields = []domain.NameValue{{Name: "note", Value: "check"}}
-				m.HTTP.Body.Files = []domain.MultipartFile{{Field: "file", Filename: "check.txt", Base64: base64.StdEncoding.EncodeToString([]byte("file-data"))}}
+				m.HTTP.Body.Files = []domain.MultipartFile{
+					{
+						Field:    "file",
+						Filename: "check.txt",
+						Base64:   base64.StdEncoding.EncodeToString([]byte("file-data")),
+					},
+				}
 			}
 			runMonitor(t, NewRunner(nil), m)
 		})
@@ -189,18 +278,43 @@ func TestHTTPRedirectScopeAndCredentials(t *testing.T) {
 			receivedCredential.Store(true)
 		}
 		if r.URL.Path == "/" {
-			http.Redirect(w, r, "/final", 302)
+			http.Redirect(
+				w,
+				r,
+				"/final",
+				302,
+			)
 			return
 		}
 		_, _ = w.Write([]byte("ok"))
 	}))
 	defer target.Close()
-	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, 302) }))
+	origin := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(
+					w,
+					r,
+					target.URL,
+					302,
+				)
+			},
+		),
+	)
 	defer origin.Close()
 	m := httpMonitor(origin.URL)
 	m.HTTP.Redirects.Enabled = true
 	m.HTTP.Auth = domain.HTTPAuth{Type: "basic", Username: "user", SecretRef: "secret"}
-	m.HTTP.Headers = []domain.NameValue{{Name: "X-Private", SecretRef: "secret"}, {Name: "Cookie", Value: "session=secret"}}
+	m.HTTP.Headers = []domain.NameValue{
+		{
+			Name:      "X-Private",
+			SecretRef: "secret",
+		},
+		{
+			Name:  "Cookie",
+			Value: "session=secret",
+		},
+	}
 	runner := NewRunner(SecretResolverFunc(func(context.Context, string) (string, error) { return "private-value", nil }))
 	result := runner.Run(context.Background(), m)
 	if result.Success {
@@ -214,7 +328,18 @@ func TestHTTPRedirectScopeAndCredentials(t *testing.T) {
 	if result.Diagnostics.Redirects != 2 {
 		t.Fatal(result.Diagnostics)
 	}
-	loop := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/again", 302) }))
+	loop := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(
+					w,
+					r,
+					"/again",
+					302,
+				)
+			},
+		),
+	)
 	defer loop.Close()
 	m = httpMonitor(loop.URL)
 	m.HTTP.Redirects.Enabled = true
@@ -230,7 +355,12 @@ func TestHTTPRedirectMethodAndOneAttemptForEveryMethod(t *testing.T) {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/start" {
-					http.Redirect(w, r, "/end", status)
+					http.Redirect(
+						w,
+						r,
+						"/end",
+						status,
+					)
 					return
 				}
 				data, _ := io.ReadAll(r.Body)
@@ -254,14 +384,25 @@ func TestHTTPRedirectMethodAndOneAttemptForEveryMethod(t *testing.T) {
 	for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} {
 		t.Run(method, func(t *testing.T) {
 			var requests atomic.Int32
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); w.WriteHeader(503) }))
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						requests.Add(1)
+						w.WriteHeader(503)
+					},
+				),
+			)
 			defer server.Close()
 			m := httpMonitor(server.URL)
 			m.HTTP.Method = method
 			m.Retries = 2
 			result := NewRunner(nil).Run(context.Background(), m)
 			if result.Success || requests.Load() != 1 {
-				t.Errorf("probe must perform one logical attempt regardless method/retries: result=%+v requests=%d", result, requests.Load())
+				t.Errorf(
+					"probe must perform one logical attempt regardless method/retries: result=%+v requests=%d",
+					result,
+					requests.Load(),
+				)
 			}
 		})
 	}

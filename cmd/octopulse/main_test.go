@@ -18,11 +18,27 @@ func TestServeWaitsForActiveHTTPHandlers(t *testing.T) {
 	l.Close()
 	started := make(chan struct{})
 	release := make(chan struct{})
-	srv := &http.Server{Addr: address, Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { close(started); <-release; w.Write([]byte("drained")) })}
+	srv := &http.Server{
+		Addr: address,
+		Handler: http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) {
+				close(started)
+				<-release
+				w.Write([]byte("drained"))
+			},
+		),
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- serveHTTP(ctx, cancel, srv, nil) }()
+	go func() {
+		done <- serveHTTP(
+			ctx,
+			cancel,
+			srv,
+			nil,
+		)
+	}()
 	response := make(chan error, 1)
 	go func() {
 		var res *http.Response
@@ -81,7 +97,13 @@ func TestAdditionalListenerFailureClosesApplicationListener(t *testing.T) {
 	available.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = serveHTTP(ctx, cancel, &http.Server{Addr: address}, nil, &http.Server{Addr: occupied.Addr().String()})
+	err = serveHTTP(
+		ctx,
+		cancel,
+		&http.Server{Addr: address},
+		nil,
+		&http.Server{Addr: occupied.Addr().String()},
+	)
 	if err == nil {
 		t.Fatal("metrics bind failure was ignored")
 	}
