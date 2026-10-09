@@ -11,19 +11,20 @@ Octopulse is a single-organization uptime platform: one Go service serves APIs a
 
 ## Build, Test, and Development Commands
 
-Run from the repository root; use tools pinned in `mise.toml`.
+Run from the repository root; use tool versions pinned in `mise.toml` and platform downloads locked in `mise.lock`.
 
-- Setup: `mise trust`, `mise install`, `mise exec -- go mod download`, then `mise run install` (locked workspace dependencies).
+- Setup: `mise trust`, `mise install`, then `mise run install` (Go modules and locked workspace dependencies in parallel).
 - `mise run dev`: start API and frontend; open `http://127.0.0.1:5173/app`.
-- `mise run check`: Go tests, frontend lint, type checking, and Vitest.
+- `mise run check`: Go tests and vet, parallel frontend lint/type checking/Vitest, and hk configuration validation.
 - `mise run test`: Go and frontend tests.
 - `mise run build`: produce `bin/octopulse` and `web/dist/`.
 - `mise install`: install pinned tools and hk Git hooks via the `postinstall` hook.
 - `mise exec -- hk check --all` / `mise exec -- hk fix --all`: check or format files with hk; pre-commit fixes staged Go and frontend files.
-- `mise exec -- go vet ./...`: Go static analysis.
-- `mise exec -- aube run lint:fix`: fix frontend formatting and lint issues.
+- `mise run vet:go`: Go static analysis.
+- `mise run lint:fix:web`: fix frontend formatting and lint issues.
+- `mise run test:race:go`: Go race tests with serial package execution, no test cache, and a ten-minute package timeout.
 
-Root Node scripts operate on frontend tooling; mise orchestrates the whole project.
+Root Node scripts operate on frontend tooling; mise orchestrates the whole project. Frontend tasks prepare dependencies through `install:web` and run scripts with `--no-install`. Shared `install:web` dependencies run once per task graph; aube's frozen install skips dependencies that are already up to date. No tasks use mise source/output freshness caching, so checks always run. When updating tools, update `mise.toml` and regenerate `mise.lock` for `linux-x64,linux-arm64,macos-arm64`; hk updates also require both versioned Pkl imports in `hk.pkl` to match.
 
 ## Coding Style & Naming Conventions
 
@@ -31,11 +32,11 @@ Format Go with `gofmt` (tabs). Follow existing TypeScript/Vue style: two-space i
 
 ## Testing Guidelines
 
-Use Go's `testing` package in `*_test.go` and Vitest in `*.test.ts` or `*.spec.ts`. Add regression tests for changed behavior; no numeric coverage threshold is configured. Run `mise exec -- go test -race -p 1 ./...` for races. Database changes should pass SQLite and dedicated PostgreSQL suites; setup is documented in `docs/development.md`.
+Use Go's `testing` package in `*_test.go` and Vitest in `*.test.ts` or `*.spec.ts`. Add regression tests for changed behavior; no numeric coverage threshold is configured. Run `mise run test:race:go` for races. Database changes should pass SQLite and dedicated PostgreSQL suites; setup is documented in `docs/development.md`.
 
 ## Generated Code
 
-Update source contracts, then run `mise run generate:db` or `mise run generate:web`. Include regenerated outputs; CI checks drift. Keep SQLite and PostgreSQL changes aligned.
+Update source contracts, then run `mise run generate:db` or `mise run generate:web`; `mise run generate` runs both and waits for database generation before exporting OpenAPI. Standalone `generate:api` does not trigger database generation. Include regenerated outputs; CI checks drift. Keep SQLite and PostgreSQL changes aligned.
 
 ## Commit & Pull Request Guidelines
 

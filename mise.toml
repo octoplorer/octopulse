@@ -2,25 +2,56 @@
 go = "1.27.1"
 hk = "2.5.0"
 node = "24.19.0"
-"github:aubepkg/aube" = "2.6.1"
 sqlc = "1.30.0"
+
+[tools."github:aubepkg/aube"]
+version = "2.6.1"
+
+[tools."github:aubepkg/aube".platforms]
+linux-x64 = { asset_pattern = "aube-v*-x86_64-unknown-linux-gnu.tar.gz" }
+linux-arm64 = { asset_pattern = "aube-v*-aarch64-unknown-linux-gnu.tar.gz" }
+macos-arm64 = { asset_pattern = "aube-v*-aarch64-apple-darwin.tar.gz" }
+
+[settings]
+lockfile = true
 
 [hooks]
 postinstall = "hk install --mise"
 
 [tasks.install]
+description = "安装 Go 和前端锁定依赖"
+depends = ["install:go", "install:web"]
+
+[tasks."install:go"]
+description = "下载 Go 模块"
+run = "go mod download"
+
+[tasks."install:web"]
+description = "安装前端 workspace 锁定依赖"
 run = "aube install --frozen-lockfile"
 
 [tasks.dev]
+description = "启动 API 和前端开发服务器"
 depends = ["dev:api", "dev:web"]
 
 [tasks."dev:api"]
+description = "启动 Go API"
+depends = ["install:go"]
 run = "go run ./cmd/octopulse serve"
 
 [tasks."dev:web"]
-run = "aube run dev"
+description = "启动前端开发服务器"
+depends = ["install:web"]
+run = "aube run --no-install dev"
+
+[tasks.generate]
+description = "生成数据库查询和 API 客户端"
+depends = ["generate:db", "generate:web"]
 
 [tasks."generate:api"]
+description = "导出 OpenAPI 契约"
+depends = ["install:go"]
+wait_for = ["generate:db"]
 run = """
 set -e
 mkdir -p .cache
@@ -29,41 +60,80 @@ mv .cache/openapi.json.tmp api/openapi.json
 """
 
 [tasks."generate:db"]
+description = "生成 SQLite 和 PostgreSQL 查询"
 run = "sqlc generate"
 
 [tasks."generate:web"]
-run = "aube run generate"
-depends = ["generate:api"]
+description = "导出契约并生成前端 API 客户端"
+depends = ["install:web", "generate:api"]
+run = "aube run --no-install generate"
 
 [tasks."test:go"]
+description = "运行 Go 测试"
+depends = ["install:go"]
 run = "go test ./..."
 
+[tasks."test:race:go"]
+description = "运行 Go 竞态测试，串行执行包并禁用测试缓存"
+depends = ["install:go"]
+run = "go test -race -p 1 -count=1 -timeout=10m ./..."
+
 [tasks."test:web"]
-run = "aube run test"
+description = "运行前端单元测试"
+depends = ["install:web"]
+run = "aube run --no-install test"
 
 [tasks."test:watch:web"]
-run = "aube run test:watch"
+description = "监听并运行前端单元测试"
+depends = ["install:web"]
+run = "aube run --no-install test:watch"
 
 [tasks.test]
+description = "运行 Go 和前端测试"
 depends = ["test:go", "test:web"]
 
 [tasks."check:web"]
-run = "aube run check"
+description = "并行执行前端 lint、类型检查和测试"
+depends = ["lint:web", "typecheck:web", "test:web"]
+
+[tasks."check:hooks"]
+description = "校验 hk 配置"
+run = "hk validate"
+
+[tasks."typecheck:web"]
+description = "检查前端 TypeScript 和 Vue 类型"
+depends = ["install:web"]
+run = "aube run --no-install typecheck"
+
+[tasks."vet:go"]
+description = "执行 Go 静态分析"
+depends = ["install:go"]
+run = "go vet ./..."
 
 [tasks."lint:web"]
-run = "aube run lint"
+description = "检查前端和 workspace 工具配置，要求零警告"
+depends = ["install:web"]
+run = "aube run --no-install lint"
 
 [tasks."lint:fix:web"]
-run = "aube run lint:fix"
+description = "自动修复前端 lint 和格式"
+depends = ["install:web"]
+run = "aube run --no-install lint:fix"
 
 [tasks."build:web"]
-run = "aube run build"
+description = "检查类型并构建前端资源"
+depends = ["install:web"]
+run = "aube run --no-install build"
 
 [tasks."build:go"]
+description = "构建 Go 二进制"
+depends = ["install:go"]
 run = "go build -trimpath -o bin/octopulse ./cmd/octopulse"
 
 [tasks.check]
-depends = ["test:go", "check:web"]
+description = "检查 Go、前端和 Git 钩子配置"
+depends = ["test:go", "vet:go", "check:web", "check:hooks"]
 
 [tasks.build]
+description = "构建 Go 二进制和前端资源"
 depends = ["build:web", "build:go"]

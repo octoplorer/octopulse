@@ -57,33 +57,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends postgresql-client-18
           echo '/usr/lib/postgresql/18/bin' >> "$GITHUB_PATH"
-      - name: Download Go modules
-        run: go mod download
-      - name: Install locked frontend dependencies
-        run: aube install --frozen-lockfile
+      - name: Install locked project dependencies
+        run: mise run install
       - name: Validate Git hook configuration
-        run: hk validate
+        run: mise run check:hooks
       - name: Check generated database and API contracts
         run: |
-          mise run generate:db
-          mise run generate:web
+          mise run generate
           git diff --exit-code -- api/openapi.json internal/store/sqlitequery internal/store/postgresquery web/src/client
           test -z "$(git status --porcelain -- api/openapi.json internal/store/sqlitequery internal/store/postgresquery web/src/client)"
       - name: Test SQLite with race detection
-        run: go test -race -p 1 -count=1 -timeout=10m ./...
+        run: mise run test:race:go
       - name: Test real PostgreSQL with race detection
         env:
           OCTOPULSE_TEST_DB_DRIVER: postgres
           OCTOPULSE_TEST_POSTGRES_DSN: postgres://octopulse_test:octopulse_ci@127.0.0.1:5432/octopulse_test?sslmode=disable
-        run: go test -race -p 1 -count=1 -timeout=10m ./...
+        run: mise run test:race:go
       - name: Vet Go code
-        run: go vet ./...
+        run: mise run vet:go
       - name: Check workspace tooling and frontend lint, types, tests and production build
         run: |
-          aube run --no-install lint
-          aube run --no-install typecheck
-          aube run --no-install test
-          aube run --no-install build
+          mise run check:web
+          mise run build:web
       - name: Test SQLite capacity
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.capacity }}
         env:
