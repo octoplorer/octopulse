@@ -96,7 +96,7 @@ jobs:
           mkdir -p .cache/release/octopulse-linux-amd64/bin .cache/release/octopulse-linux-amd64/web bin
           CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o .cache/release/octopulse-linux-amd64/bin/octopulse ./cmd/octopulse
           cp -R web/dist .cache/release/octopulse-linux-amd64/web/dist
-          cp README.md .env.example GLOSSARY.md .cache/release/octopulse-linux-amd64/
+          cp README.md .env.example CONTEXT.md .cache/release/octopulse-linux-amd64/
           cp -R docs .cache/release/octopulse-linux-amd64/
           mkdir -p .cache/release/octopulse-linux-amd64/internal/beszel
           cp internal/beszel/README.md .cache/release/octopulse-linux-amd64/internal/beszel/

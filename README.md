@@ -46,5 +46,5 @@ mise run dev
 | 状态页发布、汇总及公开字段             | [状态页规则](docs/status-page-policy.md)                                                 |
 | 数据持久化、事务、统计与迁移           | [数据库设计](docs/database-design.md)                                                    |
 | 实现差距、验证记录与容量边界           | [验收映射](docs/acceptance.md)、[容量记录](docs/capacity.md)                             |
-| 领域术语与架构决策背景                 | [术语表](GLOSSARY.md)、[设计访谈与 ADR 索引](docs/design-tree.md#已记录的术语与架构决策) |
+| 领域术语与架构决策背景                 | [术语表](CONTEXT.md)、[设计访谈与 ADR 索引](docs/design-tree.md#已记录的术语与架构决策) |
 | Beszel 协议、兼容版本与缓存策略        | [适配器说明](internal/beszel/README.md)                                                  |

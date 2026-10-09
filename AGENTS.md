@@ -7,7 +7,7 @@ Octopulse is a single-organization uptime platform: one Go service serves APIs a
 - `cmd/octopulse/`: CLI entrypoint; `internal/`: probes, scheduling, storage, notifications, and HTTP handlers.
 - `db/{sqlite,postgres}/`: migrations and SQL queries; `api/openapi.json`: generated API contract.
 - `web/src/`: `pages/` routes, `components/` UI, `composables/` reactive state, `lib/` stateless helpers, and `locales/` translations. Styles live in `style.css`; built assets go to `web/dist/`.
-- Tests sit beside source files. Consult `docs/development.md`, `docs/adr/`, and `GLOSSARY.md` for conventions and architecture.
+- Tests sit beside source files. Consult `docs/development.md`, `docs/adr/`, and `CONTEXT.md` for conventions and architecture.
 
 ## Build, Test, and Development Commands
 
