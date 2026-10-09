@@ -1,4 +1,9 @@
 {
   "eslint.bulkSuppression.location": ".",
-  "eslint.workingDirectories": ["."]
+  "eslint.workingDirectories": [
+    "."
+  ],
+  "cSpell.words": [
+    "OCTOPULSE"
+  ]
 }
