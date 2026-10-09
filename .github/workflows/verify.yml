@@ -61,6 +61,8 @@ jobs:
         run: go mod download
       - name: Install locked frontend dependencies
         run: aube install --frozen-lockfile
+      - name: Validate Git hook configuration
+        run: hk validate
       - name: Check generated database and API contracts
         run: |
           mise run generate:db

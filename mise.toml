@@ -1,8 +1,12 @@
 [tools]
 go = "1.27.1"
+hk = "2.5.0"
 node = "24.19.0"
 "github:aubepkg/aube" = "2.6.1"
 sqlc = "1.30.0"
+
+[hooks]
+postinstall = "hk install --mise"
 
 [tasks.install]
 run = "aube install --frozen-lockfile"

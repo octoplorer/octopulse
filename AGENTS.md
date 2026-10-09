@@ -18,6 +18,8 @@ Run from the repository root; use tools pinned in `mise.toml`.
 - `mise run check`: Go tests, frontend lint, type checking, and Vitest.
 - `mise run test`: Go and frontend tests.
 - `mise run build`: produce `bin/octopulse` and `web/dist/`.
+- `mise install`: install pinned tools and hk Git hooks via the `postinstall` hook.
+- `mise exec -- hk check --all` / `mise exec -- hk fix --all`: check or format files with hk; pre-commit fixes staged Go and frontend files.
 - `mise exec -- go vet ./...`: Go static analysis.
 - `mise exec -- aube run lint:fix`: fix frontend formatting and lint issues.
 

@@ -1,0 +1,27 @@
+amends "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
+
+steps {
+  ["gofmt"] = Builtins.go_fmt
+  ["eslint"] = (Builtins.eslint) {
+    glob = List(
+      "web/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,json,jsonc,yaml,yml,css,html}",
+      "package.json",
+      "eslint.config.js",
+    )
+    exclude = List("web/src/client/**", "web/typed-router.d.ts", "web/dist/**")
+    prefix = List("aube", "exec", "--no-install")
+    check = new CommandSpec {
+      command = new Command {
+        argv = List("eslint", "--max-warnings", "0", "--no-warn-ignored", "{{files}}")
+      }
+      effect = "read"
+    }
+    fix = new CommandSpec {
+      command = new Command {
+        argv = List("eslint", "--fix", "--max-warnings", "0", "--no-warn-ignored", "{{files}}")
+      }
+      effect = "write"
+    }
+  }
+}

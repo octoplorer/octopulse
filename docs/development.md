@@ -10,10 +10,10 @@
 mise trust
 mise install
 mise exec -- go mod download
-mise exec -- aube install --frozen-lockfile
+mise run install
 ```
 
-工具版本固定在 [mise.toml](../mise.toml)：Go 1.27.1、Node.js 24.19.0、aube 2.6.1、sqlc 1.30.0。Go 命令和整项目任务编排由 mise 管理，Node 命令定义在根目录私有 [package.json](../package.json)。[aube-workspace.yaml](../aube-workspace.yaml) 纳入 `web` 包，依赖由根目录 `aube-lock.yaml` 锁定。Node.js 只用于开发与构建，生产运行不需要 Node.js。
+工具版本固定在 [mise.toml](../mise.toml)：Go 1.27.1、hk 2.5.0、Node.js 24.19.0、aube 2.6.1、sqlc 1.30.0。Go 命令和整项目任务编排由 mise 管理，Node 命令定义在根目录私有 [package.json](../package.json)。[aube-workspace.yaml](../aube-workspace.yaml) 纳入 `web` 包，依赖由根目录 `aube-lock.yaml` 锁定。Node.js 只用于开发与构建，生产运行不需要 Node.js。
 
 根目录维护共享工具 `@antfu/eslint-config`、`@types/node`、`eslint`、`eslint-plugin-format` 和 `typescript`。Vue 等运行时依赖，以及 Vite、Vitest、vue-tsc、UnoCSS、HeyAPI 和图标包仍在 `web/package.json`；Vite、TypeScript、UnoCSS 和 OpenAPI 配置保留在 `web/`，ESLint 配置位于根目录。前端工具使用根 workspace 的共享依赖，`web` 包需随 workspace 安装。
 
@@ -23,7 +23,7 @@ mise exec -- aube install --frozen-lockfile
 mise run dev
 ```
 
-`mise run dev` 并行执行 `dev:api` 与 `dev:web`；也可用两个终端分别执行 `mise run dev:api` 和 `mise run dev:web`。依赖安装也可用 `mise run install`，使用根锁文件的 frozen 模式。
+`mise run dev` 并行执行 `dev:api` 与 `dev:web`；也可用两个终端分别执行 `mise run dev:api` 和 `mise run dev:web`。`mise run install` 使用根锁文件的 frozen 模式安装 workspace 依赖。
 
 前端由 Vite 自动更新。Go API 不监听源码变化；修改 Go 代码或 API 契约后，停止并重新执行 `mise run dev:api`，让运行中的接口与前端契约一致。
 
@@ -46,6 +46,20 @@ mise exec -- aube --filter @octopulse/web run <script>
 打开 `http://127.0.0.1:5173/app`，首次访问创建管理员；之后由管理员添加其他成员。默认 API 地址为 `127.0.0.1:8080`，Vite 将 `/api` 和上传图片请求代理到该地址。密码要求为 12–72 字节，公开注册关闭。
 
 开发代理保留浏览器的 `Host` 和 `Origin`，以通过后台的同源校验。调整代理时保持 `changeOrigin: false`；修改 Vite 配置后，开发服务器会自动重启。
+
+### Git 钩子
+
+Git 钩子由 [hk](https://hk.jdx.dev/) 管理，配置位于根目录 [hk.pkl](../hk.pkl)。`pre-commit` 仅处理暂存文件，自动执行 Go 的 `gofmt` 和前端 ESLint 修复；ESLint 要求零警告，并排除生成客户端、路由类型声明和构建产物。hk 会暂存修复结果，并在执行前保存、执行后恢复未暂存的改动，支持 `git add -p` 的部分提交。
+
+`mise.toml` 的原生 `[hooks].postinstall` 在 `mise install` 后执行 `hk install --mise`，安装当前仓库的 Git 钩子，让 Git 调用 mise 固定的工具链。单独重新安装、检查或修复整个仓库可执行：
+
+```sh
+mise exec -- hk install --mise
+mise exec -- hk check --all
+mise exec -- hk fix --all
+```
+
+`hk fix --all` 修改工作区但不自动暂存。若旧 checkout 仍保留调用 `pnpm lint-staged` 的 simple-git-hooks 钩子，先移除该旧 `.git/hooks/pre-commit`，再执行 `mise install`。工具更新时，保持 `hk.pkl` 的 schema 与 Builtins 导入版本和 mise 中的 hk 版本一致。
 
 ## 前端约定
 
