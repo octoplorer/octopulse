@@ -41,7 +41,7 @@ const incidentId = computed(() =>
 useHead(() => {
   const config = query.data.value?.config
   return {
-    title: `${config?.title || 'Octopulse'} · ${t('publicPage.serviceStatus')}`,
+    title: `${config?.title || 'Octopulse'} · ${t('public-page.service-status')}`,
     htmlAttrs: config
       ? {
           'data-mode': config.colorScheme === 'dark' || (config.colorScheme === 'system' && prefersDark.value) ? 'dark' : 'light',
@@ -65,22 +65,22 @@ useHead(() => {
   <StatusPage v-if="query.data.value" :page="query.data.value" :incident-id="incidentId" :stale="!!query.error.value" :path-base="isDomain ? '' : `/${route.params.slug}`" />
   <main v-else bg="canvas" un-text="default" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
     <div class="public-inner" max-w="870px" mx="auto">
-      <Loader v-if="query.isPending.value" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs" role="status">
-        {{ t('asyncState.loadingData') }}
+      <Loader v-if="query.isPending.value" :label="t('async-state.loading-data')" class="flex! w-full justify-center p-15 text-size-xs" role="status">
+        {{ t('async-state.loading-data') }}
       </Loader>
       <Empty v-else>
         <EmptyTitle as="h1">
-          {{ t('publicPage.statusPageUnavailable') }}
+          {{ t('public-page.status-page-unavailable') }}
         </EmptyTitle>
         <EmptyDescription>
-          {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
+          {{ t('public-page.this-address-is-not-bound-to-a-published') }}
         </EmptyDescription>
         <Button @click="query.refetch()">
-          {{ t('publicPage.tryAgain') }}
+          {{ t('public-page.try-again') }}
         </Button><Button variant="ghost" as-child>
           <RouterLink to="/app/login" ml="3">
             {{
-              t('publicPage.adminSignIn')
+              t('public-page.admin-sign-in')
             }}
           </RouterLink>
         </Button>

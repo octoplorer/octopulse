@@ -81,9 +81,9 @@ const historyCharts = computed(() => {
   return ([
     { key: 'cpu', name: 'CPU', unit: '%', divisor: 1 },
     { key: 'memory', name: t('common.memory'), unit: '%', divisor: 1 },
-    { key: 'disk', name: t('servers.disk2'), unit: '%', divisor: 1 },
-    { key: 'networkIn', name: t('servers.networkReceived'), unit: 'MiB/s', divisor: 1048576 },
-    { key: 'networkOut', name: t('servers.networkSent'), unit: 'MiB/s', divisor: 1048576 },
+    { key: 'disk', name: t('servers.disk-2'), unit: '%', divisor: 1 },
+    { key: 'networkIn', name: t('servers.network-received'), unit: 'MiB/s', divisor: 1048576 },
+    { key: 'networkOut', name: t('servers.network-sent'), unit: 'MiB/s', divisor: 1048576 },
   ] as const).map((metric) => {
     const points = normalizeTimeSeries(history.value.map(point => ({
       at: point.at,
@@ -121,7 +121,7 @@ const configForm = useForm({
     try {
       const result = await updateConfig.mutateAsync({ body: value })
       configOpen.value = false
-      notify(t('servers.beszelConnectionSaved'))
+      notify(t('servers.beszel-connection-saved'))
       await query.refresh()
       configForm.reset(result)
     }
@@ -149,7 +149,7 @@ async function configure() {
     if (configForm.state.isSubmitting)
       return
     if (state.status !== 'success')
-      throw state.error || new Error(t('errors.requestFailed'))
+      throw state.error || new Error(t('errors.request-failed'))
     configForm.reset(structuredClone(state.data))
     error.value = ''
     configOpen.value = true
@@ -187,9 +187,9 @@ async function detail(server: BeszelSystem) {
     if (request !== detailRequest)
       return
     if (h.status !== 'success')
-      throw h.error || new Error(t('errors.requestFailed'))
+      throw h.error || new Error(t('errors.request-failed'))
     if (c.status !== 'success')
-      throw c.error || new Error(t('errors.requestFailed'))
+      throw c.error || new Error(t('errors.request-failed'))
     historyMeta.value = h.data
     containersMeta.value = c.data
     history.value = h.data.items || []
@@ -216,39 +216,39 @@ function percentage(value: number | undefined) {
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.servers')" :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')" class="mb-6">
+  <PageHeader :title="t('navigation.servers')" :description="t('servers.independent-server-metrics-from-beszel-separate-from-website')" class="mb-6">
     <template #actions>
       <Button v-if="!integrationDisabled" @click="query.refetch()">
         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
       </Button><Button v-if="isAdmin() && !integrationDisabled" variant="primary" @click="configure">
-        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszel-connection') }}
       </Button>
     </template>
   </PageHeader>
   <div v-if="!integrationDisabled" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
     <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server shrink-0" /><span class="min-w-0 [overflow-wrap:anywhere]">{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
-      {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
-      }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
+      {{ t('servers.last-sync') }} {{ formatDate(query.data.value?.syncedAt)
+      }}<span v-if="query.data.value?.stale"> · {{ t('servers.data-is-stale') }}</span></span>
   </div>
   <Banner v-if="query.data.value?.error && !integrationDisabled" role="alert" variant="error" class="mb-6">
     {{ query.data.value.error }}
     <Button variant="ghost" @click="query.refetch()">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
-  <Loader v-if="query.isPending.value" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
-    {{ t('asyncState.loadingData') }}
+  <Loader v-if="query.isPending.value" :label="t('async-state.loading-data')" class="flex! w-full justify-center p-15 text-size-xs">
+    {{ t('async-state.loading-data') }}
   </Loader>
   <Banner v-else-if="query.error.value" variant="error">
     {{ errorText(query.error.value) }}
     <Button variant="ghost" @click="query.refetch()">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
   <template v-else>
-    <Empty v-if="integrationDisabled || (!query.data.value?.error && !query.data.value?.items.length)" size="sm" :title="t('servers.connectYourBeszelHub')" :description="t('servers.useADedicatedAccountToReadItsVisible')">
+    <Empty v-if="integrationDisabled || (!query.data.value?.error && !query.data.value?.items.length)" size="sm" :title="t('servers.connect-your-beszel-hub')" :description="t('servers.use-a-dedicated-account-to-read-its-visible')">
       <Button v-if="isAdmin()" variant="primary" @click="configure">
-        {{ t('servers.configureConnection') }}
+        {{ t('servers.configure-connection') }}
       </Button>
     </Empty>
     <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-6">
@@ -275,13 +275,13 @@ function percentage(value: number | undefined) {
             <div class="space-y-2 text-size-xs text-subtle">
               <span>{{ t('servers.updated') }}</span><p>{{ formatDate(server.updatedAt) }}</p>
               <Badge v-if="server.stale" variant="warning">
-                {{ t('servers.staleData') }}
+                {{ t('servers.stale-data') }}
               </Badge>
             </div>
           </div>
           <div class="mt-auto border-t border-line pt-4">
             <Button variant="ghost" size="sm" @click="detail(server)">
-              {{ t('servers.historyContainers') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
+              {{ t('servers.history-containers') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
             </Button>
           </div>
         </LayerCardPrimary>
@@ -289,31 +289,31 @@ function percentage(value: number | undefined) {
     </div>
   </template>
   <Banner v-if="!integrationDisabled" mt="6" variant="secondary">
-    {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
+    {{ t('servers.offline-servers-stale-data-or-incompatible-versions-do') }}
   </Banner>
-  <Dialog v-model:open="configDialogOpen" :close-label="t('common.close')" :title="t('servers.beszelHubConnection')">
+  <Dialog v-model:open="configDialogOpen" :close-label="t('common.close')" :title="t('servers.beszel-hub-connection')">
     <form id="beszel-form" @submit.prevent="configForm.handleSubmit()">
       <Banner mb="5" variant="secondary">
-        {{ t('servers.supportsBeszel020XUseADedicated') }}
+        {{ t('servers.supports-beszel-020-x-use-a-dedicated') }}
       </Banner>
       <configForm.Field v-slot="{ field }" name="url">
-        <Field :label="t('servers.hubUrl')">
+        <Field :label="t('servers.hub-url')">
           <Input :model-value="field.state.value" type="url" placeholder="https://beszel.example.com" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="email">
-        <Field :label="t('servers.dedicatedAccountEmail')" mt="4">
+        <Field :label="t('servers.dedicated-account-email')" mt="4">
           <Input :model-value="field.state.value" type="email" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="passwordSecretId">
-        <Field :label="t('servers.passwordSecretReference')" mt="4">
+        <Field :label="t('servers.password-secret-reference')" mt="4">
           <Select :model-value="field.state.value" @update:model-value="field.handleChange($event || '')">
             <SelectTrigger @focusout="field.handleBlur">
-              <SelectValue :placeholder="t('secretSelect.chooseASecret')" />
+              <SelectValue :placeholder="t('secret-select.choose-a-secret')" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="">
-                  {{ t('secretSelect.chooseASecret') }}
+                  {{ t('secret-select.choose-a-secret') }}
                 </SelectItem>
                 <SelectItem v-for="secret in secrets.data.value?.items || []" :key="secret.id" :value="secret.id">
                   {{ secret.name }}
@@ -323,11 +323,11 @@ function percentage(value: number | undefined) {
           </Select>
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="pollSeconds">
-        <Field :label="t('servers.syncIntervalSeconds')" mt="4">
+        <Field :label="t('servers.sync-interval-seconds')" mt="4">
           <Input :model-value="field.state.value" type="number" min="30" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="enabled">
-        <Switch :model-value="field.state.value" :label="t('servers.enableIntegration')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+        <Switch :model-value="field.state.value" :label="t('servers.enable-integration')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
       </configForm.Field>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
@@ -337,7 +337,7 @@ function percentage(value: number | undefined) {
       <Button :disabled="saving" @click="configOpen = false">
         {{ t('common.cancel') }}
       </Button><Button type="submit" form="beszel-form" :loading="saving" variant="primary">
-        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('servers.saveConnection') }}
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('servers.save-connection') }}
       </Button>
     </template>
   </Dialog><Dialog v-model:open="detailOpen" :close-label="t('common.close')" :title="selected?.name || ''" wide>
@@ -355,7 +355,7 @@ function percentage(value: number | undefined) {
         </p>
       </div>
       <div>
-        <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.systemAgent') }}</span>
+        <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.system-agent') }}</span>
         <p>{{ selected.info.kernel || '—' }}</p>
         <p class="muted" un-text="13px subtle">
           {{ selected.info.agentVersion || '—' }} ·
@@ -363,13 +363,13 @@ function percentage(value: number | undefined) {
         </p>
       </div>
     </div>
-    <Loader v-if="detailLoading" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
-      {{ t('asyncState.loadingData') }}
+    <Loader v-if="detailLoading" :label="t('async-state.loading-data')" class="flex! w-full justify-center p-15 text-size-xs">
+      {{ t('async-state.loading-data') }}
     </Loader>
     <Banner v-else-if="detailError" variant="error">
       {{ errorText(detailError) }}
       <Button variant="ghost" @click="selected && detail(selected)">
-        {{ t('asyncState.retry') }}
+        {{ t('async-state.retry') }}
       </Button>
     </Banner>
     <template v-else>
@@ -389,10 +389,10 @@ function percentage(value: number | undefined) {
             <Banner variant="secondary">
               {{ t('common.source') }}: {{ historyMeta?.source || 'Beszel' }} ·
               {{ formatDate(historyMeta?.syncedAt)
-              }}<span v-if="historyMeta?.stale"> · {{ t('common.staleData') }}</span>
+              }}<span v-if="historyMeta?.stale"> · {{ t('common.stale-data') }}</span>
             </Banner>
             <Select v-model="historyRange" @change="selected && detail(selected)">
-              <SelectTrigger :aria-label="t('servers.historyRange')">
+              <SelectTrigger :aria-label="t('servers.history-range')">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -407,17 +407,17 @@ function percentage(value: number | undefined) {
           <Banner v-if="historyMeta?.error" variant="error" class="mt-4">
             {{ historyMeta.error }}
             <Button variant="ghost" @click="selected && detail(selected)">
-              {{ t('asyncState.retry') }}
+              {{ t('async-state.retry') }}
             </Button>
           </Banner>
-          <Empty v-if="!history.length" size="sm" :title="t('servers.noHistoryReturnedByTheHub')" />
+          <Empty v-if="!history.length" size="sm" :title="t('servers.no-history-returned-by-the-hub')" />
           <div v-else py="6">
             <div grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
               <section v-for="chart in historyCharts" :key="chart.key" class="min-w-0">
                 <h3>{{ chart.name }} ({{ chart.unit }})</h3>
                 <Chart v-if="chart.hasData" :option="chart.option" :height="160" :aria-label="chart.label" />
                 <div v-else h="160px" flex="~ items-center justify-center" un-text="subtle" role="status">
-                  {{ t('chart.noObservations') }}
+                  {{ t('chart.no-observations') }}
                 </div>
               </section>
             </div>
@@ -429,16 +429,16 @@ function percentage(value: number | undefined) {
           <Banner mt="5" variant="secondary">
             {{ t('common.source') }}: {{ containersMeta?.source || 'Beszel' }} ·
             {{ formatDate(containersMeta?.syncedAt)
-            }}<span v-if="containersMeta?.stale"> · {{ t('common.staleData') }}</span>
+            }}<span v-if="containersMeta?.stale"> · {{ t('common.stale-data') }}</span>
           </Banner>
           <Banner v-if="containersMeta?.error" variant="error" class="mt-4">
             {{ containersMeta.error }}
             <Button variant="ghost" @click="selected && detail(selected)">
-              {{ t('asyncState.retry') }}
+              {{ t('async-state.retry') }}
             </Button>
           </Banner>
-          <Empty v-if="!containers.length" size="sm" :title="t('servers.noVisibleContainerData')" />
-          <TableContainer v-else :scroll-label="t('common.scrollTable')" mt="5">
+          <Empty v-if="!containers.length" size="sm" :title="t('servers.no-visible-container-data')" />
+          <TableContainer v-else :scroll-label="t('common.scroll-table')" mt="5">
             <Table>
               <TableHeader>
                 <TableRow>

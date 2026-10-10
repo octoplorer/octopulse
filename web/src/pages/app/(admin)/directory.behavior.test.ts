@@ -42,7 +42,7 @@ it('filters members by username or display name and lets the user recover from n
   expect(wrapper.get('tbody').text()).toContain('Operations')
   await search.setValue('missing-member')
   expect(wrapper.findAll('tbody tr')).toHaveLength(0)
-  const clear = wrapper.findAll('button').find(button => button.text() === i18n.global.t('common.clearFilters'))!
+  const clear = wrapper.findAll('button').find(button => button.text() === i18n.global.t('common.clear-filters'))!
   await clear.trigger('click')
   expect(wrapper.findAll('tbody tr')).toHaveLength(2)
 })

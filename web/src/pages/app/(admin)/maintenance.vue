@@ -63,15 +63,15 @@ function maintenanceState(window: Maintenance) {
     ? 'completed'
     : window.startsAt > now.value.getTime()
       ? 'scheduled'
-      : 'inProgress'
+      : 'in-progress'
 }
 const statusTabs = computed(() => [
   { value: 'all', label: t('maintenance.all'), count: allItems.value.length },
-  ...(['inProgress', 'scheduled', 'completed'] as const).map(value => ({ value, label: t(`maintenance.${value}`), count: allItems.value.filter(window => maintenanceState(window) === value).length })),
+  ...(['in-progress', 'scheduled', 'completed'] as const).map(value => ({ value, label: t(`maintenance.${value}`), count: allItems.value.filter(window => maintenanceState(window) === value).length })),
 ])
 const items = computed(() => {
   const text = search.value.trim().toLowerCase()
-  const order = { inProgress: 0, scheduled: 1, completed: 2 }
+  const order = { 'in-progress': 0, 'scheduled': 1, 'completed': 2 }
   return allItems.value
     .filter(window => (filter.value === 'all' || maintenanceState(window) === filter.value)
       && (!text || `${window.name} ${window.description}`.toLowerCase().includes(text)))
@@ -118,7 +118,7 @@ const form = useForm({
         await updateMaintenance.mutateAsync({ path: { id: value.id }, body })
       else await createMaintenance.mutateAsync({ body })
       open.value = false
-      notify(t('maintenance.maintenanceSaved'))
+      notify(t('maintenance.maintenance-saved'))
       await query.refresh()
     }
     catch (e) {
@@ -142,7 +142,7 @@ async function remove() {
   try {
     await deleteMaintenance.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
-    notify(t('maintenance.maintenanceDeleted'))
+    notify(t('maintenance.maintenance-deleted'))
     await query.refresh()
   }
   catch (e) {
@@ -159,10 +159,10 @@ function confirmDelete(value: Maintenance) {
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('navigation.maintenance')" :description="t('maintenance.plannedWorkKeepsCollectionRunningExcludesDurationAnd')">
+  <PageHeader class="mb-6" :title="t('navigation.maintenance')" :description="t('maintenance.planned-work-keeps-collection-running-excludes-duration-and')">
     <template #actions>
       <Button v-if="canEdit()" variant="primary" @click="edit()">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.scheduleMaintenance') }}
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.schedule-maintenance') }}
       </Button>
     </template>
   </PageHeader>
@@ -177,34 +177,34 @@ function confirmDelete(value: Maintenance) {
         <TableToolbar>
           <InputGroup class="w-full max-w-sm [@container_workspace_(max-width:_700px)]:max-w-none">
             <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-            <InputGroupInput v-model="search" type="search" :placeholder="t('maintenance.searchNameOrDescription')" :aria-label="t('maintenance.searchMaintenance')" />
+            <InputGroupInput v-model="search" type="search" :placeholder="t('maintenance.search-name-or-description')" :aria-label="t('maintenance.search-maintenance')" />
           </InputGroup>
-          <span class="text-size-sm text-subtle">{{ t('maintenance.showingMaintenance', { shown: items.length, total: allItems.length }) }}</span>
+          <span class="text-size-sm text-subtle">{{ t('maintenance.showing-maintenance', { shown: items.length, total: allItems.length }) }}</span>
         </TableToolbar>
         <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+          <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
         </div>
         <Banner v-else-if="query.error.value" variant="error">
           {{ errorText(query.error.value) }}
           <Button variant="ghost" @click="query.refetch()">
-            {{ t('asyncState.retry') }}
+            {{ t('async-state.retry') }}
           </Button>
         </Banner>
         <template v-else>
-          <Empty v-if="!items.length" :title="allItems.length ? t('maintenance.noMatchingMaintenance') : t('maintenance.noScheduledMaintenance')" :description="allItems.length ? t('monitors.tryChangingYourSearchOrFilters') : t('maintenance.planAnUpgradeWindowAndInformStatusPage')" size="sm" class="rounded-none border-none">
+          <Empty v-if="!items.length" :title="allItems.length ? t('maintenance.no-matching-maintenance') : t('maintenance.no-scheduled-maintenance')" :description="allItems.length ? t('monitors.try-changing-your-search-or-filters') : t('maintenance.plan-an-upgrade-window-and-inform-status-page')" size="sm" class="rounded-none border-none">
             <template #icon>
               <span class="i-lucide-calendar-clock size-8 text-subtle" aria-hidden="true" />
             </template>
             <template #actions>
               <Button v-if="allItems.length" @click="clearFilters">
-                {{ t('common.clearFilters') }}
+                {{ t('common.clear-filters') }}
               </Button>
               <Button v-else-if="canEdit()" variant="primary" @click="edit()">
-                {{ t('common.scheduleMaintenance') }}
+                {{ t('common.schedule-maintenance') }}
               </Button>
             </template>
           </Empty>
-          <TableContainer v-else :scroll-label="t('common.scrollTable')">
+          <TableContainer v-else :scroll-label="t('common.scroll-table')">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -228,7 +228,7 @@ function confirmDelete(value: Maintenance) {
                   <TableCell>
                     <span class="block max-w-sm font-medium [overflow-wrap:anywhere]">{{ window.name }}</span><span v-if="window.description" class="mt-1 block max-w-sm text-size-xs text-subtle [overflow-wrap:anywhere]">{{ window.description }}</span>
                     <div class="mt-2 hidden space-y-2 [@container_workspace_(max-width:_700px)]:block">
-                      <Badge :variant="maintenanceState(window) === 'inProgress' ? 'warning' : 'outline'" dot>
+                      <Badge :variant="maintenanceState(window) === 'in-progress' ? 'warning' : 'outline'" dot>
                         {{ t(`maintenance.${maintenanceState(window)}`) }}
                       </Badge>
                       <div class="text-size-xs text-subtle">
@@ -240,7 +240,7 @@ function confirmDelete(value: Maintenance) {
                     </div>
                   </TableCell>
                   <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
-                    <Badge :variant="maintenanceState(window) === 'inProgress' ? 'warning' : 'outline'" dot>
+                    <Badge :variant="maintenanceState(window) === 'in-progress' ? 'warning' : 'outline'" dot>
                       {{ t(`maintenance.${maintenanceState(window)}`) }}
                     </Badge>
                   </TableCell>
@@ -279,7 +279,7 @@ function confirmDelete(value: Maintenance) {
       </TabsContent>
     </TabsRoot>
   </LayerCard>
-  <Dialog v-model:open="open" :close-label="t('common.close')" :title="editingId ? t('maintenance.editMaintenance') : t('common.scheduleMaintenance')" size="xl">
+  <Dialog v-model:open="open" :close-label="t('common.close')" :title="editingId ? t('maintenance.edit-maintenance') : t('common.schedule-maintenance')" size="xl">
     <form id="maintenance-form" @submit.prevent="form.handleSubmit">
       <FieldGroup>
         <form.Field v-slot="{ field }" name="name">
@@ -291,31 +291,31 @@ function confirmDelete(value: Maintenance) {
             <InputArea :model-value="field.state.value" @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="start">
-          <Field :label="t('maintenance.startsAt')">
+          <Field :label="t('maintenance.starts-at')">
             <Input :model-value="field.state.value" type="datetime-local" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="end">
-          <Field :label="t('maintenance.endsAt')">
+          <Field :label="t('maintenance.ends-at')">
             <Input :model-value="field.state.value" type="datetime-local" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="timezone">
-          <Field :label="t('maintenance.windowTimeZone')" :description="t('maintenance.theInputsAboveAreInterpretedAsWallClock')" class="span-full">
+          <Field :label="t('maintenance.window-time-zone')" :description="t('maintenance.the-inputs-above-are-interpreted-as-wall-clock')" class="span-full">
             <Input :model-value="field.state.value" required placeholder="Asia/Shanghai" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </form.Field>
         <form.Field v-slot="{ field }" name="monitorIds">
           <div class="span-full">
             <div v-if="monitors.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+              <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
             </div>
             <Banner v-else-if="monitors.error.value" variant="error">
               {{ errorText(monitors.error.value) }}
               <Button variant="ghost" @click="monitors.refetch()">
-                {{ t('asyncState.retry') }}
+                {{ t('async-state.retry') }}
               </Button>
             </Banner>
             <template v-else>
-              <CheckboxGroup :model-value="field.state.value" :label="t('maintenance.affectedMonitors')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <CheckboxGroup :model-value="field.state.value" :label="t('maintenance.affected-monitors')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                 <Checkbox v-for="monitor in monitors.data.value?.items" :key="monitor.id" :value="monitor.id" :label="monitor.name" />
               </CheckboxGroup>
               <p v-if="!monitors.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
@@ -327,16 +327,16 @@ function confirmDelete(value: Maintenance) {
         <form.Field v-slot="{ field }" name="pageIds">
           <div class="span-full">
             <div v-if="pages.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+              <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
             </div>
             <Banner v-else-if="pages.error.value" variant="error">
               {{ errorText(pages.error.value) }}
               <Button variant="ghost" @click="pages.refetch()">
-                {{ t('asyncState.retry') }}
+                {{ t('async-state.retry') }}
               </Button>
             </Banner>
             <template v-else>
-              <CheckboxGroup :model-value="field.state.value" :label="t('maintenance.showOnStatusPages')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <CheckboxGroup :model-value="field.state.value" :label="t('maintenance.show-on-status-pages')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                 <Checkbox v-for="page in pages.data.value?.items" :key="page.id" :value="page.id" :label="page.name" />
               </CheckboxGroup>
               <p v-if="!pages.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
@@ -354,10 +354,10 @@ function confirmDelete(value: Maintenance) {
       <Button :disabled="saving" @click="open = false">
         {{ t('common.cancel') }}
       </Button><Button type="submit" form="maintenance-form" :loading="saving" variant="primary">
-        {{ t('maintenance.saveSchedule') }}
+        {{ t('maintenance.save-schedule') }}
       </Button>
     </template>
-  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('maintenance.deleteMaintenance')">
+  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('maintenance.delete-maintenance')">
     <p>{{ deleteTarget?.name }}</p>
     <template #footer>
       <Button :disabled="deleting" @click="deleteOpen = false">

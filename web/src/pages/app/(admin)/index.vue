@@ -84,22 +84,22 @@ const nextMaintenance = computed(
       .slice(0, 3) || [],
 )
 const summary = computed(() => [
-  { label: t('overview.totalMonitors'), value: items.value.length, icon: 'i-lucide-activity', description: `${t('overview.active')} ${active.value.length} · ${t('common.paused')} ${items.value.length - active.value.length}`, color: 'text-default' },
-  { label: t('overview.operational'), value: up.value.length, icon: 'i-lucide-circle-check', description: t('overview.confirmedServiceStates'), color: 'text-fg-success' },
-  { label: t('overview.needsAttention'), value: down.value.length, icon: 'i-lucide-triangle-alert', description: t('overview.confirmedOutages'), color: down.value.length ? 'text-fg-danger' : 'text-default' },
-  { label: t('overview.waitingForData'), value: unknown.value.length, icon: 'i-lucide-clock', description: t('overview.initialChecksOrCollectionGaps'), color: 'text-subtle' },
+  { label: t('overview.total-monitors'), value: items.value.length, icon: 'i-lucide-activity', description: `${t('overview.active')} ${active.value.length} · ${t('common.paused')} ${items.value.length - active.value.length}`, color: 'text-default' },
+  { label: t('overview.operational'), value: up.value.length, icon: 'i-lucide-circle-check', description: t('overview.confirmed-service-states'), color: 'text-fg-success' },
+  { label: t('overview.needs-attention'), value: down.value.length, icon: 'i-lucide-triangle-alert', description: t('overview.confirmed-outages'), color: down.value.length ? 'text-fg-danger' : 'text-default' },
+  { label: t('overview.waiting-for-data'), value: unknown.value.length, icon: 'i-lucide-clock', description: t('overview.initial-checks-or-collection-gaps'), color: 'text-subtle' },
 ])
 </script>
 
 <template>
-  <PageHeader :title="t('overview.serviceOverview')" :description="t('overview.aClearViewOfEveryServiceHeartbeat')" class="mb-6">
+  <PageHeader :title="t('overview.service-overview')" :description="t('overview.a-clear-view-of-every-service-heartbeat')" class="mb-6">
     <template #actions>
       <Button :loading="monitors.isPending.value" @click="monitors.refetch()">
         <span class="i-lucide-refresh-cw size-4" aria-hidden="true" />{{ t('common.refresh') }}
       </Button>
       <Button v-if="canEdit()" variant="primary" as-child>
         <RouterLink to="/app/monitors/new">
-          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.addMonitor') }}
+          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.add-monitor') }}
         </RouterLink>
       </Button>
     </template>
@@ -129,38 +129,38 @@ const summary = computed(() => [
               {{ t('common.monitors') }}
             </Text>
             <Text as="p" size="sm" variant="secondary">
-              {{ t('overview.outagesFirstSoYouCanFocusOnWhat') }}
+              {{ t('overview.outages-first-so-you-can-focus-on-what') }}
             </Text>
           </div>
           <Button variant="ghost" size="sm" as-child>
             <RouterLink to="/app/monitors">
-              {{ t('overview.viewAll') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
+              {{ t('overview.view-all') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
             </RouterLink>
           </Button>
         </LayerCardSecondary>
         <div v-if="monitors.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+          <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
         </div>
         <Banner v-else-if="monitors.error.value" variant="error">
           {{ errorText(monitors.error.value) }}
           <Button variant="ghost" @click="monitors.refetch()">
-            {{ t('asyncState.retry') }}
+            {{ t('async-state.retry') }}
           </Button>
         </Banner>
         <template v-else>
-          <Empty v-if="!items.length" :title="t('overview.monitorYourFirstService')" :description="t('overview.httpTcpDnsHeartbeatAndCertificateChecksAre')" size="sm" class="rounded-none border-none">
+          <Empty v-if="!items.length" :title="t('overview.monitor-your-first-service')" :description="t('overview.http-tcp-dns-heartbeat-and-certificate-checks-are')" size="sm" class="rounded-none border-none">
             <template #icon>
               <span class="i-lucide-activity size-8 text-subtle" aria-hidden="true" />
             </template>
             <template #actions>
               <Button v-if="canEdit()" variant="primary" as-child>
                 <RouterLink to="/app/monitors/new">
-                  <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.createMonitor') }}
+                  <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.create-monitor') }}
                 </RouterLink>
               </Button>
             </template>
           </Empty>
-          <TableContainer v-else :scroll-label="t('common.scrollTable')">
+          <TableContainer v-else :scroll-label="t('common.scroll-table')">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -169,7 +169,7 @@ const summary = computed(() => [
                   </TableHead><TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
                     {{ t('overview.interval') }}
                   </TableHead><TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
-                    {{ t('common.lastCheck') }}
+                    {{ t('common.last-check') }}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -182,7 +182,7 @@ const summary = computed(() => [
                         <span class="mt-2 hidden space-y-2 [@container_workspace_(max-width:_700px)]:block">
                           <Badge :variant="monitor.stateDisplay.variant" :data-state="monitor.stateDisplay.state" dot>{{ monitor.stateDisplay.label }}</Badge>
                           <span class="block text-size-xs text-subtle">{{ t('overview.interval') }} · {{ monitor.type === 'heartbeat' ? monitor.heartbeat?.periodSeconds : monitor.intervalSeconds }} s</span>
-                          <span class="block text-size-xs text-subtle">{{ t('common.lastCheck') }} · {{ formatDate(monitor.lastCheckedAt) }}</span>
+                          <span class="block text-size-xs text-subtle">{{ t('common.last-check') }} · {{ formatDate(monitor.lastCheckedAt) }}</span>
                         </span>
                       </span>
                     </RouterLink>
@@ -204,7 +204,7 @@ const summary = computed(() => [
           </TableContainer>
         </template>
         <TablePagination v-if="items.length">
-          <span>{{ t('overview.showingMonitors', { shown: ordered.length, total: items.length }) }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span>
+          <span>{{ t('overview.showing-monitors', { shown: ordered.length, total: items.length }) }}</span><span>{{ t('common.refreshes-every-30-seconds') }}</span>
         </TablePagination>
       </LayerCard>
     </div>
@@ -212,22 +212,22 @@ const summary = computed(() => [
       <LayerCard>
         <LayerCardSecondary class="flex flex-wrap items-center justify-between gap-3">
           <Text as="h2" variant="heading">
-            {{ t('overview.incidentActivity') }}
+            {{ t('overview.incident-activity') }}
           </Text><Badge>{{ recentIncidents.length }}</Badge>
         </LayerCardSecondary>
         <LayerCardPrimary>
           <div v-if="incidents.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-            <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+            <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
           </div>
           <Banner v-else-if="incidents.error.value" variant="error">
             {{ errorText(incidents.error.value) }}
             <Button variant="ghost" @click="incidents.refetch()">
-              {{ t('asyncState.retry') }}
+              {{ t('async-state.retry') }}
             </Button>
           </Banner>
           <template v-else>
             <Text v-if="!recentIncidents.length" as="p" size="sm" variant="secondary" class="py-3">
-              {{ t('overview.noIncidentAnnouncementsUpdatesWillAppearHere') }}
+              {{ t('overview.no-incident-announcements-updates-will-appear-here') }}
             </Text>
             <div v-else class="divide-y divide-line">
               <RouterLink v-for="incident in recentIncidents" :key="incident.id" to="/app/incidents" class="flex gap-3 rounded-md py-4 outline-none hover:bg-tint focus-visible:ring-2 focus-visible:ring-brand">
@@ -247,22 +247,22 @@ const summary = computed(() => [
       <LayerCard>
         <LayerCardSecondary>
           <Text as="h2" variant="heading">
-            {{ t('overview.upcomingMaintenance') }}
+            {{ t('overview.upcoming-maintenance') }}
           </Text>
         </LayerCardSecondary>
         <LayerCardPrimary>
           <div v-if="maintenance.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-            <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+            <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
           </div>
           <Banner v-else-if="maintenance.error.value" variant="error">
             {{ errorText(maintenance.error.value) }}
             <Button variant="ghost" @click="maintenance.refetch()">
-              {{ t('asyncState.retry') }}
+              {{ t('async-state.retry') }}
             </Button>
           </Banner>
           <template v-else>
             <Text v-if="!nextMaintenance.length" as="p" size="sm" variant="secondary" class="py-3">
-              {{ t('overview.noScheduledMaintenance') }}
+              {{ t('overview.no-scheduled-maintenance') }}
             </Text>
             <div v-else class="divide-y divide-line">
               <RouterLink v-for="window in nextMaintenance" :key="window.id" to="/app/maintenance" class="flex gap-3 rounded-md py-4 outline-none hover:bg-tint focus-visible:ring-2 focus-visible:ring-brand">
@@ -280,37 +280,37 @@ const summary = computed(() => [
         </LayerCardPrimary>
       </LayerCard>
       <Banner variant="secondary" size="sm">
-        {{ t('overview.uptimeReflectsConfirmedDurationPausedMaintenanceAndMissing') }}
+        {{ t('overview.uptime-reflects-confirmed-duration-paused-maintenance-and-missing') }}
       </Banner>
     </aside>
   </div>
   <LayerCard class="mt-6">
     <LayerCardSecondary class="flex flex-wrap items-center justify-between gap-3">
       <Text as="h2" variant="heading">
-        {{ t('overview.publicStatusPages') }}
+        {{ t('overview.public-status-pages') }}
       </Text>
       <Button variant="ghost" size="sm" as-child>
         <RouterLink to="/app/pages">
-          {{ t('overview.managePages') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
+          {{ t('overview.manage-pages') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
         </RouterLink>
       </Button>
     </LayerCardSecondary>
     <LayerCardPrimary>
       <div v-if="pages.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
       </div>
       <Banner v-else-if="pages.error.value" variant="error">
         {{ errorText(pages.error.value) }}
         <Button variant="ghost" @click="pages.refetch()">
-          {{ t('asyncState.retry') }}
+          {{ t('async-state.retry') }}
         </Button>
       </Banner>
       <template v-else>
-        <Empty v-if="!pages.data.value?.items.length" :title="t('overview.keepEveryoneInformed')" :description="t('overview.publishAStatusPageWithYourOwnBrand')" size="sm" class="rounded-none border-none px-0! py-4!">
+        <Empty v-if="!pages.data.value?.items.length" :title="t('overview.keep-everyone-informed')" :description="t('overview.publish-a-status-page-with-your-own-brand')" size="sm" class="rounded-none border-none px-0! py-4!">
           <template #actions>
             <Button v-if="canEdit()" as-child>
               <RouterLink to="/app/pages/new">
-                {{ t('common.createStatusPage') }}
+                {{ t('common.create-status-page') }}
               </RouterLink>
             </Button>
           </template>

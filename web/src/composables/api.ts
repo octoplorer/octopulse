@@ -34,7 +34,7 @@ client.interceptors.error.use((error) => {
     title?: string
     errors?: { message?: string, location?: string }[]
   }
-  let message = problem.detail || problem.title || t('errors.requestFailed')
+  let message = problem.detail || problem.title || t('errors.request-failed')
   if (problem.errors?.length)
     message += `: ${problem.errors.map(e => `${e.location || ''} ${e.message || ''}`).join('; ')}`
   return new Error(message)

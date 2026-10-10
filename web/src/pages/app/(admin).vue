@@ -59,9 +59,9 @@ const primaryGroups = [
     ],
   },
   {
-    label: 'navigation.serviceOperations',
+    label: 'navigation.service-operations',
     links: [
-      { path: '/app/pages', icon: 'i-lucide-globe', label: 'navigation.statusPages' },
+      { path: '/app/pages', icon: 'i-lucide-globe', label: 'navigation.status-pages' },
       { path: '/app/incidents', icon: 'i-lucide-message-square', label: 'navigation.incidents' },
       { path: '/app/maintenance', icon: 'i-lucide-calendar-clock', label: 'navigation.maintenance' },
       { path: '/app/notifications', icon: 'i-lucide-bell', label: 'navigation.notifications' },
@@ -71,7 +71,7 @@ const primaryGroups = [
 const administrationLinks = [
   { path: '/app/users', icon: 'i-lucide-users', label: 'navigation.members' },
   { path: '/app/secrets', icon: 'i-lucide-key-round', label: 'navigation.secrets' },
-  { path: '/app/audit', icon: 'i-lucide-scroll-text', label: 'navigation.auditLog' },
+  { path: '/app/audit', icon: 'i-lucide-scroll-text', label: 'navigation.audit-log' },
 ]
 function active(path: string) {
   return path === '/app' ? route.path === path : route.path.startsWith(path)
@@ -88,13 +88,13 @@ const signOut = useMutation({
 
 <template>
   <SidebarProvider ref="sidebar" :default-open="sidebarOpen" peekable class="workspace-shell h-svh overflow-hidden" @update:open="sidebarOpen = $event">
-    <a href="#workspace-main" class="skip-link" @click.prevent="focusContent">{{ t('common.skipToContent') }}</a>
+    <a href="#workspace-main" class="skip-link" @click.prevent="focusContent">{{ t('common.skip-to-content') }}</a>
     <Sidebar id="workspace-navigation">
       <SidebarHeader class="flex-row items-center justify-between">
         <RouterLink to="/app" :aria-label="t('navigation.overview')" class="min-w-0">
           <Brand :compact="!sidebarOpen" />
         </RouterLink>
-        <SidebarClose :aria-label="t('navigation.closeNavigation')" class="md:hidden" />
+        <SidebarClose :aria-label="t('navigation.close-navigation')" class="md:hidden" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup v-for="group in primaryGroups" :key="group.label">
@@ -120,13 +120,13 @@ const signOut = useMutation({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarTrigger :aria-label="sidebarOpen ? t('navigation.collapseSidebar') : t('navigation.expandSidebar')" />
+        <SidebarTrigger :aria-label="sidebarOpen ? t('navigation.collapse-sidebar') : t('navigation.expand-sidebar')" />
       </SidebarFooter>
     </Sidebar>
     <div ref="workspace-scroll" class="workspace-scroll min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain">
       <header class="sticky top-0 z-30 flex h-$workspace-header-height shrink-0 items-center justify-between gap-3 border-b border-solid border-line bg-canvas px-4 md:px-8">
         <div class="flex min-w-0 items-center gap-3">
-          <SidebarTrigger :aria-label="t('navigation.openNavigation')" aria-controls="workspace-navigation" class="md:hidden" />
+          <SidebarTrigger :aria-label="t('navigation.open-navigation')" aria-controls="workspace-navigation" class="md:hidden" />
           <Breadcrumbs class="workspace-breadcrumbs min-w-0" :items="[{ label: t('common.workspace'), href: '/app' }, { label: title }]" :label="t('common.workspace')" />
         </div>
         <div class="flex shrink-0 items-center gap-2">
@@ -142,20 +142,20 @@ const signOut = useMutation({
               <DropdownMenuItem value="settings" as-child>
                 <RouterLink to="/app/settings">
                   <span class="i-lucide-settings size-4" aria-hidden="true" />
-                  {{ t('settings.personalPreferences') }}
+                  {{ t('settings.personal-preferences') }}
                 </RouterLink>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem value="sign-out" :disabled="signOut.isLoading.value" destructive>
                 <span class="i-lucide-log-out size-4" aria-hidden="true" />
-                {{ t('navigation.signOut') }}
+                {{ t('navigation.sign-out') }}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" shape="square" :aria-label="t('common.switchLanguage')" @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'">
+          <Button variant="ghost" shape="square" :aria-label="t('common.switch-language')" @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'">
             <span class="i-lucide-languages size-4" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" shape="square" :aria-label="t('navigation.toggleColorScheme')" @click="theme = dark ? 'light' : 'dark'">
+          <Button variant="ghost" shape="square" :aria-label="t('navigation.toggle-color-scheme')" @click="theme = dark ? 'light' : 'dark'">
             <span :class="dark ? 'i-lucide-sun' : 'i-lucide-moon'" class="size-4" aria-hidden="true" />
           </Button>
         </div>

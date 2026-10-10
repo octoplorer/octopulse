@@ -57,7 +57,7 @@ export function datetimeInput(value: number, tz = timezone.value) {
 export function datetimeMilliseconds(value: string, tz = timezone.value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value)
   if (!match)
-    throw new Error(t('preferences.invalidDateAndTime'))
+    throw new Error(t('preferences.invalid-date-and-time'))
   const [, year, month, day, hour, minute] = match
   const target = Date.UTC(+year!, +month! - 1, +day!, +hour!, +minute!)
   let guess = target
@@ -77,7 +77,7 @@ export function datetimeMilliseconds(value: string, tz = timezone.value) {
     guess += target - local
   }
   if (datetimeInput(guess, tz) !== value.slice(0, 16))
-    throw new Error(t('preferences.thisWallClockTimeDoesNotExistIn'))
+    throw new Error(t('preferences.this-wall-clock-time-does-not-exist-in'))
   return guess
 }
 export function statusLabel(value: string) {
@@ -102,9 +102,9 @@ export function statusLabel(value: string) {
     test: 'status.test',
     down: 'status.down',
     up: 'status.up',
-    certificate_expiring: 'status.certificate_expiring',
-    certificate_expired: 'status.certificate_expired',
-    certificate_renewed: 'status.certificate_renewed',
+    certificate_expiring: 'status.certificate-expiring',
+    certificate_expired: 'status.certificate-expired',
+    certificate_renewed: 'status.certificate-renewed',
   }
   return Object.hasOwn(labels, value) ? t(labels[value]!) : value
 }

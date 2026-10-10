@@ -65,14 +65,14 @@ async function load() {
       queryCache.ensure({ ...getSetupQuery(), staleTime: 0 }),
     )
     if (setupState.status !== 'success')
-      throw setupState.error || new Error(t('errors.requestFailed'))
+      throw setupState.error || new Error(t('errors.request-failed'))
     required.value = setupState.data.required
     if (!required.value) {
       const sessionState = await queryCache.refresh(
         queryCache.ensure({ ...getSessionQuery(), staleTime: 0 }),
       )
       if (sessionState.status !== 'success')
-        throw sessionState.error || new Error(t('errors.requestFailed'))
+        throw sessionState.error || new Error(t('errors.request-failed'))
       applySession(sessionState.data)
       if (sessionState.data.user)
         await router.replace('/app')
@@ -96,13 +96,13 @@ onMounted(load)
         <p class="eyebrow" un-text="12px subtle" font="500" mb="8px">
           {{ t('login.slogan') }}
         </p>
-        <h1>{{ t('login.everyHeartbeat') }}<br>{{ t('login.alwaysInSight') }}</h1>
+        <h1>{{ t('login.every-heartbeat') }}<br>{{ t('login.always-in-sight') }}</h1>
         <p>
-          {{ t('login.monitorServicesRespondToIncidentsAndKeepEveryone') }}
+          {{ t('login.monitor-services-respond-to-incidents-and-keep-everyone') }}
         </p>
       </div>
       <div flex="~ items-center gap-2" un-text="12px subtle">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />{{ t('login.selfHostedYourInfrastructureYourData') }}
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />{{ t('login.self-hosted-your-infrastructure-your-data') }}
       </div>
     </section>
     <section flex="~ items-center justify-center" p="48px" bg="base" class="min-w-0 [@media(max-width:900px)]:min-h-100dvh [@media(max-width:700px)]:px-20px [@media(max-width:700px)]:py-32px">
@@ -111,25 +111,25 @@ onMounted(load)
           <Brand />
         </div>
         <p class="eyebrow" un-text="12px subtle" font="500" mb="8px">
-          {{ required ? t('login.getStarted') : t('login.welcomeBackEyebrow') }}
+          {{ required ? t('login.get-started') : t('login.welcome-back-eyebrow') }}
         </p>
         <h1>
-          {{ required ? t('login.createYourWorkspace') : t('login.welcomeBack') }}
+          {{ required ? t('login.create-your-workspace') : t('login.welcome-back') }}
         </h1>
         <p class="muted" un-text="13px subtle">
           {{
             required
-              ? t('login.createTheFirstAdministratorAccountToStartMonitoring')
-              : t('login.signInToSeeHowYourServicesAre')
+              ? t('login.create-the-first-administrator-account-to-start-monitoring')
+              : t('login.sign-in-to-see-how-your-services-are')
           }}
         </p>
         <div v-if="loading" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle">
-          <Loader :label="t('asyncState.loadingData')" />
+          <Loader :label="t('async-state.loading-data')" />
         </div>
         <Banner v-else-if="loadError" variant="error">
           {{ loadError }}
           <Button class="mt-3" @click="load">
-            {{ t('asyncState.retry') }}
+            {{ t('async-state.retry') }}
           </Button>
         </Banner>
         <form v-else @submit.prevent="formApi.handleSubmit()">
@@ -139,18 +139,18 @@ onMounted(load)
             </Field>
           </formApi.Field>
           <formApi.Field v-slot="{ field }" name="password">
-            <Field :label="t('common.password')" :description="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
+            <Field :label="t('common.password')" :description="required ? t('login.at-least-12-characters-up-to-72-bytes') : undefined">
               <Input :name="field.name" :model-value="field.state.value" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72" @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
             </Field>
           </formApi.Field>
           <template v-if="required">
             <formApi.Field v-slot="{ field }" name="organizationName">
-              <Field :label="t('common.organizationName')">
+              <Field :label="t('common.organization-name')">
                 <Input :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
               </Field>
             </formApi.Field>
             <formApi.Field v-slot="{ field }" name="timezone">
-              <Field :label="t('common.organizationTimeZone')">
+              <Field :label="t('common.organization-time-zone')">
                 <Input :name="field.name" :model-value="field.state.value" placeholder="Asia/Shanghai" required @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
               </Field>
             </formApi.Field>
@@ -163,13 +163,13 @@ onMounted(load)
               saving
                 ? t('login.connecting')
                 : required
-                  ? t('login.createWorkspace')
-                  : t('login.signIn')
+                  ? t('login.create-workspace')
+                  : t('login.sign-in')
             }}<span w="16px" h="16px" aria-hidden="true" class="i-lucide-arrow-right" />
           </Button>
         </form>
         <p mt="7" class="muted" un-text="13px subtle">
-          {{ t('login.registrationIsClosedContactYourAdministratorForAccess') }}
+          {{ t('login.registration-is-closed-contact-your-administrator-for-access') }}
         </p>
       </div>
     </section>

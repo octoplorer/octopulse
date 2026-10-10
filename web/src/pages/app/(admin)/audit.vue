@@ -18,7 +18,7 @@ import { errorText } from '../../../lib/errors'
 
 const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: 'navigation.auditLog', roles: ['admin'] } })
+definePage({ meta: { title: 'navigation.audit-log', roles: ['admin'] } })
 
 const query = useQuery({
   ...listAuditQuery(),
@@ -38,7 +38,7 @@ const items = computed(
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('navigation.auditLog')" :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')">
+  <PageHeader class="mb-6" :title="t('navigation.audit-log')" :description="t('audit.trace-configuration-changes-and-their-actors-without-recording')">
     <template #actions>
       <Button :loading="query.isLoading.value" @click="query.refetch()">
         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
@@ -50,30 +50,30 @@ const items = computed(
       <TableToolbar>
         <InputGroup class="w-full max-w-sm">
           <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-          <InputGroupInput v-model="search" type="search" :placeholder="t('audit.searchActorActionOrResource')" :aria-label="t('audit.searchAuditLog')" />
+          <InputGroupInput v-model="search" type="search" :placeholder="t('audit.search-actor-action-or-resource')" :aria-label="t('audit.search-audit-log')" />
         </InputGroup>
         <span class="muted" un-text="13px subtle">{{
           t('counts.records', { count: items.length }, items.length)
         }}</span>
       </TableToolbar>
       <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
       </div>
       <Banner v-else-if="query.error.value" variant="error">
         {{ errorText(query.error.value) }}
         <Button variant="ghost" @click="query.refetch()">
-          {{ t('asyncState.retry') }}
+          {{ t('async-state.retry') }}
         </Button>
       </Banner>
       <template v-else>
-        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search.trim() ? t('audit.noMatchingRecords') : t('audit.noRecords')" :description="search.trim() ? t('monitors.tryChangingYourSearchOrFilters') : undefined">
+        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search.trim() ? t('audit.no-matching-records') : t('audit.no-records')" :description="search.trim() ? t('monitors.try-changing-your-search-or-filters') : undefined">
           <template #actions>
             <Button v-if="search.trim()" @click="search = ''">
-              {{ t('common.clearFilters') }}
+              {{ t('common.clear-filters') }}
             </Button>
           </template>
         </Empty>
-        <TableContainer v-else :scroll-label="t('common.scrollTable')">
+        <TableContainer v-else :scroll-label="t('common.scroll-table')">
           <Table>
             <TableHeader>
               <TableRow>
@@ -101,7 +101,7 @@ const items = computed(
                 </TableCell>
                 <TableCell>
                   <span class="block [overflow-wrap:anywhere]">{{ entry.resourceType }}</span>
-                  <ClipboardText v-if="entry.resourceId" :text="entry.resourceId" inline :copy-label="t('monitorDetails.copy')" :copied-label="t('monitorDetails.copied')" class="mt-1 max-w-64 text-subtle" />
+                  <ClipboardText v-if="entry.resourceId" :text="entry.resourceId" inline :copy-label="t('monitor-details.copy')" :copied-label="t('monitor-details.copied')" class="mt-1 max-w-64 text-subtle" />
                 </TableCell>
                 <TableCell class="whitespace-nowrap text-subtle [@container_workspace_(max-width:_700px)]:hidden">
                   {{ formatDate(entry.createdAt) }}

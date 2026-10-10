@@ -19,7 +19,7 @@ it('restores audit records from an unmatched search through the empty state', as
     await flushPromises()
     await wrapper.get('input').setValue('missing resource')
     expect(wrapper.findAll('tbody tr')).toHaveLength(0)
-    const clear = wrapper.findAll('button').find(button => button.text() === i18n.global.t('common.clearFilters'))
+    const clear = wrapper.findAll('button').find(button => button.text() === i18n.global.t('common.clear-filters'))
     expect(clear).toBeDefined()
     await clear!.trigger('click')
     await flushPromises()

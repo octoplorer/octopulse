@@ -38,7 +38,7 @@ describe('monitor editor recovery', () => {
   it('reveals a hidden target field when native validation rejects it', async () => {
     const wrapper = await render()
     const url = wrapper.find<HTMLInputElement>('input[type=url]')
-    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitorEditor.notifications'))!.trigger('click')
+    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitor-editor.notifications'))!.trigger('click')
     await flushPromises()
     expect(url.element.closest('[role=tabpanel]')?.hasAttribute('hidden')).toBe(true)
     await url.trigger('invalid')
@@ -55,7 +55,7 @@ describe('monitor editor recovery', () => {
     url.element.addEventListener('invalid', (event) => {
       invalidEvents.push({ prevented: event.defaultPrevented, hidden: !!url.element.closest('[role=tabpanel]')?.hasAttribute('hidden') })
     })
-    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitorEditor.notifications'))!.trigger('click')
+    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitor-editor.notifications'))!.trigger('click')
     await flushPromises()
     await url.trigger('invalid')
     await flushPromises()
@@ -70,7 +70,7 @@ describe('monitor editor recovery', () => {
     const wrapper = await render()
     expect(wrapper.find('[role=alert]').text()).toContain('Secrets unavailable')
     expect(wrapper.find('form').exists()).toBe(false)
-    const retry = wrapper.findAll('button').find(button => button.text() === i18n.global.t('asyncState.retry'))
+    const retry = wrapper.findAll('button').find(button => button.text() === i18n.global.t('async-state.retry'))
     expect(retry).toBeDefined()
     await retry!.trigger('click')
     await flushPromises()
@@ -80,10 +80,10 @@ describe('monitor editor recovery', () => {
 
   it('returns to target assertions and focuses invalid JSON after saving from another tab', async () => {
     const wrapper = await render()
-    const label = wrapper.findAll('label').find(label => label.text() === i18n.global.t('monitorEditor.responseHeaderAssertions'))!
+    const label = wrapper.findAll('label').find(label => label.text() === i18n.global.t('monitor-editor.response-header-assertions'))!
     const headers = wrapper.find<HTMLTextAreaElement>(`#${label.attributes('for')}`)
     await headers.setValue('{')
-    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitorEditor.notifications'))!.trigger('click')
+    await wrapper.findAll('[role=tab]').find(tab => tab.text() === i18n.global.t('monitor-editor.notifications'))!.trigger('click')
     await flushPromises()
     expect(headers.element.closest('[role=tabpanel]')?.hasAttribute('hidden')).toBe(true)
     await wrapper.find('form').trigger('submit')

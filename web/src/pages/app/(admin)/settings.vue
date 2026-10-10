@@ -50,7 +50,7 @@ const organizationForm = useForm({
       const result = await updateSettings.mutateAsync({
         body: value,
       })
-      notify(t('settings.organizationSettingsSaved'))
+      notify(t('settings.organization-settings-saved'))
       organizationForm.reset(result)
     }
     catch (e) {
@@ -87,7 +87,7 @@ const profileForm = useForm({
       currentUser.value = user
       locale.value = user.locale
       timezone.value = user.timezone
-      notify(t('settings.personalSettingsSaved'))
+      notify(t('settings.personal-settings-saved'))
       profileForm.reset({
         name: user.name,
         locale: user.locale,
@@ -111,7 +111,7 @@ async function load() {
       queryCache.ensure({ ...getSettingsQuery(), staleTime: 0 }),
     )
     if (state.status !== 'success')
-      throw state.error || new Error(t('errors.requestFailed'))
+      throw state.error || new Error(t('errors.request-failed'))
     organizationForm.reset(structuredClone(state.data))
   }
   catch (e) {
@@ -125,13 +125,13 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('common.settings')" :description="t('settings.configureTheWorkspaceForYourOrganizationAndYour')" /><Loader v-if="loading" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
-    {{ t('asyncState.loadingData') }}
+  <PageHeader class="mb-6" :title="t('common.settings')" :description="t('settings.configure-the-workspace-for-your-organization-and-your')" /><Loader v-if="loading" :label="t('async-state.loading-data')" class="flex! w-full justify-center p-15 text-size-xs">
+    {{ t('async-state.loading-data') }}
   </Loader>
   <Banner v-else-if="loadError" variant="error">
     {{ loadError }}
     <Button class="mt-3" @click="load">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
   <template v-else>
@@ -144,27 +144,27 @@ onMounted(load)
           <TabsList variant="line">
             <TabsTrigger variant="line" value="personal">
               {{
-                t('settings.personalPreferences')
+                t('settings.personal-preferences')
               }}
             </TabsTrigger><TabsTrigger variant="line" value="organization">
               {{
-                t('settings.organizationSettings')
+                t('settings.organization-settings')
               }}
             </TabsTrigger><TabsTrigger v-if="isAdmin()" variant="line" value="retention">
               {{
-                t('settings.dataRetention')
+                t('settings.data-retention')
               }}
             </TabsTrigger>
           </TabsList><TabsContent value="personal">
             <form @submit.prevent="profileForm.handleSubmit">
               <FieldSection>
-                <h2>{{ t('settings.displayPreferences') }}</h2>
+                <h2>{{ t('settings.display-preferences') }}</h2>
                 <p class="muted" un-text="13px subtle">
-                  {{ t('settings.yourDisplayTimeZoneDoesNotChangeUtc') }}
+                  {{ t('settings.your-display-time-zone-does-not-change-utc') }}
                 </p>
                 <FieldGroup>
                   <profileForm.Field v-slot="{ field }" name="name">
-                    <Field :label="t('common.displayName')">
+                    <Field :label="t('common.display-name')">
                       <Input :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
                   </profileForm.Field><profileForm.Field v-slot="{ field }" name="locale">
@@ -181,10 +181,10 @@ onMounted(load)
                       </Select>
                     </Field>
                   </profileForm.Field><profileForm.Field v-slot="{ field }" name="timezone">
-                    <Field :label="t('common.displayTimeZone')">
+                    <Field :label="t('common.display-time-zone')">
                       <Input :model-value="field.state.value" placeholder="Asia/Shanghai" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
-                  </profileForm.Field><Field :label="t('settings.adminColorScheme')">
+                  </profileForm.Field><Field :label="t('settings.admin-color-scheme')">
                     <Select v-model="theme">
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -205,17 +205,17 @@ onMounted(load)
                 </FieldGroup>
               </FieldSection>
               <FieldSection>
-                <h2>{{ t('settings.changePassword') }}</h2>
+                <h2>{{ t('settings.change-password') }}</h2>
                 <p class="muted" un-text="13px subtle">
-                  {{ t('settings.leaveEmptyToKeepYourPassword') }}
+                  {{ t('settings.leave-empty-to-keep-your-password') }}
                 </p>
                 <FieldGroup>
                   <profileForm.Field v-slot="{ field }" name="oldPassword">
-                    <Field :label="t('settings.currentPassword')">
+                    <Field :label="t('settings.current-password')">
                       <Input :model-value="field.state.value" type="password" autocomplete="current-password" :required="!!newPassword" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
                   </profileForm.Field><profileForm.Field v-slot="{ field }" name="password">
-                    <Field :label="t('settings.newPassword')" :description="t('common.atLeast12CharactersUpTo72Bytes')">
+                    <Field :label="t('settings.new-password')" :description="t('common.at-least-12-characters-up-to-72-bytes')">
                       <Input :model-value="field.state.value" type="password" autocomplete="new-password" minlength="12" maxlength="72" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
                   </profileForm.Field>
@@ -223,7 +223,7 @@ onMounted(load)
               </FieldSection>
               <FieldActions class="settings-actions p-5 sm:p-6">
                 <Button type="submit" :loading="profileSaving" variant="primary">
-                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.savePreferences') }}
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.save-preferences') }}
                 </Button>
               </FieldActions>
             </form>
@@ -232,19 +232,19 @@ onMounted(load)
               <FieldSection>
                 <h2>{{ t('settings.organization') }}</h2>
                 <p class="muted" un-text="13px subtle">
-                  {{ t('settings.organizationSettingsProvideDefaultsForAccountsAndMaintenance') }}
+                  {{ t('settings.organization-settings-provide-defaults-for-accounts-and-maintenance') }}
                 </p>
                 <FieldGroup>
                   <organizationForm.Field v-slot="{ field }" name="organizationName">
-                    <Field :label="t('common.organizationName')">
+                    <Field :label="t('common.organization-name')">
                       <Input :model-value="field.state.value" :disabled="!isAdmin()" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="timezone">
-                    <Field :label="t('common.organizationTimeZone')">
+                    <Field :label="t('common.organization-time-zone')">
                       <Input :model-value="field.state.value" :disabled="!isAdmin()" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="locale">
-                    <Field :label="t('settings.defaultLanguage')">
+                    <Field :label="t('settings.default-language')">
                       <Select :model-value="field.state.value" :disabled="!isAdmin()" @update:model-value="field.handleChange($event)" @focusout="field.handleBlur">
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -257,7 +257,7 @@ onMounted(load)
                       </Select>
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="allowedDomains">
-                    <Field :label="t('settings.allowedStatusPageDomainsOnePerLine')" :description="t('settings.hostnamesOnlyWithoutSchemeOrPathConfigureDns')" class="span-full">
+                    <Field :label="t('settings.allowed-status-page-domains-one-per-line')" :description="t('settings.hostnames-only-without-scheme-or-path-configure-dns')" class="span-full">
                       <InputArea v-model="allowedDomainsInput" :disabled="!isAdmin()" placeholder="status.example.com" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field>
@@ -265,43 +265,43 @@ onMounted(load)
               </FieldSection>
               <FieldActions v-if="isAdmin()" class="settings-actions p-5 sm:p-6">
                 <Button type="submit" :loading="organizationSaving" variant="primary">
-                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.saveOrganization') }}
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.save-organization') }}
                 </Button>
               </FieldActions>
             </form>
           </TabsContent><TabsContent v-if="isAdmin()" value="retention">
             <form @submit.prevent="organizationForm.handleSubmit">
               <FieldSection>
-                <h2>{{ t('settings.historyRetention') }}</h2>
+                <h2>{{ t('settings.history-retention') }}</h2>
                 <p class="muted" un-text="13px subtle">
-                  {{ t('settings.configureRawAndAggregatedHistoryWindowsCleanupRuns') }}
+                  {{ t('settings.configure-raw-and-aggregated-history-windows-cleanup-runs') }}
                 </p>
                 <FieldGroup>
                   <organizationForm.Field v-slot="{ field }" name="retention.roundDays">
-                    <Field :label="t('settings.rawRoundsDays')">
+                    <Field :label="t('settings.raw-rounds-days')">
                       <Input :model-value="field.state.value" type="number" min="1" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="retention.attemptDays">
-                    <Field :label="t('settings.attemptDetailsDays')">
+                    <Field :label="t('settings.attempt-details-days')">
                       <Input :model-value="field.state.value" type="number" min="1" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="retention.fiveMinuteDays">
-                    <Field :label="t('settings.5MinuteAggregatesDays')">
+                    <Field :label="t('settings.5-minute-aggregates-days')">
                       <Input :model-value="field.state.value" type="number" min="1" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field><organizationForm.Field v-slot="{ field }" name="retention.historyMonths">
-                    <Field :label="t('settings.hourlyAggregatesStateIntervalsMonths')">
+                    <Field :label="t('settings.hourly-aggregates-state-intervals-months')">
                       <Input :model-value="field.state.value" type="number" min="1" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
                     </Field>
                   </organizationForm.Field>
                 </FieldGroup>
                 <Banner mt="6" variant="default">
-                  {{ t('settings.completeRequestResponseBodiesAndSecretHeadersAre') }}
+                  {{ t('settings.complete-request-response-bodies-and-secret-headers-are') }}
                 </Banner>
               </FieldSection>
               <FieldActions class="settings-actions p-5 sm:p-6">
                 <Button type="submit" :loading="organizationSaving" variant="primary">
-                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.saveRetention') }}
+                  <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('settings.save-retention') }}
                 </Button>
               </FieldActions>
             </form>

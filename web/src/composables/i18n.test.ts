@@ -50,7 +50,7 @@ it('translations react to locale changes, interpolate values, and pluralize coun
   try {
     locale.value = 'en'
     expect(translated.value).toBe('Monitors')
-    expect(t('overview.showingMonitors', { shown: 2, total: 5 })).toBe('Showing 2 of 5 monitors')
+    expect(t('overview.showing-monitors', { shown: 2, total: 5 })).toBe('Showing 2 of 5 monitors')
     expect(t('counts.monitors', 0)).toBe('No monitors')
     expect(t('counts.monitors', 1)).toBe('1 monitor')
     expect(t('counts.monitors', 2)).toBe('2 monitors')
@@ -67,7 +67,7 @@ it('literal JSON and at signs are handled by the message compiler', () => {
   const originalLocale = locale.value
   try {
     locale.value = 'en'
-    expect(t('monitorDetails.postReportsStatusUpOrStatusDownWith')).toBe(
+    expect(t('monitor-details.post-reports-status-up-or-status-down-with')).toBe(
       'POST reports: {"status":"up"} or {"status":"down"}, with optional description.',
     )
     const composer = createI18n({

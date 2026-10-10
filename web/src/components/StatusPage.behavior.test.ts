@@ -48,8 +48,8 @@ describe('public status page', () => {
     const wrapper = render({ incidentId: 'missing' })
     const heading = wrapper.find('h1')
     expect(heading.exists()).toBe(true)
-    expect(heading.text()).toBe(i18n.global.t('statusPage.incidentUnavailable'))
-    expect(wrapper.find('a[href="/service-status"]').text()).toBe(i18n.global.t('statusPage.backToStatusPage'))
+    expect(heading.text()).toBe(i18n.global.t('status-page.incident-unavailable'))
+    expect(wrapper.find('a[href="/service-status"]').text()).toBe(i18n.global.t('status-page.back-to-status-page'))
   })
 
   it('exposes the public content landmark while previews remain inside the editor landmark', () => {

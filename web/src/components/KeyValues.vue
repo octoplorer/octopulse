@@ -36,15 +36,15 @@ function update<K extends keyof NameValueForm>(index: number, name: K, value: Na
         :aria-label="t('common.value')"
         @update:model-value="update(index, 'value', String($event ?? ''))"
       /><Banner v-else variant="secondary" size="sm">
-        {{ t('keyValues.valueFromSecret') }}
+        {{ t('key-values.value-from-secret') }}
       </Banner><Select :model-value="item.secretRef" @update:model-value="update(index, 'secretRef', $event)">
-        <SelectTrigger class="kv-secret" :aria-label="t('keyValues.secretReference')">
-          <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+        <SelectTrigger class="kv-secret" :aria-label="t('key-values.secret-reference')">
+          <SelectValue :placeholder="t('secret-select.no-secret-reference')" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             <SelectItem value="">
-              {{ t('secretSelect.noSecretReference') }}
+              {{ t('secret-select.no-secret-reference') }}
             </SelectItem>
             <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
               {{ secret.name }}
@@ -53,7 +53,7 @@ function update<K extends keyof NameValueForm>(index: number, name: K, value: Na
         </SelectContent>
       </Select><Button
         type="button"
-        :aria-label="t('keyValues.removeField')"
+        :aria-label="t('key-values.remove-field')"
         shape="square"
         @click="values = values.filter((_, i) => i !== index)"
       >
@@ -61,7 +61,7 @@ function update<K extends keyof NameValueForm>(index: number, name: K, value: Na
       </Button>
     </div>
     <Button type="button" variant="ghost" size="sm" @click="values = [...values, { name: '', value: '' }]">
-      <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('keyValues.addField') }}
+      <span class="i-lucide-plus" w="13px" h="13px" aria-hidden="true" />{{ t('key-values.add-field') }}
     </Button>
   </div>
 </template>

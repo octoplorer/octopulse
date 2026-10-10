@@ -81,7 +81,7 @@ const form = useForm({
         await updateIncident.mutateAsync({ path: { id: value.id }, body: value })
       else await createIncident.mutateAsync({ body: value })
       open.value = false
-      notify(t('incidents.incidentSaved'))
+      notify(t('incidents.incident-saved'))
       await query.refresh()
     }
     catch (e) {
@@ -102,7 +102,7 @@ const updateForm = useForm({
         body: value,
       })
       selected.value = result
-      notify(t('incidents.updatePublished'))
+      notify(t('incidents.update-published'))
       await query.refresh()
       updateForm.reset({ body: '', status: result.status })
     }
@@ -152,16 +152,16 @@ function detail(incident: Incident) {
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('navigation.incidents')" :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')">
+  <PageHeader class="mb-6" :title="t('navigation.incidents')" :description="t('incidents.communicate-impact-and-progress-with-clear-consistent-updates')">
     <template #actions>
       <Button v-if="canEdit()" variant="primary" @click="create">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('incidents.createIncident') }}
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('incidents.create-incident') }}
       </Button>
     </template>
   </PageHeader>
   <LayerCard>
     <TabsRoot v-model="filter">
-      <TabsList variant="line" class="[@container_workspace_(max-width:_700px)]:px-4!" :aria-label="t('incidents.incidentFilter')">
+      <TabsList variant="line" class="[@container_workspace_(max-width:_700px)]:px-4!" :aria-label="t('incidents.incident-filter')">
         <TabsTrigger v-for="status in statusTabs" :key="status.value" variant="line" :value="status.value">
           {{ status.label }}<span class="ms-2 text-size-xs text-subtle">{{ status.count }}</span>
         </TabsTrigger>
@@ -170,34 +170,34 @@ function detail(incident: Incident) {
         <TableToolbar>
           <InputGroup class="w-full max-w-sm [@container_workspace_(max-width:_700px)]:max-w-none">
             <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-            <InputGroupInput v-model="search" type="search" :placeholder="t('incidents.searchTitleOrContent')" :aria-label="t('incidents.searchIncidents')" />
+            <InputGroupInput v-model="search" type="search" :placeholder="t('incidents.search-title-or-content')" :aria-label="t('incidents.search-incidents')" />
           </InputGroup>
-          <span class="text-size-sm text-subtle">{{ t('incidents.showingIncidents', { shown: items.length, total: allItems.length }) }}</span>
+          <span class="text-size-sm text-subtle">{{ t('incidents.showing-incidents', { shown: items.length, total: allItems.length }) }}</span>
         </TableToolbar>
         <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+          <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
         </div>
         <Banner v-else-if="query.error.value" variant="error">
           {{ errorText(query.error.value) }}
           <Button variant="ghost" @click="query.refetch()">
-            {{ t('asyncState.retry') }}
+            {{ t('async-state.retry') }}
           </Button>
         </Banner>
         <template v-else>
-          <Empty v-if="!items.length" :title="allItems.length ? t('incidents.noMatchingIncidents') : t('incidents.noIncidentsHere')" :description="allItems.length ? t('monitors.tryChangingYourSearchOrFilters') : t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')" size="sm" class="rounded-none border-none">
+          <Empty v-if="!items.length" :title="allItems.length ? t('incidents.no-matching-incidents') : t('incidents.no-incidents-here')" :description="allItems.length ? t('monitors.try-changing-your-search-or-filters') : t('incidents.manual-incidents-do-not-change-monitor-states-or')" size="sm" class="rounded-none border-none">
             <template #icon>
               <span class="i-lucide-message-square size-8 text-subtle" aria-hidden="true" />
             </template>
             <template #actions>
               <Button v-if="allItems.length" @click="clearFilters">
-                {{ t('common.clearFilters') }}
+                {{ t('common.clear-filters') }}
               </Button>
               <Button v-else-if="canEdit()" variant="primary" @click="create">
-                {{ t('incidents.createIncident') }}
+                {{ t('incidents.create-incident') }}
               </Button>
             </template>
           </Empty>
-          <TableContainer v-else :scroll-label="t('common.scrollTable')">
+          <TableContainer v-else :scroll-label="t('common.scroll-table')">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -212,7 +212,7 @@ function detail(incident: Incident) {
                     {{ t('common.updated') }}
                   </TableHead>
                   <TableHead class="w-28 [@container_workspace_(max-width:_700px)]:w-12">
-                    <span class="sr-only">{{ t('incidents.viewUpdates') }}</span>
+                    <span class="sr-only">{{ t('incidents.view-updates') }}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -248,8 +248,8 @@ function detail(incident: Incident) {
                     {{ formatDate(incident.updatedAt) }}
                   </TableCell>
                   <TableCell class="text-end">
-                    <Button size="sm" variant="ghost" :aria-label="t('incidents.viewUpdates')" @click="detail(incident)">
-                      <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('incidents.viewUpdates') }}</span>
+                    <Button size="sm" variant="ghost" :aria-label="t('incidents.view-updates')" @click="detail(incident)">
+                      <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('incidents.view-updates') }}</span>
                       <span class="i-lucide-chevron-right hidden size-4 [@container_workspace_(max-width:_700px)]:block" aria-hidden="true" />
                     </Button>
                   </TableCell>
@@ -262,9 +262,9 @@ function detail(incident: Incident) {
     </TabsRoot>
   </LayerCard>
   <p class="mt-4 text-size-sm text-subtle">
-    {{ t('incidents.activeIncidentsMayRaiseAPageSImpact') }}
+    {{ t('incidents.active-incidents-may-raise-a-page-s-impact') }}
   </p>
-  <Dialog v-model:open="open" :close-label="t('common.close')" :title="editingId ? t('incidents.editIncident') : t('incidents.createIncident2')" size="xl">
+  <Dialog v-model:open="open" :close-label="t('common.close')" :title="editingId ? t('incidents.edit-incident') : t('incidents.create-incident-2')" size="xl">
     <form id="incident-form" @submit.prevent="form.handleSubmit">
       <FieldGroup>
         <form.Field v-slot="{ field }" name="title">
@@ -276,7 +276,7 @@ function detail(incident: Incident) {
             <InputArea :model-value="field.state.value" :min-rows="5" required @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="status">
-          <Field :label="t('incidents.progressStatus')">
+          <Field :label="t('incidents.progress-status')">
             <Select :model-value="field.state.value" @update:model-value="field.handleChange($event as Incident['status'])" @focusout="field.handleBlur">
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -293,7 +293,7 @@ function detail(incident: Incident) {
             </Select>
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="impact">
-          <Field :label="t('incidents.impactLevel')">
+          <Field :label="t('incidents.impact-level')">
             <Select :model-value="field.state.value" @update:model-value="field.handleChange($event as Incident['impact'])" @focusout="field.handleBlur">
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -302,10 +302,10 @@ function detail(incident: Incident) {
                     {{ t('incidents.informational') }}
                   </SelectItem>
                   <SelectItem value="partial">
-                    {{ t('incidents.partialOutage') }}
+                    {{ t('incidents.partial-outage') }}
                   </SelectItem>
                   <SelectItem value="outage">
-                    {{ t('incidents.majorOutage') }}
+                    {{ t('incidents.major-outage') }}
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>
@@ -315,16 +315,16 @@ function detail(incident: Incident) {
         <form.Field v-slot="{ field }" name="pageIds">
           <div class="span-full">
             <div v-if="pages.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+              <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
             </div>
             <Banner v-else-if="pages.error.value" variant="error">
               {{ errorText(pages.error.value) }}
               <Button variant="ghost" @click="pages.refetch()">
-                {{ t('asyncState.retry') }}
+                {{ t('async-state.retry') }}
               </Button>
             </Banner>
             <template v-else>
-              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.publishToStatusPages')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.publish-to-status-pages')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                 <Checkbox v-for="page in pages.data.value?.items" :key="page.id" :value="page.id" :label="page.name" />
               </CheckboxGroup>
               <p v-if="!pages.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
@@ -336,16 +336,16 @@ function detail(incident: Incident) {
         <form.Field v-slot="{ field }" name="monitorIds">
           <div class="span-full">
             <div v-if="monitors.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+              <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
             </div>
             <Banner v-else-if="monitors.error.value" variant="error">
               {{ errorText(monitors.error.value) }}
               <Button variant="ghost" @click="monitors.refetch()">
-                {{ t('asyncState.retry') }}
+                {{ t('async-state.retry') }}
               </Button>
             </Banner>
             <template v-else>
-              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.relatedMonitors')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.related-monitors')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                 <Checkbox v-for="monitor in monitors.data.value?.items" :key="monitor.id" :value="monitor.id" :label="monitor.name" />
               </CheckboxGroup>
               <p v-if="!monitors.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
@@ -363,7 +363,7 @@ function detail(incident: Incident) {
       <Button :disabled="saving" @click="open = false">
         {{ t('common.cancel') }}
       </Button><Button type="submit" form="incident-form" :loading="saving" variant="primary">
-        {{ t('incidents.saveIncident') }}
+        {{ t('incidents.save-incident') }}
       </Button>
     </template>
   </Dialog><Dialog v-model:open="detailOpen" :close-label="t('common.close')" :title="selected?.title || ''" size="xl">
@@ -373,12 +373,12 @@ function detail(incident: Incident) {
           {{ selected.body }}
         </p>
         <Button v-if="canEdit()" size="sm" @click="edit(selected)">
-          {{ t('incidents.editIncident2') }}
+          {{ t('incidents.edit-incident-2') }}
         </Button>
       </div>
       <div ml="5px" pl="21px" border="l-1 solid line" class="[&_.timeline-entry]:relative [&_.timeline-entry]:pb-24px [&_.timeline-entry]:before:content-empty [&_.timeline-entry]:before:absolute [&_.timeline-entry]:before:left-[-26px] [&_.timeline-entry]:before:top-5px [&_.timeline-entry]:before:size-9px [&_.timeline-entry]:before:rounded-full [&_.timeline-entry]:before:border-2 [&_.timeline-entry]:before:border-solid [&_.timeline-entry]:before:border-base [&_.timeline-entry]:before:bg-brand [&_.timeline-entry_h3]:text-12px [&_.timeline-entry_p]:mt-6px [&_.timeline-entry_p]:whitespace-pre-wrap [&_.timeline-entry_p]:text-12px [&_.timeline-entry_p]:text-subtle [&_.timeline-entry_small]:text-12px [&_.timeline-entry_small]:text-subtle">
         <div class="timeline-entry">
-          <h3>{{ t('incidents.initialAnnouncement') }}</h3>
+          <h3>{{ t('incidents.initial-announcement') }}</h3>
           <small>{{ formatDate(selected.createdAt) }}</small>
         </div>
         <div v-for="entry in selected.updates" :key="entry.id" class="timeline-entry">
@@ -390,10 +390,10 @@ function detail(incident: Incident) {
       <form v-if="canEdit()" @submit.prevent="updateForm.handleSubmit">
         <Separator />
         <h3 mb="4">
-          {{ t('incidents.publishAnUpdate') }}
+          {{ t('incidents.publish-an-update') }}
         </h3>
         <updateForm.Field v-slot="{ field }" name="status">
-          <Field :label="t('incidents.progress2')">
+          <Field :label="t('incidents.progress-2')">
             <Select :model-value="field.state.value" @update:model-value="field.handleChange($event as Incident['status'])" @focusout="field.handleBlur">
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -414,7 +414,7 @@ function detail(incident: Incident) {
             <InputArea :model-value="field.state.value" required :min-rows="4" @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
           </Field>
         </updateForm.Field><Button type="submit" :loading="publishing" mt="4" variant="primary">
-          {{ t('incidents.publishUpdate') }}
+          {{ t('incidents.publish-update') }}
         </Button>
       </form>
     </template>

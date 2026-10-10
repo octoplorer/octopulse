@@ -79,7 +79,7 @@ const formApi = useForm({
       const result = await (editing.value
         ? updateMonitor.mutateAsync({ path: { id: value.id }, body: payload })
         : createMonitor.mutateAsync({ body: payload }))
-      notify(t('monitorEditor.monitorSaved'))
+      notify(t('monitor-editor.monitor-saved'))
       await router.push(`/app/monitors/${result.id}`)
     }
     catch (e) {
@@ -128,9 +128,9 @@ async function load() {
       queryCache.refresh(queryCache.ensure({ ...listSecretsQuery(), staleTime: 0 })),
     ])
     if (c.status !== 'success')
-      throw c.error || new Error(t('errors.requestFailed'))
+      throw c.error || new Error(t('errors.request-failed'))
     if (s.status !== 'success')
-      throw s.error || new Error(t('errors.requestFailed'))
+      throw s.error || new Error(t('errors.request-failed'))
     channels.value = clone(c.data.items)
     secrets.value = clone(s.data.items)
     if (editing.value) {
@@ -138,7 +138,7 @@ async function load() {
         queryCache.ensure({ ...getMonitorQuery({ path: { id: id.value! } }), staleTime: 0 }),
       )
       if (monitor.status !== 'success')
-        throw monitor.error || new Error(t('errors.requestFailed'))
+        throw monitor.error || new Error(t('errors.request-failed'))
       formApi.reset(toMonitorForm(monitor.data))
     }
   }
@@ -157,7 +157,7 @@ function monitorPayload(value: MonitorForm): MonitorForm {
       delete payload[type]
   }
   if (new Blob([JSON.stringify(payload)]).size > 8 * 1024 * 1024)
-    throw new Error(t('monitorEditor.theMonitorConfigurationRequestMayNotExceed8'))
+    throw new Error(t('monitor-editor.the-monitor-configuration-request-may-not-exceed-8'))
   return payload
 }
 function parseStatusRange(value: string) {
@@ -205,12 +205,12 @@ const warningDaysInput = useListInput(
 const { text: headerAssertionsInput, error: headerError } = useJSONInput(
   () => form.value.type === 'http' ? form.value.http?.assertions.headers ?? [] : [],
   value => formApi.setFieldValue('http.assertions.headers', value),
-  () => t('monitorEditor.headerAssertions'),
+  () => t('monitor-editor.header-assertions'),
 )
 const { text: jsonAssertionsInput, error: jsonError } = useJSONInput(
   () => form.value.type === 'http' ? form.value.http?.assertions.json ?? [] : [],
   value => formApi.setFieldValue('http.assertions.json', value),
-  () => t('monitorEditor.jsonAssertions'),
+  () => t('monitor-editor.json-assertions'),
 )
 function validateMonitorForm(value: MonitorForm): string | undefined {
   if (value.type === 'http' && (headerError.value || jsonError.value))
@@ -273,7 +273,7 @@ async function addFile(event: Event) {
       0,
     )
     if (file.size + existingBytes > 4 * 1024 * 1024) {
-      notify(t('monitorEditor.multipartFilesMayTotalAtMost4Mib'), 'error')
+      notify(t('monitor-editor.multipart-files-may-total-at-most-4-mib'), 'error')
       continue
     }
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -308,26 +308,26 @@ const charsetOptions = [
 <template>
   <PageHeader
     class="mb-6"
-    :title="editing ? t('monitorEditor.editMonitor') : t('common.createMonitor')"
-    :description="t('monitorEditor.defineTheTargetSuccessCriteriaAndConfirmationPolicy')"
+    :title="editing ? t('monitor-editor.edit-monitor') : t('common.create-monitor')"
+    :description="t('monitor-editor.define-the-target-success-criteria-and-confirmation-policy')"
   >
     <template #actions>
       <Button as-child>
         <RouterLink :to="editing ? `/app/monitors/${id}` : '/app/monitors'">
-          <span class="i-lucide-arrow-left" w="15px" h="15px" aria-hidden="true" />{{ t('monitorEditor.back') }}
+          <span class="i-lucide-arrow-left" w="15px" h="15px" aria-hidden="true" />{{ t('monitor-editor.back') }}
         </RouterLink>
       </Button><Button :disabled="saving || loading || !!loadError || !canEdit()" form="monitor-form" type="submit" variant="primary">
-        <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ saving ? t('monitorEditor.saving') : t('common.saveMonitor') }}
+        <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ saving ? t('monitor-editor.saving') : t('common.save-monitor') }}
       </Button>
     </template>
   </PageHeader>
   <div v-if="loading" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-    <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+    <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
   </div>
   <Banner v-else-if="loadError" variant="error">
     {{ loadError }}
     <Button class="mt-3" @click="load">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
   <template v-else>
@@ -341,24 +341,24 @@ const charsetOptions = [
         <section class="mb-6">
           <LayerCardPrimary class="p-0!">
             <FieldSection class="monitor-section">
-              <h2>{{ t('monitorEditor.basicInformation') }}</h2>
+              <h2>{{ t('monitor-editor.basic-information') }}</h2>
               <p un-text="13px subtle">
-                {{ t('monitorEditor.useARecognizableNameAndGroupRelatedServices') }}
+                {{ t('monitor-editor.use-a-recognizable-name-and-group-related-services') }}
               </p>
               <FieldGroup>
-                <Field :label="t('common.displayName')">
+                <Field :label="t('common.display-name')">
                   <formApi.Field v-slot="{ field }" name="name">
                     <Input
                       :model-value="field.state.value" required maxlength="200"
-                      :placeholder="t('monitorEditor.namePlaceholder')"
+                      :placeholder="t('monitor-editor.name-placeholder')"
                       @update:model-value="field.handleChange(String($event ?? ''))"
                       @blur="field.handleBlur"
                     />
                   </formApi.Field>
                 </Field><Field
-                  :label="t('monitorEditor.monitorType')"
+                  :label="t('monitor-editor.monitor-type')"
                   :description="
-                    editing ? t('monitorEditor.theMonitorTypeIsFixedAfterCreationCreate') : undefined
+                    editing ? t('monitor-editor.the-monitor-type-is-fixed-after-creation-create') : undefined
                   "
                 >
                   <formApi.Field v-slot="{ field }" name="type">
@@ -375,13 +375,13 @@ const charsetOptions = [
                   </formApi.Field>
                 </Field><Field :label="t('common.group')">
                   <formApi.Field v-slot="{ field }" name="group">
-                    <Input :model-value="field.state.value" :placeholder="t('monitorEditor.eGProduction')" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
+                    <Input :model-value="field.state.value" :placeholder="t('monitor-editor.e-g-production')" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                   </formApi.Field>
-                </Field><Field :label="t('monitorEditor.tags')" :description="t('monitorEditor.separateWithCommas')">
+                </Field><Field :label="t('monitor-editor.tags')" :description="t('monitor-editor.separate-with-commas')">
                   <formApi.Field v-slot="{ field }" name="tags">
                     <TagInput ref="tagsInput" allow-duplicates :labels="{ removeValue: value => `${t('common.delete')} ${value}`, editValue: value => `${t('common.edit')} ${value}` }" :model-value="field.state.value" :name="field.name" placeholder="production, api" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
                   </formApi.Field>
-                </Field><Field class="span-full" :label="t('monitorEditor.description')">
+                </Field><Field class="span-full" :label="t('monitor-editor.description')">
                   <formApi.Field v-slot="{ field }" name="description">
                     <InputArea :model-value="field.state.value" rows="2" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                   </formApi.Field>
@@ -389,7 +389,7 @@ const charsetOptions = [
                 <div class="span-full">
                   <formApi.Field v-slot="{ field }" name="enabled">
                     <Switch
-                      :model-value="field.state.value" :label="t('monitorEditor.enableMonitor')" :description="t('monitorEditor.pausingStopsCollectionAndExcludesPausedTimeFrom')"
+                      :model-value="field.state.value" :label="t('monitor-editor.enable-monitor')" :description="t('monitor-editor.pausing-stops-collection-and-excludes-paused-time-from')"
                       @update:model-value="field.handleChange"
                       @focusout="field.handleBlur"
                     />
@@ -407,26 +407,26 @@ const charsetOptions = [
               <TabsList>
                 <TabsTrigger value="target">
                   {{
-                    t('monitorEditor.checkTarget')
+                    t('monitor-editor.check-target')
                   }}
                 </TabsTrigger><TabsTrigger v-if="form.type !== 'heartbeat'" value="schedule">
                   {{
-                    t('monitorEditor.scheduleRetries')
+                    t('monitor-editor.schedule-retries')
                   }}
                 </TabsTrigger><TabsTrigger value="notifications">
                   {{
-                    t('monitorEditor.notifications')
+                    t('monitor-editor.notifications')
                   }}
                 </TabsTrigger>
               </TabsList><TabsContent value="target">
                 <template v-if="form.type === 'http' && form.http">
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.httpRequest') }}</h2>
+                    <h2>{{ t('monitor-editor.http-request') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.allRequestMethodsUseTheSameRoundRetry') }}
+                      {{ t('monitor-editor.all-request-methods-use-the-same-round-retry') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.targetUrl')" class="span-full">
+                      <Field :label="t('monitor-editor.target-url')" class="span-full">
                         <formApi.Field v-slot="{ field }" name="http.url">
                           <Input
                             :model-value="field.state.value" type="url" required
@@ -435,7 +435,7 @@ const charsetOptions = [
                             @blur="field.handleBlur"
                           />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.requestMethod')">
+                      </Field><Field :label="t('monitor-editor.request-method')">
                         <formApi.Field v-slot="{ field }" name="http.method">
                           <Input :model-value="field.state.value" list="http-methods" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field><datalist
@@ -456,14 +456,14 @@ const charsetOptions = [
                             {{ method }}
                           </option>
                         </datalist>
-                      </Field><Field :label="t('monitorEditor.hostOverride')">
+                      </Field><Field :label="t('monitor-editor.host-override')">
                         <formApi.Field v-slot="{ field }" name="http.host">
                           <Input :model-value="field.state.value" placeholder="api.example.com" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
                       </Field>
                       <div class="span-full">
                         <FieldLabel as="div">
-                          {{ t('monitorEditor.queryParameters') }}
+                          {{ t('monitor-editor.query-parameters') }}
                         </FieldLabel><formApi.Field v-slot="{ field }" name="http.query">
                           <KeyValues :model-value="field.state.value!" :secrets="secrets" mt="2" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
                         </formApi.Field>
@@ -471,7 +471,7 @@ const charsetOptions = [
                       <div class="span-full">
                         <FieldLabel as="div">
                           {{
-                            t('monitorEditor.requestHeadersRepeatedNamesSupported')
+                            t('monitor-editor.request-headers-repeated-names-supported')
                           }}
                         </FieldLabel><formApi.Field v-slot="{ field }" name="http.headers">
                           <KeyValues :model-value="field.state.value!" :secrets="secrets" mt="2" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
@@ -480,12 +480,12 @@ const charsetOptions = [
                     </FieldGroup>
                   </FieldSection>
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.requestBody') }}</h2>
+                    <h2>{{ t('monitor-editor.request-body') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.configureFormatCharacterEncodingAndCompressionSeparately') }}
+                      {{ t('monitor-editor.configure-format-character-encoding-and-compression-separately') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.bodyFormat')">
+                      <Field :label="t('monitor-editor.body-format')">
                         <formApi.Field v-slot="{ field }" name="http.body.format">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -504,7 +504,7 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="!['none', 'json'].includes(form.http.body.format)"
-                        :label="t('common.characterEncoding')"
+                        :label="t('common.character-encoding')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.body.charset">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
@@ -520,17 +520,17 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="['json', 'text', 'raw'].includes(form.http.body.format)"
-                        :label="t('monitorEditor.bodySecretReference')"
+                        :label="t('monitor-editor.body-secret-reference')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.body.secretRef">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange">
                             <SelectTrigger @focusout="field.handleBlur">
-                              <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+                              <SelectValue :placeholder="t('secret-select.no-secret-reference')" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="">
-                                  {{ t('secretSelect.noSecretReference') }}
+                                  {{ t('secret-select.no-secret-reference') }}
                                 </SelectItem>
                                 <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
                                   {{ secret.name }}
@@ -541,7 +541,7 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="['text', 'raw'].includes(form.http.body.format)"
-                        :label="t('monitorEditor.contentType')"
+                        :label="t('monitor-editor.content-type')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.body.contentType">
                           <Input :model-value="field.state.value" placeholder="text/plain" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
@@ -551,7 +551,7 @@ const charsetOptions = [
                           ['json', 'text'].includes(form.http.body.format) && !form.http.body.secretRef
                         "
                         class="span-full"
-                        :label="t('monitorEditor.bodyContent')"
+                        :label="t('monitor-editor.body-content')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.body.text">
                           <InputArea
@@ -564,7 +564,7 @@ const charsetOptions = [
                       </Field><Field
                         v-if="form.http.body.format === 'raw' && !form.http.body.secretRef"
                         class="span-full"
-                        :label="t('monitorEditor.rawBytesBase64')"
+                        :label="t('monitor-editor.raw-bytes-base-64')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.body.base64">
                           <InputArea :model-value="field.state.value" spellcheck="false" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
@@ -575,14 +575,14 @@ const charsetOptions = [
                         class="span-full"
                       >
                         <FieldLabel as="div">
-                          {{ t('monitorEditor.formFields') }}
+                          {{ t('monitor-editor.form-fields') }}
                         </FieldLabel><formApi.Field v-slot="{ field }" name="http.body.fields">
                           <KeyValues :model-value="field.state.value!" :secrets="secrets" mt="2" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
                         </formApi.Field>
                       </div>
                       <div v-if="form.http.body.format === 'multipart'" class="span-full">
                         <FieldLabel as="div">
-                          {{ t('monitorEditor.files') }}
+                          {{ t('monitor-editor.files') }}
                         </FieldLabel>
                         <Banner
                           v-for="(file, index) in form.http.body.files" :key="index"
@@ -593,13 +593,13 @@ const charsetOptions = [
                           <div class="flex min-w-0 flex-wrap items-center gap-3">
                             <formApi.Field v-slot="{ field }" :name="`http.body.files[${index}].field`">
                               <Input
-                                :model-value="field.state.value" :aria-label="t('monitorEditor.fieldName')" placeholder="file" class="min-w-32 flex-1"
+                                :model-value="field.state.value" :aria-label="t('monitor-editor.field-name')" placeholder="file" class="min-w-32 flex-1"
                                 @update:model-value="field.handleChange(String($event ?? ''))"
                                 @blur="field.handleBlur"
                               />
                             </formApi.Field><span class="min-w-0 flex-1 [overflow-wrap:anywhere]">{{ file.filename }}</span><Button
                               type="button"
-                              :aria-label="t('monitorEditor.removeFile')"
+                              :aria-label="t('monitor-editor.remove-file')"
                               shape="square"
                               @click="formApi.setFieldValue('http.body.files', files => files?.filter((_, i) => i !== index))"
                             >
@@ -608,31 +608,31 @@ const charsetOptions = [
                           </div>
                         </Banner>
                         <Button size="sm" class="mt-3" @click="fileInput?.click()">
-                          <span class="i-lucide-upload" w="13px" h="13px" aria-hidden="true" />{{ t('monitorEditor.addFiles') }}
+                          <span class="i-lucide-upload" w="13px" h="13px" aria-hidden="true" />{{ t('monitor-editor.add-files') }}
                         </Button>
-                        <input ref="fileInput" type="file" multiple hidden :aria-label="t('monitorEditor.addFiles')" @change="addFile">
+                        <input ref="fileInput" type="file" multiple hidden :aria-label="t('monitor-editor.add-files')" @change="addFile">
                         <FieldDescription mt="2">
                           {{
-                            t('monitorEditor.multipartBoundaryAndContentTypeAreGeneratedAutomatically')
+                            t('monitor-editor.multipart-boundary-and-content-type-are-generated-automatically')
                           }}
                         </FieldDescription>
                       </div>
                     </FieldGroup>
                   </FieldSection>
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.authentication') }}</h2>
+                    <h2>{{ t('monitor-editor.authentication') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.credentialsUseExistingSecretReferences') }}
+                      {{ t('monitor-editor.credentials-use-existing-secret-references') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.authenticationType')">
+                      <Field :label="t('monitor-editor.authentication-type')">
                         <formApi.Field v-slot="{ field }" name="http.auth.type">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="none">
-                                  {{ t('monitorEditor.none') }}
+                                  {{ t('monitor-editor.none') }}
                                 </SelectItem>
                                 <SelectItem value="basic">
                                   Basic
@@ -641,7 +641,7 @@ const charsetOptions = [
                                   Bearer
                                 </SelectItem>
                                 <SelectItem value="header">
-                                  {{ t('monitorEditor.apiKeyHeader') }}
+                                  {{ t('monitor-editor.api-key-header') }}
                                 </SelectItem>
                               </SelectGroup>
                             </SelectContent>
@@ -649,17 +649,17 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="form.http.auth.type !== 'none'"
-                        :label="t('monitorEditor.passwordTokenSecret')"
+                        :label="t('monitor-editor.password-token-secret')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.auth.secretRef">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange">
                             <SelectTrigger @focusout="field.handleBlur">
-                              <SelectValue :placeholder="t('secretSelect.chooseASecret')" />
+                              <SelectValue :placeholder="t('secret-select.choose-a-secret')" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="">
-                                  {{ t('secretSelect.chooseASecret') }}
+                                  {{ t('secret-select.choose-a-secret') }}
                                 </SelectItem>
                                 <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
                                   {{ secret.name }}
@@ -674,17 +674,17 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="form.http.auth.type === 'basic'"
-                        :label="t('monitorEditor.usernameSecretOptional')"
+                        :label="t('monitor-editor.username-secret-optional')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.auth.usernameSecretRef">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange">
                             <SelectTrigger @focusout="field.handleBlur">
-                              <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+                              <SelectValue :placeholder="t('secret-select.no-secret-reference')" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="">
-                                  {{ t('secretSelect.noSecretReference') }}
+                                  {{ t('secret-select.no-secret-reference') }}
                                 </SelectItem>
                                 <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
                                   {{ secret.name }}
@@ -695,14 +695,14 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         v-if="form.http.auth.type === 'header'"
-                        :label="t('monitorEditor.authenticationHeader')"
+                        :label="t('monitor-editor.authentication-header')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.auth.header">
                           <Input :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
                       </Field><Field
                         v-if="form.http.auth.type === 'header'"
-                        :label="t('monitorEditor.valuePrefix')"
+                        :label="t('monitor-editor.value-prefix')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.auth.prefix">
                           <Input :model-value="field.state.value" placeholder="Bearer " @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
@@ -711,37 +711,37 @@ const charsetOptions = [
                     </FieldGroup>
                   </FieldSection>
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.successAssertions') }}</h2>
+                    <h2>{{ t('monitor-editor.success-assertions') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.everyConfiguredAssertionMustPassForASuccessful') }}
+                      {{ t('monitor-editor.every-configured-assertion-must-pass-for-a-successful') }}
                     </p>
                     <FieldGroup>
                       <Field
-                        :label="t('monitorEditor.statusCodes')"
-                        :description="t('monitorEditor.commaSeparatedAcceptedTogetherWithRanges')"
+                        :label="t('monitor-editor.status-codes')"
+                        :description="t('monitor-editor.comma-separated-accepted-together-with-ranges')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.assertions.statusCodes">
                           <Input v-model="statusCodesInput" placeholder="200, 204" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.statusRanges')">
+                      </Field><Field :label="t('monitor-editor.status-ranges')">
                         <formApi.Field v-slot="{ field }" name="http.assertions.statusRanges">
                           <Input v-model="statusRangesInput" placeholder="200-299, 300-399" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.textContainsOnePerLine')">
+                      </Field><Field :label="t('monitor-editor.text-contains-one-per-line')">
                         <formApi.Field v-slot="{ field }" name="http.assertions.textContains">
                           <InputArea v-model="textContainsInput" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.textExcludesOnePerLine')">
+                      </Field><Field :label="t('monitor-editor.text-excludes-one-per-line')">
                         <formApi.Field v-slot="{ field }" name="http.assertions.textNotContains">
                           <InputArea v-model="textNotContainsInput" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.bodyRegexOnePerLine')">
+                      </Field><Field :label="t('monitor-editor.body-regex-one-per-line')">
                         <formApi.Field v-slot="{ field }" name="http.assertions.regex">
                           <InputArea v-model="bodyRegexInput" spellcheck="false" @blur="field.handleBlur" />
                         </formApi.Field>
                       </Field><Field
-                        :label="t('monitorEditor.maximumResponseTimeMs')"
-                        :description="t('monitorEditor.0DisablesThisAssertion')"
+                        :label="t('monitor-editor.maximum-response-time-ms')"
+                        :description="t('monitor-editor.0-disables-this-assertion')"
                       >
                         <formApi.Field v-slot="{ field }" name="http.assertions.maxLatencyMs">
                           <Input
@@ -752,7 +752,7 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         class="span-full"
-                        :label="t('monitorEditor.responseHeaderAssertions')"
+                        :label="t('monitor-editor.response-header-assertions')"
                         :error="headerError"
                         :description="headerHint"
                       >
@@ -761,7 +761,7 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         class="span-full"
-                        :label="t('monitorEditor.jsonFieldAssertionsJsonPointer')"
+                        :label="t('monitor-editor.json-field-assertions-json-pointer')"
                         :error="jsonError"
                         :description="jsonHint"
                       >
@@ -776,7 +776,7 @@ const charsetOptions = [
                       <CollapsibleTrigger as-child>
                         <Button variant="ghost" class="group w-full justify-start">
                           <span class="i-lucide-chevron-right size-4 motion-safe:transition-transform group-data-[state=open]:rotate-90" aria-hidden="true" />
-                          {{ t('monitorEditor.advancedTlsConnectionsTransport') }}
+                          {{ t('monitor-editor.advanced-tls-connections-transport') }}
                         </Button>
                       </CollapsibleTrigger><CollapsibleContent class="pt-4">
                         <h3 mb="4">
@@ -787,7 +787,7 @@ const charsetOptions = [
                         </formApi.Field>
                         <Separator />
                         <h3 mb="4">
-                          {{ t('monitorEditor.networkConnection') }}
+                          {{ t('monitor-editor.network-connection') }}
                         </h3>
                         <formApi.Field v-slot="{ field }" name="http.connection">
                           <ConnectionFields :model-value="field.state.value!" :secrets="secrets" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
@@ -797,12 +797,12 @@ const charsetOptions = [
                           <div class="span-full">
                             <formApi.Field v-slot="{ field }" name="http.redirects.enabled">
                               <Switch
-                                :model-value="field.state.value" :label="t('monitorEditor.followRedirects')" @update:model-value="field.handleChange"
+                                :model-value="field.state.value" :label="t('monitor-editor.follow-redirects')" @update:model-value="field.handleChange"
                                 @focusout="field.handleBlur"
                               />
                             </formApi.Field>
                           </div>
-                          <Field :label="t('monitorEditor.maximumRedirects')">
+                          <Field :label="t('monitor-editor.maximum-redirects')">
                             <formApi.Field v-slot="{ field }" name="http.redirects.maxHops">
                               <Input
                                 :model-value="field.state.value" type="number" min="1"
@@ -811,26 +811,26 @@ const charsetOptions = [
                                 @blur="field.handleBlur"
                               />
                             </formApi.Field>
-                          </Field><Field :label="t('monitorEditor.redirectScope')">
+                          </Field><Field :label="t('monitor-editor.redirect-scope')">
                             <formApi.Field v-slot="{ field }" name="http.redirects.scope">
                               <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>
                                     <SelectItem value="same-origin">
-                                      {{ t('monitorEditor.sameOrigin') }}
+                                      {{ t('monitor-editor.same-origin') }}
                                     </SelectItem>
                                     <SelectItem value="same-host">
-                                      {{ t('monitorEditor.sameHost') }}
+                                      {{ t('monitor-editor.same-host') }}
                                     </SelectItem>
                                     <SelectItem value="any">
-                                      {{ t('monitorEditor.anyTarget') }}
+                                      {{ t('monitor-editor.any-target') }}
                                     </SelectItem>
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>
                             </formApi.Field>
-                          </Field><Field :label="t('monitorEditor.acceptEncoding')">
+                          </Field><Field :label="t('monitor-editor.accept-encoding')">
                             <formApi.Field v-slot="{ field }" name="http.acceptEncoding">
                               <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -846,14 +846,14 @@ const charsetOptions = [
                                 </SelectContent>
                               </Select>
                             </formApi.Field>
-                          </Field><Field :label="t('monitorEditor.responseCharset')">
+                          </Field><Field :label="t('monitor-editor.response-charset')">
                             <formApi.Field v-slot="{ field }" name="http.responseCharset">
                               <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
-                                <SelectTrigger><SelectValue :placeholder="t('monitorEditor.detectFromResponse')" /></SelectTrigger>
+                                <SelectTrigger><SelectValue :placeholder="t('monitor-editor.detect-from-response')" /></SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>
                                     <SelectItem value="">
-                                      {{ t('monitorEditor.detectFromResponse') }}
+                                      {{ t('monitor-editor.detect-from-response') }}
                                     </SelectItem>
                                     <SelectItem v-for="charset in charsetOptions" :key="charset" :value="charset">
                                       {{ charset }}
@@ -862,7 +862,7 @@ const charsetOptions = [
                                 </SelectContent>
                               </Select>
                             </formApi.Field>
-                          </Field><Field :label="t('monitorEditor.decompressedResponseLimitBytes')">
+                          </Field><Field :label="t('monitor-editor.decompressed-response-limit-bytes')">
                             <formApi.Field v-slot="{ field }" name="http.maxResponseBytes">
                               <Input
                                 :model-value="field.state.value" type="number" min="1"
@@ -875,7 +875,7 @@ const charsetOptions = [
                           <div>
                             <formApi.Field v-slot="{ field }" name="http.requestGzip">
                               <Switch
-                                :model-value="field.state.value" :label="t('monitorEditor.gzipRequestBody')" @update:model-value="field.handleChange"
+                                :model-value="field.state.value" :label="t('monitor-editor.gzip-request-body')" @update:model-value="field.handleChange"
                                 @focusout="field.handleBlur"
                               />
                             </formApi.Field>
@@ -886,12 +886,12 @@ const charsetOptions = [
                   </FieldSection>
                 </template><template v-if="form.type === 'tcp' && form.tcp">
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorTypes.tcpConnection') }}</h2>
+                    <h2>{{ t('monitor-types.tcp-connection') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.testAConnectionOrSendAPayloadAnd') }}
+                      {{ t('monitor-editor.test-a-connection-or-send-a-payload-and') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.host')">
+                      <Field :label="t('monitor-editor.host')">
                         <formApi.Field v-slot="{ field }" name="tcp.host">
                           <Input :model-value="field.state.value" required placeholder="db.example.com" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
@@ -905,24 +905,24 @@ const charsetOptions = [
                             @blur="field.handleBlur"
                           />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.sendText')">
+                      </Field><Field :label="t('monitor-editor.send-text')">
                         <formApi.Field v-slot="{ field }" name="tcp.sendText">
                           <InputArea :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.sendBytesBase64')">
+                      </Field><Field :label="t('monitor-editor.send-bytes-base-64')">
                         <formApi.Field v-slot="{ field }" name="tcp.sendBase64">
                           <InputArea :model-value="field.state.value" spellcheck="false" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.payloadSecret')">
+                      </Field><Field :label="t('monitor-editor.payload-secret')">
                         <formApi.Field v-slot="{ field }" name="tcp.sendSecretRef">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange">
                             <SelectTrigger @focusout="field.handleBlur">
-                              <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+                              <SelectValue :placeholder="t('secret-select.no-secret-reference')" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="">
-                                  {{ t('secretSelect.noSecretReference') }}
+                                  {{ t('secret-select.no-secret-reference') }}
                                 </SelectItem>
                                 <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
                                   {{ secret.name }}
@@ -931,7 +931,7 @@ const charsetOptions = [
                             </SelectContent>
                           </Select>
                         </formApi.Field>
-                      </Field><Field :label="t('common.characterEncoding')">
+                      </Field><Field :label="t('common.character-encoding')">
                         <formApi.Field v-slot="{ field }" name="tcp.charset">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -944,15 +944,15 @@ const charsetOptions = [
                             </SelectContent>
                           </Select>
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.responseContains')">
+                      </Field><Field :label="t('monitor-editor.response-contains')">
                         <formApi.Field v-slot="{ field }" name="tcp.receiveContains">
                           <Input :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.responseRegex')">
+                      </Field><Field :label="t('monitor-editor.response-regex')">
                         <formApi.Field v-slot="{ field }" name="tcp.receiveRegex">
                           <Input :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.receiveSizeLimitBytes')">
+                      </Field><Field :label="t('monitor-editor.receive-size-limit-bytes')">
                         <formApi.Field v-slot="{ field }" name="tcp.maxReceiveBytes">
                           <Input
                             :model-value="field.state.value" type="number" min="1"
@@ -969,7 +969,7 @@ const charsetOptions = [
                       <CollapsibleTrigger as-child>
                         <Button variant="ghost" class="group w-full justify-start">
                           <span class="i-lucide-chevron-right size-4 motion-safe:transition-transform group-data-[state=open]:rotate-90" aria-hidden="true" />
-                          {{ t('common.tlsConnectionSettings') }}
+                          {{ t('common.tls-connection-settings') }}
                         </Button>
                       </CollapsibleTrigger><CollapsibleContent class="pt-4">
                         <formApi.Field v-slot="{ field }" name="tcp.tls">
@@ -987,16 +987,16 @@ const charsetOptions = [
                   </FieldSection>
                 </template><template v-if="form.type === 'dns' && form.dns">
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.dnsQuery') }}</h2>
+                    <h2>{{ t('monitor-editor.dns-query') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.validateResponseCodesAndRecordValues') }}
+                      {{ t('monitor-editor.validate-response-codes-and-record-values') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.queryName')">
+                      <Field :label="t('monitor-editor.query-name')">
                         <formApi.Field v-slot="{ field }" name="dns.name">
                           <Input :model-value="field.state.value" required placeholder="example.com" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.recordType')">
+                      </Field><Field :label="t('monitor-editor.record-type')">
                         <formApi.Field v-slot="{ field }" name="dns.recordType">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -1025,13 +1025,13 @@ const charsetOptions = [
                           </Select>
                         </formApi.Field>
                       </Field><Field
-                        :label="t('monitorEditor.dnsServer')"
-                        :description="t('monitorEditor.leaveEmptyForSystemResolverOrEnterHost')"
+                        :label="t('monitor-editor.dns-server')"
+                        :description="t('monitor-editor.leave-empty-for-system-resolver-or-enter-host')"
                       >
                         <formApi.Field v-slot="{ field }" name="dns.server">
                           <Input :model-value="field.state.value" placeholder="1.1.1.1:53" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.protocol')">
+                      </Field><Field :label="t('monitor-editor.protocol')">
                         <formApi.Field v-slot="{ field }" name="dns.protocol">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -1047,7 +1047,7 @@ const charsetOptions = [
                             </SelectContent>
                           </Select>
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.expectedResponseCode')">
+                      </Field><Field :label="t('monitor-editor.expected-response-code')">
                         <formApi.Field v-slot="{ field }" name="dns.expectedRCode">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -1071,23 +1071,23 @@ const charsetOptions = [
                             </SelectContent>
                           </Select>
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.recordMatching')">
+                      </Field><Field :label="t('monitor-editor.record-matching')">
                         <formApi.Field v-slot="{ field }" name="dns.matchMode">
                           <Select :model-value="field.state.value" @update:model-value="field.handleChange" @focusout="field.handleBlur">
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
                                 <SelectItem value="contains">
-                                  {{ t('monitorEditor.containsExpectedRecords') }}
+                                  {{ t('monitor-editor.contains-expected-records') }}
                                 </SelectItem>
                                 <SelectItem value="exact">
-                                  {{ t('monitorEditor.exactSet') }}
+                                  {{ t('monitor-editor.exact-set') }}
                                 </SelectItem>
                               </SelectGroup>
                             </SelectContent>
                           </Select>
                         </formApi.Field>
-                      </Field><Field class="span-full" :label="t('monitorEditor.expectedValuesOnePerLine')">
+                      </Field><Field class="span-full" :label="t('monitor-editor.expected-values-one-per-line')">
                         <formApi.Field v-slot="{ field }" name="dns.expectedValues">
                           <InputArea v-model="dnsExpectedValuesInput" @blur="field.handleBlur" />
                         </formApi.Field>
@@ -1096,12 +1096,12 @@ const charsetOptions = [
                   </FieldSection>
                 </template><template v-if="form.type === 'heartbeat' && form.heartbeat">
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorTypes.heartbeat') }}</h2>
+                    <h2>{{ t('monitor-types.heartbeat') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.servicesReportPeriodicallyMissingAPeriodPlusGrace') }}
+                      {{ t('monitor-editor.services-report-periodically-missing-a-period-plus-grace') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.expectedPeriodSeconds')">
+                      <Field :label="t('monitor-editor.expected-period-seconds')">
                         <formApi.Field v-slot="{ field }" name="heartbeat.periodSeconds">
                           <Input
                             :model-value="field.state.value" type="number" min="30"
@@ -1110,7 +1110,7 @@ const charsetOptions = [
                             @blur="field.handleBlur"
                           />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.gracePeriodSeconds')">
+                      </Field><Field :label="t('monitor-editor.grace-period-seconds')">
                         <formApi.Field v-slot="{ field }" name="heartbeat.graceSeconds">
                           <Input
                             :model-value="field.state.value" type="number" min="0"
@@ -1122,17 +1122,17 @@ const charsetOptions = [
                       </Field>
                     </FieldGroup>
                     <Banner size="sm" variant="secondary" mt="5">
-                      {{ t('monitorEditor.afterSavingGenerateOrRotateTheReportToken') }}
+                      {{ t('monitor-editor.after-saving-generate-or-rotate-the-report-token') }}
                     </Banner>
                   </FieldSection>
                 </template><template v-if="form.type === 'certificate' && form.certificate">
                   <FieldSection class="monitor-section">
-                    <h2>{{ t('monitorEditor.certificateExpiry') }}</h2>
+                    <h2>{{ t('monitor-editor.certificate-expiry') }}</h2>
                     <p un-text="13px subtle">
-                      {{ t('monitorEditor.certificateRiskIsDisplayedSeparatelyAndExcludedFrom') }}
+                      {{ t('monitor-editor.certificate-risk-is-displayed-separately-and-excluded-from') }}
                     </p>
                     <FieldGroup>
-                      <Field :label="t('monitorEditor.tlsHost')">
+                      <Field :label="t('monitor-editor.tls-host')">
                         <formApi.Field v-slot="{ field }" name="certificate.host">
                           <Input :model-value="field.state.value" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
                         </formApi.Field>
@@ -1147,8 +1147,8 @@ const charsetOptions = [
                         </formApi.Field>
                       </Field><Field
                         class="span-full"
-                        :label="t('common.warningThresholdsDays')"
-                        :description="t('monitorEditor.commaSeparatedDefaults301471Days')"
+                        :label="t('common.warning-thresholds-days')"
+                        :description="t('monitor-editor.comma-separated-defaults-301471-days')"
                       >
                         <formApi.Field v-slot="{ field }" name="certificate.warningDays">
                           <Input v-model="warningDaysInput" @blur="field.handleBlur" />
@@ -1161,7 +1161,7 @@ const charsetOptions = [
                       <CollapsibleTrigger as-child>
                         <Button variant="ghost" class="group w-full justify-start">
                           <span class="i-lucide-chevron-right size-4 motion-safe:transition-transform group-data-[state=open]:rotate-90" aria-hidden="true" />
-                          {{ t('common.tlsConnectionSettings') }}
+                          {{ t('common.tls-connection-settings') }}
                         </Button>
                       </CollapsibleTrigger><CollapsibleContent class="pt-4">
                         <formApi.Field v-slot="{ field }" name="certificate.tls">
@@ -1180,17 +1180,17 @@ const charsetOptions = [
                 </template>
               </TabsContent><TabsContent v-if="form.type !== 'heartbeat'" value="schedule">
                 <FieldSection class="monitor-section">
-                  <h2>{{ t('monitorEditor.checkSchedule') }}</h2>
+                  <h2>{{ t('monitor-editor.check-schedule') }}</h2>
                   <p un-text="13px subtle">
-                    {{ t('monitorEditor.checksRunOnAFixedCadenceWithoutOverlap') }}
+                    {{ t('monitor-editor.checks-run-on-a-fixed-cadence-without-overlap') }}
                   </p>
                   <FieldGroup>
                     <Field
-                      :label="t('monitorEditor.checkIntervalSeconds')"
+                      :label="t('monitor-editor.check-interval-seconds')"
                       :description="
                         form.type === 'certificate'
-                          ? t('monitorEditor.certificatesDefaultToDailyChecks86400Seconds')
-                          : t('monitorEditor.minimum30Seconds')
+                          ? t('monitor-editor.certificates-default-to-daily-checks-86400-seconds')
+                          : t('monitor-editor.minimum-30-seconds')
                       "
                     >
                       <formApi.Field v-slot="{ field }" name="intervalSeconds">
@@ -1202,7 +1202,7 @@ const charsetOptions = [
                           @blur="field.handleBlur"
                         />
                       </formApi.Field>
-                    </Field><Field :label="t('monitorEditor.attemptTimeoutSeconds')">
+                    </Field><Field :label="t('monitor-editor.attempt-timeout-seconds')">
                       <formApi.Field v-slot="{ field }" name="timeoutSeconds">
                         <Input
                           :model-value="field.state.value" type="number" min="1"
@@ -1214,13 +1214,13 @@ const charsetOptions = [
                       </formApi.Field>
                     </Field><template v-if="['http', 'tcp', 'dns'].includes(form.type)">
                       <Field
-                        :label="t('monitorEditor.additionalRetries')"
-                        :description="t('monitorEditor.default2ZeroMeansTheFirstAttemptOnly')"
+                        :label="t('monitor-editor.additional-retries')"
+                        :description="t('monitor-editor.default-2-zero-means-the-first-attempt-only')"
                       >
                         <formApi.Field v-slot="{ field }" name="retries">
                           <Input :model-value="field.state.value" type="number" min="0" max="10" @input="field.handleChange(($event.target as HTMLInputElement).valueAsNumber)" @blur="field.handleBlur" />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.retryDelaySeconds')">
+                      </Field><Field :label="t('monitor-editor.retry-delay-seconds')">
                         <formApi.Field v-slot="{ field }" name="retryDelaySeconds">
                           <Input
                             :model-value="field.state.value" type="number" min="0"
@@ -1229,7 +1229,7 @@ const charsetOptions = [
                             @blur="field.handleBlur"
                           />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.consecutiveFailedRounds')">
+                      </Field><Field :label="t('monitor-editor.consecutive-failed-rounds')">
                         <formApi.Field v-slot="{ field }" name="failureThreshold">
                           <Input
                             :model-value="field.state.value" type="number" min="1"
@@ -1238,7 +1238,7 @@ const charsetOptions = [
                             @blur="field.handleBlur"
                           />
                         </formApi.Field>
-                      </Field><Field :label="t('monitorEditor.consecutiveSuccessfulRounds')">
+                      </Field><Field :label="t('monitor-editor.consecutive-successful-rounds')">
                         <formApi.Field v-slot="{ field }" name="recoveryThreshold">
                           <Input
                             :model-value="field.state.value" type="number" min="1"
@@ -1251,46 +1251,46 @@ const charsetOptions = [
                     </template>
                   </FieldGroup>
                   <Banner size="sm" variant="secondary" mt="6">
-                    {{ t('monitorEditor.retryCountIsALimitInsufficientBudgetEnds') }}
+                    {{ t('monitor-editor.retry-count-is-a-limit-insufficient-budget-ends') }}
                   </Banner>
                 </FieldSection>
               </TabsContent><TabsContent value="notifications">
                 <FieldSection class="monitor-section">
-                  <h2>{{ t('monitorEditor.notificationChannels') }}</h2>
+                  <h2>{{ t('monitor-editor.notification-channels') }}</h2>
                   <p un-text="13px subtle">
                     {{
                       t(
-                        'monitorEditor.selectAdministratorConfiguredChannelsConfirmedFailuresCreateDurable',
+                        'monitor-editor.select-administrator-configured-channels-confirmed-failures-create-durable',
                       )
                     }}
                   </p>
                   <formApi.Field v-slot="{ field }" name="notificationChannelIds">
-                    <CheckboxGroup :model-value="field.state.value" orientation="horizontal" :aria-label="t('monitorEditor.notificationChannels')" @update:model-value="field.handleChange" @focusout="field.handleBlur">
-                      <CheckboxItem v-for="channel in channels" :key="channel.id" :value="channel.id" :label="channel.name" :description="!channel.enabled ? t('monitorEditor.disabled') : undefined" />
+                    <CheckboxGroup :model-value="field.state.value" orientation="horizontal" :aria-label="t('monitor-editor.notification-channels')" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+                      <CheckboxItem v-for="channel in channels" :key="channel.id" :value="channel.id" :label="channel.name" :description="!channel.enabled ? t('monitor-editor.disabled') : undefined" />
                     </CheckboxGroup>
                   </formApi.Field>
                   <p v-if="!channels.length" un-text="13px subtle">
-                    {{ t('monitorEditor.noChannelsYetAnAdministratorCanCreateOne') }}
+                    {{ t('monitor-editor.no-channels-yet-an-administrator-can-create-one') }}
                   </p>
                   <Separator />
                   <formApi.Field v-if="form.type === 'certificate' && form.certificate" v-slot="{ field }" name="certificate.notifyRenewal">
                     <Switch
 
-                      :model-value="field.state.value" :label="t('monitorEditor.notifyOnCertificateRenewal')" mb="5"
+                      :model-value="field.state.value" :label="t('monitor-editor.notify-on-certificate-renewal')" mb="5"
                       @update:model-value="field.handleChange"
                       @focusout="field.handleBlur"
                     />
                   </formApi.Field><formApi.Field v-else v-slot="{ field }" name="notifyRecovery">
                     <Switch
 
-                      :model-value="field.state.value" :label="t('monitorEditor.notifyOnRecovery')" mb="5"
+                      :model-value="field.state.value" :label="t('monitor-editor.notify-on-recovery')" mb="5"
                       @update:model-value="field.handleChange"
                       @focusout="field.handleBlur"
                     />
                   </formApi.Field><Field
                     v-if="form.type !== 'certificate'"
-                    :label="t('monitorEditor.repeatedOutageReminderSeconds')"
-                    :description="t('monitorEditor.0DisablesRepeatedRemindersMinimum30SecondsWhen')"
+                    :label="t('monitor-editor.repeated-outage-reminder-seconds')"
+                    :description="t('monitor-editor.0-disables-repeated-reminders-minimum-30-seconds-when')"
                   >
                     <formApi.Field v-slot="{ field }" name="reminderSeconds">
                       <Input :model-value="field.state.value" type="number" min="0" @input="field.handleChange(($event.target as HTMLInputElement).valueAsNumber)" @blur="field.handleBlur" />
@@ -1308,7 +1308,7 @@ const charsetOptions = [
             {{ t('common.cancel') }}
           </RouterLink>
         </Button><Button type="submit" :disabled="saving || !canEdit()" variant="primary">
-          <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ t('common.saveMonitor') }}
+          <span class="i-lucide-save" w="15px" h="15px" aria-hidden="true" />{{ t('common.save-monitor') }}
         </Button>
       </FieldActions>
     </form>

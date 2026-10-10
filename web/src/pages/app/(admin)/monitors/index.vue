@@ -67,14 +67,14 @@ function clearFilters() {
 </script>
 
 <template>
-  <PageHeader :title="t('common.monitors')" :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')" class="mb-6">
+  <PageHeader :title="t('common.monitors')" :description="t('monitors.define-healthy-behavior-and-detect-every-change')" class="mb-6">
     <template #actions>
       <Button :loading="query.isPending.value" @click="query.refetch()">
         <span class="i-lucide-refresh-cw size-4" aria-hidden="true" />{{ t('common.refresh') }}
       </Button>
       <Button v-if="canEdit()" variant="primary" as-child>
         <RouterLink to="/app/monitors/new">
-          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.addMonitor') }}
+          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.add-monitor') }}
         </RouterLink>
       </Button>
     </template>
@@ -83,16 +83,16 @@ function clearFilters() {
     <TableToolbar class="flex-wrap gap-3">
       <InputGroup class="min-w-0 flex-1 basis-64">
         <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-        <InputGroupInput v-model="search" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')" />
+        <InputGroupInput v-model="search" :placeholder="t('monitors.search-name-target-or-tags')" :aria-label="t('monitors.search-monitors')" />
       </InputGroup>
       <div class="flex max-w-full flex-none flex-wrap items-center gap-3">
         <Select v-model="state">
-          <SelectTrigger :aria-label="t('monitors.filterStatus')" class="w-auto!">
+          <SelectTrigger :aria-label="t('monitors.filter-status')" class="w-auto!">
             <SelectValue />
           </SelectTrigger><SelectContent>
             <SelectGroup>
               <SelectItem value="all">
-                {{ t('monitors.allStates') }}
+                {{ t('monitors.all-states') }}
               </SelectItem><SelectItem value="up">
                 {{ t('monitors.up') }}
               </SelectItem><SelectItem value="down">
@@ -106,12 +106,12 @@ function clearFilters() {
           </SelectContent>
         </Select>
         <Select v-model="type">
-          <SelectTrigger :aria-label="t('monitors.filterType')" class="w-auto!">
+          <SelectTrigger :aria-label="t('monitors.filter-type')" class="w-auto!">
             <SelectValue />
           </SelectTrigger><SelectContent>
             <SelectGroup>
               <SelectItem value="all">
-                {{ t('monitors.allTypes') }}
+                {{ t('monitors.all-types') }}
               </SelectItem><SelectItem v-for="item in monitorTypes" :key="item.value" :value="item.value">
                 {{ t(item.label) }}
               </SelectItem>
@@ -119,36 +119,36 @@ function clearFilters() {
           </SelectContent>
         </Select>
         <Button v-if="hasFilters" variant="ghost" size="sm" @click="clearFilters">
-          <span class="i-lucide-x size-3.5" aria-hidden="true" />{{ t('common.clearFilters') }}
+          <span class="i-lucide-x size-3.5" aria-hidden="true" />{{ t('common.clear-filters') }}
         </Button>
       </div>
     </TableToolbar>
     <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-      <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+      <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
     </div>
     <Banner v-else-if="query.error.value" variant="error">
       {{ errorText(query.error.value) }}
       <Button variant="ghost" @click="query.refetch()">
-        {{ t('asyncState.retry') }}
+        {{ t('async-state.retry') }}
       </Button>
     </Banner>
     <template v-else>
-      <Empty v-if="!filtered.length" :title="items.length ? t('monitors.noMatchingMonitors') : t('monitors.startWatchingYourServices')" :description="items.length ? t('monitors.tryChangingYourSearchOrFilters') : t('monitors.addAServiceCheckToSeeStatusHistory')" size="sm" class="rounded-none border-none">
+      <Empty v-if="!filtered.length" :title="items.length ? t('monitors.no-matching-monitors') : t('monitors.start-watching-your-services')" :description="items.length ? t('monitors.try-changing-your-search-or-filters') : t('monitors.add-a-service-check-to-see-status-history')" size="sm" class="rounded-none border-none">
         <template #icon>
           <span class="i-lucide-activity size-8 text-subtle" aria-hidden="true" />
         </template>
         <template #actions>
           <Button v-if="hasFilters" @click="clearFilters">
-            {{ t('common.clearFilters') }}
+            {{ t('common.clear-filters') }}
           </Button>
           <Button v-if="canEdit() && !items.length" variant="primary" as-child>
             <RouterLink to="/app/monitors/new">
-              {{ t('common.addMonitor') }}
+              {{ t('common.add-monitor') }}
             </RouterLink>
           </Button>
         </template>
       </Empty>
-      <TableContainer v-else :scroll-label="t('common.scrollTable')">
+      <TableContainer v-else :scroll-label="t('common.scroll-table')">
         <Table>
           <TableHeader>
             <TableRow>
@@ -157,11 +157,11 @@ function clearFilters() {
               </TableHead><TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
                 {{ t('common.status') }}
               </TableHead><TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
-                {{ t('monitors.intervalRetries') }}
+                {{ t('monitors.interval-retries') }}
               </TableHead><TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
-                {{ t('common.lastCheck') }}
+                {{ t('common.last-check') }}
               </TableHead><TableHead class="w-12">
-                <span class="sr-only">{{ t('monitors.viewDetails') }}</span>
+                <span class="sr-only">{{ t('monitors.view-details') }}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -179,8 +179,8 @@ function clearFilters() {
                     </span>
                     <span class="hidden space-y-2 pt-1 [@container_workspace_(max-width:_700px)]:block">
                       <Badge :variant="monitor.stateDisplay.variant" :data-state="monitor.stateDisplay.state" dot>{{ monitor.stateDisplay.label }}</Badge>
-                      <span class="block text-size-xs text-subtle">{{ t('monitors.intervalRetries') }} · {{ monitor.type === 'heartbeat' ? monitor.heartbeat?.periodSeconds : monitor.intervalSeconds }} s<span v-if="['http', 'tcp', 'dns'].includes(monitor.type)"> / {{ monitor.retries }}</span></span>
-                      <span class="block text-size-xs text-subtle">{{ t('common.lastCheck') }} · {{ formatDate(monitor.lastCheckedAt) }}</span>
+                      <span class="block text-size-xs text-subtle">{{ t('monitors.interval-retries') }} · {{ monitor.type === 'heartbeat' ? monitor.heartbeat?.periodSeconds : monitor.intervalSeconds }} s<span v-if="['http', 'tcp', 'dns'].includes(monitor.type)"> / {{ monitor.retries }}</span></span>
+                      <span class="block text-size-xs text-subtle">{{ t('common.last-check') }} · {{ formatDate(monitor.lastCheckedAt) }}</span>
                     </span>
                   </span>
                 </RouterLink>
@@ -198,7 +198,7 @@ function clearFilters() {
               </TableCell>
               <TableCell class="text-end">
                 <Button variant="ghost" shape="square" size="sm" as-child>
-                  <RouterLink :to="`/app/monitors/${monitor.id}`" :aria-label="t('monitors.viewDetails')">
+                  <RouterLink :to="`/app/monitors/${monitor.id}`" :aria-label="t('monitors.view-details')">
                     <span class="i-lucide-chevron-right size-4" aria-hidden="true" />
                   </RouterLink>
                 </Button>
@@ -208,6 +208,6 @@ function clearFilters() {
         </Table>
       </TableContainer>
     </template>
-    <TablePagination><span role="status" aria-live="polite">{{ t('overview.showingMonitors', { shown: filtered.length, total: items.length }) }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span></TablePagination>
+    <TablePagination><span role="status" aria-live="polite">{{ t('overview.showing-monitors', { shown: filtered.length, total: items.length }) }}</span><span>{{ t('common.refreshes-every-30-seconds') }}</span></TablePagination>
   </LayerCard>
 </template>

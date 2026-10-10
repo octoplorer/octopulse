@@ -17,7 +17,7 @@ import { publishedEntry } from '../../../../lib/pages'
 
 const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: 'navigation.statusPages' } })
+definePage({ meta: { title: 'navigation.status-pages' } })
 
 const query = useQuery({
   ...listPagesQuery(),
@@ -26,33 +26,33 @@ const query = useQuery({
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.statusPages')" :description="t('pages.shareServiceHealthAndUpdatesWithYourOwn')" class="mb-6">
+  <PageHeader :title="t('navigation.status-pages')" :description="t('pages.share-service-health-and-updates-with-your-own')" class="mb-6">
     <template #actions>
       <Button v-if="canEdit()" variant="primary" as-child>
         <RouterLink to="/app/pages/new">
-          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.createStatusPage') }}
+          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.create-status-page') }}
         </RouterLink>
       </Button>
     </template>
   </PageHeader>
-  <Loader v-if="query.isPending.value" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
-    {{ t('asyncState.loadingData') }}
+  <Loader v-if="query.isPending.value" :label="t('async-state.loading-data')" class="flex! w-full justify-center p-15 text-size-xs">
+    {{ t('async-state.loading-data') }}
   </Loader>
   <Banner v-else-if="query.error.value" variant="error">
     {{ errorText(query.error.value) }}
     <Button variant="ghost" @click="query.refetch()">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
   <template v-else>
-    <Empty v-if="!query.data.value?.items.length" :title="t('pages.buildYourFirstStatusPage')" :description="t('pages.chooseBrandingPublicServicesAndGroupsPublishOn')">
+    <Empty v-if="!query.data.value?.items.length" :title="t('pages.build-your-first-status-page')" :description="t('pages.choose-branding-public-services-and-groups-publish-on')">
       <template #icon>
         <span class="i-lucide-globe size-8 text-subtle" aria-hidden="true" />
       </template>
       <template #actions>
         <Button v-if="canEdit()" variant="primary" as-child>
           <RouterLink to="/app/pages/new">
-            {{ t('common.createStatusPage') }}
+            {{ t('common.create-status-page') }}
           </RouterLink>
         </Button>
       </template>

@@ -55,7 +55,7 @@ const formApi = useForm({
       formApi.setFieldValue('value', '')
       open.value = false
       await query.refresh()
-      notify(t('secrets.secretSaved'))
+      notify(t('secrets.secret-saved'))
     }
     catch (e) {
       error.value = errorText(e)
@@ -82,7 +82,7 @@ async function remove() {
     await deleteSecret.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     await query.refresh()
-    notify(t('secrets.secretDeleted'))
+    notify(t('secrets.secret-deleted'))
   }
   catch (e) {
     notify(errorText(e), 'error')
@@ -102,47 +102,47 @@ function cancel() {
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('navigation.secrets')" :description="t('secrets.manageSensitiveValuesUsedByRequestsTlsProxies')">
+  <PageHeader class="mb-6" :title="t('navigation.secrets')" :description="t('secrets.manage-sensitive-values-used-by-requests-tls-proxies')">
     <template #actions>
       <Button v-if="isAdmin()" variant="primary" @click="edit()">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addSecret') }}
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.add-secret') }}
       </Button>
     </template>
   </PageHeader>
   <p class="mb-5 flex items-start gap-2 text-size-sm text-subtle">
     <span class="i-lucide-key-round mt-0.5 size-4 shrink-0" aria-hidden="true" />
-    {{ t('secrets.savedValuesCannotBeReadBackReplaceA') }}
+    {{ t('secrets.saved-values-cannot-be-read-back-replace-a') }}
   </p>
   <LayerCard>
     <LayerCardPrimary class="p-0!">
       <TableToolbar>
         <InputGroup class="w-full max-w-sm">
           <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-          <InputGroupInput v-model="search" type="search" :placeholder="t('secrets.searchSecretsPlaceholder')" :aria-label="t('secrets.searchSecrets')" />
+          <InputGroupInput v-model="search" type="search" :placeholder="t('secrets.search-secrets-placeholder')" :aria-label="t('secrets.search-secrets')" />
         </InputGroup>
         <Button v-if="search" variant="ghost" size="sm" @click="search = ''">
-          {{ t('common.clearFilters') }}
+          {{ t('common.clear-filters') }}
         </Button>
       </TableToolbar>
       <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
       </div>
       <Banner v-else-if="query.error.value" variant="error">
         {{ errorText(query.error.value) }}
         <Button variant="ghost" @click="query.refetch()">
-          {{ t('asyncState.retry') }}
+          {{ t('async-state.retry') }}
         </Button>
       </Banner>
       <template v-else>
-        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search ? t('secrets.noMatchingSecrets') : t('secrets.noSecretsYet')" :description="search ? t('monitors.tryChangingYourSearchOrFilters') : t('secrets.storeTokensPemCertificatesProxyPasswordsAndShoutrrr')">
+        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search ? t('secrets.no-matching-secrets') : t('secrets.no-secrets-yet')" :description="search ? t('monitors.try-changing-your-search-or-filters') : t('secrets.store-tokens-pem-certificates-proxy-passwords-and-shoutrrr')">
           <Button v-if="search" @click="search = ''">
-            {{ t('common.clearFilters') }}
+            {{ t('common.clear-filters') }}
           </Button>
           <Button v-else-if="isAdmin()" variant="primary" @click="edit()">
-            {{ t('common.addSecret') }}
+            {{ t('common.add-secret') }}
           </Button>
         </Empty>
-        <TableContainer v-else :scroll-label="t('common.scrollTable')">
+        <TableContainer v-else :scroll-label="t('common.scroll-table')">
           <Table>
             <TableHeader>
               <TableRow>
@@ -159,7 +159,7 @@ function cancel() {
               <TableRow v-for="secret in items" :key="secret.id">
                 <TableCell>
                   <span class="block font-medium [overflow-wrap:anywhere]">{{ secret.name }}</span>
-                  <ClipboardText :text="secret.id" inline :copy-label="t('monitorDetails.copy')" :copied-label="t('monitorDetails.copied')" class="mt-1 max-w-64 text-subtle" />
+                  <ClipboardText :text="secret.id" inline :copy-label="t('monitor-details.copy')" :copied-label="t('monitor-details.copied')" class="mt-1 max-w-64 text-subtle" />
                   <span class="mt-1 block text-size-xs text-subtle [@container_workspace_(width_>_700px)]:hidden">{{ t('secrets.updated') }} · {{ formatDate(secret.updatedAt) }}</span>
                 </TableCell>
                 <TableCell class="text-subtle [@container_workspace_(max-width:_700px)]:hidden">
@@ -180,11 +180,11 @@ function cancel() {
         </TableContainer>
       </template>
       <TablePagination v-if="query.data.value">
-        {{ t('secrets.showingSecrets', { shown: items.length, total: query.data.value.items.length }) }}
+        {{ t('secrets.showing-secrets', { shown: items.length, total: query.data.value.items.length }) }}
       </TablePagination>
     </LayerCardPrimary>
   </LayerCard>
-  <Dialog v-model:open="open" :close-label="t('common.close')" size="lg" :title="form.id ? t('secrets.updateSecret') : t('common.addSecret')">
+  <Dialog v-model:open="open" :close-label="t('common.close')" size="lg" :title="form.id ? t('secrets.update-secret') : t('common.add-secret')">
     <form id="secret-form" @submit.prevent="formApi.handleSubmit()">
       <formApi.Field v-slot="{ field }" name="name">
         <Field :label="t('common.name')">
@@ -192,7 +192,7 @@ function cancel() {
         </Field>
       </formApi.Field>
       <formApi.Field v-slot="{ field }" name="value">
-        <Field :label="form.id ? t('secrets.replacementSecretValue') : t('secrets.secretValue')" mt="5">
+        <Field :label="form.id ? t('secrets.replacement-secret-value') : t('secrets.secret-value')" mt="5">
           <InputArea :name="field.name" :model-value="field.state.value" required :min-rows="6" autocomplete="off" spellcheck="false" @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
         </Field>
       </formApi.Field>
@@ -204,10 +204,10 @@ function cancel() {
       <Button :disabled="saving" @click="cancel">
         {{ t('common.cancel') }}
       </Button><Button type="submit" form="secret-form" :loading="saving" variant="primary">
-        {{ t('secrets.saveSecret') }}
+        {{ t('secrets.save-secret') }}
       </Button>
     </template>
-  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('secrets.deleteSecret')" :description="t('secrets.removeMonitorAndChannelReferencesBeforeDeletingA')">
+  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('secrets.delete-secret')" :description="t('secrets.remove-monitor-and-channel-references-before-deleting-a')">
     <p>{{ deleteTarget?.name }}</p>
     <template #footer>
       <Button :disabled="deleting" @click="deleteOpen = false">

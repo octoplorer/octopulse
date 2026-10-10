@@ -8,7 +8,7 @@ export function parseJSON<T>(value: string, label: string): T {
     return JSON.parse(value) as T
   }
   catch {
-    throw new Error(t('errors.invalidJSON', { label }))
+    throw new Error(t('errors.invalid-json', { label }))
   }
 }
 export function splitValues(value: string): string[] {

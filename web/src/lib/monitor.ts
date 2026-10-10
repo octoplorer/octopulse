@@ -13,11 +13,11 @@ import { t } from '../composables/i18n'
 import { clone, defaults } from './form'
 
 export const monitorTypes = [
-  { value: 'http', label: 'monitorTypes.httpHttps' },
-  { value: 'tcp', label: 'monitorTypes.tcpConnection' },
-  { value: 'dns', label: 'monitorTypes.dnsResolution' },
-  { value: 'heartbeat', label: 'monitorTypes.heartbeat' },
-  { value: 'certificate', label: 'monitorTypes.certificateExpiry' },
+  { value: 'http', label: 'monitor-types.http-https' },
+  { value: 'tcp', label: 'monitor-types.tcp-connection' },
+  { value: 'dns', label: 'monitor-types.dns-resolution' },
+  { value: 'heartbeat', label: 'monitor-types.heartbeat' },
+  { value: 'certificate', label: 'monitor-types.certificate-expiry' },
 ]
 function emptyTLS(): TLSConfigForm {
   return {
@@ -171,6 +171,6 @@ export function targetOf(m: Monitor) {
     || (m.tcp ? `${m.tcp.host}:${m.tcp.port}` : '')
     || m.dns?.name
     || (m.certificate ? `${m.certificate.host}:${m.certificate.port}` : '')
-    || t('monitorTypes.heartbeat')
+    || t('monitor-types.heartbeat')
   )
 }

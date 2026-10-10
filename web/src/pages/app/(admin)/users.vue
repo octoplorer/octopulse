@@ -78,7 +78,7 @@ const formApi = useForm({
       formApi.setFieldValue('password', '')
       open.value = false
       await query.refresh()
-      notify(t('users.memberSaved'))
+      notify(t('users.member-saved'))
     }
     catch (e) {
       error.value = errorText(e)
@@ -105,7 +105,7 @@ async function remove() {
     await deleteUser.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
     await query.refresh()
-    notify(t('users.memberDeleted'))
+    notify(t('users.member-deleted'))
   }
   catch (e) {
     notify(errorText(e), 'error')
@@ -125,10 +125,10 @@ function cancel() {
 </script>
 
 <template>
-  <PageHeader class="mb-6" :title="t('navigation.members')" :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')">
+  <PageHeader class="mb-6" :title="t('navigation.members')" :description="t('users.collaborate-with-administrator-operator-and-viewer-roles')">
     <template #actions>
       <Button v-if="isAdmin()" variant="primary" @click="edit()">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMember') }}
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.add-member') }}
       </Button>
     </template>
   </PageHeader>
@@ -137,31 +137,31 @@ function cancel() {
       <TableToolbar>
         <InputGroup class="w-full max-w-sm">
           <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
-          <InputGroupInput v-model="search" type="search" :placeholder="t('users.searchMembersPlaceholder')" :aria-label="t('users.searchMembers')" />
+          <InputGroupInput v-model="search" type="search" :placeholder="t('users.search-members-placeholder')" :aria-label="t('users.search-members')" />
         </InputGroup>
         <Button v-if="search" variant="ghost" size="sm" @click="search = ''">
-          {{ t('common.clearFilters') }}
+          {{ t('common.clear-filters') }}
         </Button>
       </TableToolbar>
       <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
       </div>
       <Banner v-else-if="query.error.value" variant="error">
         {{ errorText(query.error.value) }}
         <Button variant="ghost" @click="query.refetch()">
-          {{ t('asyncState.retry') }}
+          {{ t('async-state.retry') }}
         </Button>
       </Banner>
       <template v-else>
-        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search ? t('users.noMatchingMembers') : t('users.noMembers')">
+        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search ? t('users.no-matching-members') : t('users.no-members')">
           <Button v-if="search" @click="search = ''">
-            {{ t('common.clearFilters') }}
+            {{ t('common.clear-filters') }}
           </Button>
           <Button v-else-if="isAdmin()" variant="primary" @click="edit()">
-            {{ t('common.addMember') }}
+            {{ t('common.add-member') }}
           </Button>
         </Empty>
-        <TableContainer v-else :scroll-label="t('common.scrollTable')">
+        <TableContainer v-else :scroll-label="t('common.scroll-table')">
           <Table>
             <TableHeader>
               <TableRow>
@@ -219,14 +219,14 @@ function cancel() {
         </TableContainer>
       </template>
       <TablePagination v-if="query.data.value">
-        {{ t('users.showingMembers', { shown: items.length, total: query.data.value.items.length }) }}
+        {{ t('users.showing-members', { shown: items.length, total: query.data.value.items.length }) }}
       </TablePagination>
     </LayerCardPrimary>
   </LayerCard>
   <p class="mt-4 max-w-prose text-size-sm text-subtle">
-    {{ t('users.operatorsManageMonitorsMaintenanceAndPublicPagesAdministrators') }}
+    {{ t('users.operators-manage-monitors-maintenance-and-public-pages-administrators') }}
   </p>
-  <Dialog v-model:open="open" :close-label="t('common.close')" size="lg" :title="form.id ? t('users.editMember') : t('common.addMember')">
+  <Dialog v-model:open="open" :close-label="t('common.close')" size="lg" :title="form.id ? t('users.edit-member') : t('common.add-member')">
     <form id="user-form" @submit.prevent="formApi.handleSubmit()">
       <FieldGroup>
         <formApi.Field v-slot="{ field }" name="username">
@@ -235,7 +235,7 @@ function cancel() {
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="name">
-          <Field :label="t('common.displayName')">
+          <Field :label="t('common.display-name')">
             <Input :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
@@ -274,18 +274,18 @@ function cancel() {
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="timezone">
-          <Field :label="t('common.displayTimeZone')" class="span-full">
+          <Field :label="t('common.display-time-zone')" class="span-full">
             <Input :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="password">
-          <Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :description="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
+          <Field :label="form.id ? t('users.new-password-leave-empty-to-keep') : t('common.password')" :description="t('common.at-least-12-characters-up-to-72-bytes')" class="span-full">
             <Input :name="field.name" :model-value="field.state.value" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="enabled">
           <div class="span-full">
-            <Switch :model-value="field.state.value" :label="t('users.enableAccount')" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+            <Switch :model-value="field.state.value" :label="t('users.enable-account')" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
           </div>
         </formApi.Field>
       </FieldGroup>
@@ -297,10 +297,10 @@ function cancel() {
       <Button :disabled="saving" @click="cancel">
         {{ t('common.cancel') }}
       </Button><Button type="submit" form="user-form" :loading="saving" variant="primary">
-        {{ t('users.saveMember') }}
+        {{ t('users.save-member') }}
       </Button>
     </template>
-  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('users.deleteMember')">
+  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('users.delete-member')">
     <p>{{ deleteTarget?.name || deleteTarget?.username }}</p>
     <template #footer>
       <Button :disabled="deleting" @click="deleteOpen = false">

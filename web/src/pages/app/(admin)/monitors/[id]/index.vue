@@ -39,7 +39,7 @@ import { monitorStateDisplay } from '../../../../../lib/monitor-state'
 
 const { t, n, d } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: 'navigation.monitorDetails', contentWidth: 'detail' } })
+definePage({ meta: { title: 'navigation.monitor-details', contentWidth: 'detail' } })
 
 const checkMonitor = useMutation(checkMonitorMutation())
 const updateMonitor = useMutation(updateMonitorMutation())
@@ -114,14 +114,14 @@ const latencyOption = computed(() => {
   const timeZone = timezone.value
   return timeSeriesOption({
     points: latencyPoints.value,
-    name: t('monitorDetails.responseLatency'),
+    name: t('monitor-details.response-latency'),
     unit: 'ms',
     valueFormatter: value => n(value, { maximumFractionDigits: 2 }),
     timeFormatter: at => d(at, { key: 'short', timeZone }),
   })
 })
 const latencyLabel = computed(() => t('chart.summary', {
-  name: t('monitorDetails.responseLatency'),
+  name: t('monitor-details.response-latency'),
   count: latencyPoints.value.length,
   value: latencyPoints.value.length ? n(latencyPoints.value.at(-1)!.value, { maximumFractionDigits: 2 }) : '—',
   unit: 'ms',
@@ -136,14 +136,14 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
   try {
     if (action === 'check') {
       await checkMonitor.mutateAsync({ path: { id: monitor.value.id } })
-      notify(t('monitorDetails.checkRequestAcceptedResultsUpdateWhenTheRound'))
+      notify(t('monitor-details.check-request-accepted-results-update-when-the-round'))
     }
     else if (action === 'toggle') {
       await updateMonitor.mutateAsync({
         path: { id: monitor.value.id },
         body: { ...monitor.value, enabled: !monitor.value.enabled },
       })
-      notify(t('monitorDetails.monitorUpdated'))
+      notify(t('monitor-details.monitor-updated'))
     }
     else if (action === 'rotate') {
       const data = await rotateHeartbeat.mutateAsync({ path: { id: monitor.value.id } })
@@ -152,11 +152,11 @@ async function act(action: 'check' | 'toggle' | 'rotate' | 'delete') {
         data.url || `/api/heartbeat/${monitor.value.id}/${data.token}`,
         location.origin,
       ).href
-      notify(t('monitorDetails.saveThisTokenItIsShownOnlyOnce'))
+      notify(t('monitor-details.save-this-token-it-is-shown-only-once'))
     }
     else {
       await deleteMonitor.mutateAsync({ path: { id: monitor.value.id } })
-      notify(t('monitorDetails.monitorDeleted'))
+      notify(t('monitor-details.monitor-deleted'))
       router.push('/app/monitors')
       return
     }
@@ -178,12 +178,12 @@ function viewRound(round: Round) {
 
 <template>
   <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-    <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+    <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
   </div>
   <Banner v-else-if="query.error.value" variant="error">
     {{ errorText(query.error.value) }}
     <Button variant="ghost" @click="query.refetch()">
-      {{ t('asyncState.retry') }}
+      {{ t('async-state.retry') }}
     </Button>
   </Banner>
   <template v-else>
@@ -192,19 +192,19 @@ function viewRound(round: Round) {
         <template #actions>
           <Button variant="ghost" as-child>
             <RouterLink to="/app/monitors">
-              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-left" />{{ t('monitorDetails.allMonitors') }}
+              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-left" />{{ t('monitor-details.all-monitors') }}
             </RouterLink>
           </Button><template v-if="canEdit()">
             <Button :disabled="busy" @click="act('toggle')">
               <span v-if="monitor.enabled" w="14px" h="14px" aria-hidden="true" class="i-lucide-pause" /><span v-else w="14px" h="14px" aria-hidden="true" class="i-lucide-play" />{{
-                monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
+                monitor.enabled ? t('monitor-details.pause') : t('monitor-details.enable')
               }}
             </Button><Button as-child>
               <RouterLink :to="`/app/monitors/${monitor.id}/edit`">
                 <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />{{ t('common.edit') }}
               </RouterLink>
             </Button><Button v-if="monitor.type !== 'heartbeat'" :disabled="busy || !monitor.enabled" variant="primary" @click="act('check')">
-              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('monitorDetails.checkNow') }}
+              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('monitor-details.check-now') }}
             </Button>
           </template>
         </template>
@@ -213,7 +213,7 @@ function viewRound(round: Round) {
         <LayerCard>
           <LayerCardPrimary class="stat-card">
             <div class="stat-label">
-              {{ t('monitorDetails.currentState') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
+              {{ t('monitor-details.current-state') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
             </div>
             <div mt="5" mb="4">
               <Badge :variant="currentState.variant" :data-state="currentState.state" dot>
@@ -230,8 +230,8 @@ function viewRound(round: Round) {
             <div class="stat-label">
               {{
                 monitor.certificate
-                  ? t('common.certificateExpires')
-                  : t('monitorDetails.durationUptime')
+                  ? t('common.certificate-expires')
+                  : t('monitor-details.duration-uptime')
               }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-circle-check" />
             </div>
             <div :style="monitor.certificate ? { fontSize: '16px' } : undefined" class="stat-value">
@@ -244,10 +244,10 @@ function viewRound(round: Round) {
             <p class="stat-meta">
               <template v-if="monitor.certificate">
                 {{
-                  t('common.certificateRiskIsExcludedFromUptime')
+                  t('common.certificate-risk-is-excluded-from-uptime')
                 }}
               </template><template v-else>
-                {{ t('monitorDetails.effectiveDuration') }}
+                {{ t('monitor-details.effective-duration') }}
                 {{ duration(availability?.effectiveMs) }}
               </template>
             </p>
@@ -258,8 +258,8 @@ function viewRound(round: Round) {
             <div class="stat-label">
               {{
                 monitor.certificate
-                  ? t('monitorDetails.daysRemaining')
-                  : t('monitorDetails.observationCoverage')
+                  ? t('monitor-details.days-remaining')
+                  : t('monitor-details.observation-coverage')
               }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />
             </div>
             <div class="stat-value">
@@ -274,12 +274,12 @@ function viewRound(round: Round) {
             <p class="stat-meta">
               {{
                 monitor.certificate
-                  ? t('monitorDetails.warningThresholdsSummary', {
+                  ? t('monitor-details.warning-thresholds-summary', {
                     thresholds: (monitor.certificate.warningDays || [])
                       .map((days) => n(days))
                       .join(', '),
                   })
-                  : t('monitorDetails.missingDataNeverCountsAsUp')
+                  : t('monitor-details.missing-data-never-counts-as-up')
               }}
             </p>
           </LayerCardPrimary>
@@ -287,7 +287,7 @@ function viewRound(round: Round) {
         <LayerCard>
           <LayerCardPrimary class="stat-card">
             <div class="stat-label">
-              {{ t('monitorDetails.latestLatency') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
+              {{ t('monitor-details.latest-latency') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
             </div>
             <div class="stat-value">
               {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
@@ -301,8 +301,8 @@ function viewRound(round: Round) {
               s
               {{
                 monitor.type === 'heartbeat'
-                  ? t('monitorDetails.expectedPeriod')
-                  : t('monitorDetails.checkInterval')
+                  ? t('monitor-details.expected-period')
+                  : t('monitor-details.check-interval')
               }}
             </p>
           </LayerCardPrimary>
@@ -312,40 +312,40 @@ function viewRound(round: Round) {
         <LayerCardPrimary>
           <div flex="~ wrap items-center justify-between gap-4">
             <div>
-              <h2>{{ t('monitorDetails.heartbeatReporting') }}</h2>
+              <h2>{{ t('monitor-details.heartbeat-reporting') }}</h2>
               <p mt="2" class="muted" un-text="13px subtle">
-                {{ t('monitorDetails.tokensCannotBeReadBackRotationInvalidatesThe') }}
+                {{ t('monitor-details.tokens-cannot-be-read-back-rotation-invalidates-the') }}
               </p>
             </div>
             <Button v-if="canEdit()" :disabled="busy" @click="act('rotate')">
-              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-key-round" />{{ t('monitorDetails.generateRotateToken') }}
+              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-key-round" />{{ t('monitor-details.generate-rotate-token') }}
             </Button>
           </div>
           <Banner v-if="monitor.heartbeat?.lastReceivedAt" mt="4" variant="secondary">
-            {{ t('monitorDetails.lastReport') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
-            {{ monitor.heartbeat.lastSuccess ? t('monitorDetails.up') : t('monitorDetails.down') }}
+            {{ t('monitor-details.last-report') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
+            {{ monitor.heartbeat.lastSuccess ? t('monitor-details.up') : t('monitor-details.down') }}
             <p v-if="monitor.heartbeat.description" mt="2">
               {{ monitor.heartbeat.description }}
             </p>
           </Banner>
           <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid line" bg="tint" rounded="8px" un-text="12px" mt="15px">
-            <ClipboardText :text="heartbeatUrl" :copy-label="t('monitorDetails.copy')" :copied-label="t('monitorDetails.copied')" class="max-w-full" />
+            <ClipboardText :text="heartbeatUrl" :copy-label="t('monitor-details.copy')" :copied-label="t('monitor-details.copied')" class="max-w-full" />
             <p mt="3" class="muted" un-text="13px subtle">
-              {{ t('monitorDetails.postReportsStatusUpOrStatusDownWith') }}
+              {{ t('monitor-details.post-reports-status-up-or-status-down-with') }}
             </p>
           </div>
         </LayerCardPrimary>
       </LayerCard>
       <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
-        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check shrink-0" /><span class="min-w-0 [overflow-wrap:anywhere]">{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
+        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check shrink-0" /><span class="min-w-0 [overflow-wrap:anywhere]">{{ t('common.certificate-expires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
-            t('monitorDetails.remainingDays', {
+            t('monitor-details.remaining-days', {
               days: monitor.certificate.expiresAt
                 ? n(monitor.certificate.daysRemaining, 'decimal')
                 : '—',
             })
           }}
-          · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span>
+          · {{ t('common.certificate-risk-is-excluded-from-uptime') }}</span>
       </div>
       <div class="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 [@container_workspace_(max-width:_960px)]:grid-cols-1">
         <LayerCard>
@@ -353,20 +353,20 @@ function viewRound(round: Round) {
             <TabsList variant="line">
               <TabsTrigger variant="line" value="history">
                 {{
-                  t('monitorDetails.historyTrends')
+                  t('monitor-details.history-trends')
                 }}
               </TabsTrigger><TabsTrigger variant="line" value="configuration">
                 {{
-                  t('monitorDetails.configuration')
+                  t('monitor-details.configuration')
                 }}
               </TabsTrigger>
             </TabsList><TabsContent value="history">
               <LayerCardPrimary>
                 <div flex="~ wrap justify-between items-center gap-3" mb="4">
-                  <h3>{{ t('monitorDetails.responseLatency') }}</h3>
+                  <h3>{{ t('monitor-details.response-latency') }}</h3>
                   <div class="historical-period" flex="~ items-center" gap="9px" un-text="12px subtle">
                     <Select v-model="period">
-                      <SelectTrigger w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
+                      <SelectTrigger w="auto!" :aria-label="t('monitor-details.statistics-window')">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -393,45 +393,45 @@ function viewRound(round: Round) {
                   :loading="history.isPending.value"
                 />
                 <div v-else h="240px" flex="~ items-center justify-center" un-text="subtle" role="status">
-                  {{ t('chart.noObservations') }}
+                  {{ t('chart.no-observations') }}
                 </div>
                 <FieldDescription as="p" mt="2">
-                  {{ t('monitorDetails.sourceActualCheckRoundsMissingObservationsAreNot') }}
+                  {{ t('monitor-details.source-actual-check-rounds-missing-observations-are-not') }}
                 </FieldDescription>
               </LayerCardPrimary>
               <div v-if="history.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
-                <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+                <Loader :label="t('async-state.loading-data')" />{{ t('async-state.loading-data') }}
               </div>
               <Banner v-else-if="history.error.value" variant="error">
                 {{ errorText(history.error.value) }}
                 <Button variant="ghost" @click="refreshHistory()">
-                  {{ t('asyncState.retry') }}
+                  {{ t('async-state.retry') }}
                 </Button>
               </Banner>
               <template v-else>
-                <Empty v-if="!history.data.value?.rounds.length" size="sm" class="rounded-none border-none" :title="t('monitorDetails.noCheckRecordsYet')" :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')" />
+                <Empty v-if="!history.data.value?.rounds.length" size="sm" class="rounded-none border-none" :title="t('monitor-details.no-check-records-yet')" :description="t('monitor-details.rounds-and-diagnostics-appear-after-the-first-check')" />
                 <TableContainer
                   v-else
-                  :scroll-label="t('common.scrollTable')"
+                  :scroll-label="t('common.scroll-table')"
                   max-h="400px"
                   overscroll="contain"
                   tabindex="0"
                   role="region"
-                  :aria-label="t('monitorDetails.historyTrends')"
+                  :aria-label="t('monitor-details.history-trends')"
                 >
                   <Table>
                     <TableHeader sticky top="0" z="1">
                       <TableRow>
-                        <TableHead>{{ t('monitorDetails.checkedAt') }}</TableHead>
-                        <TableHead>{{ t('monitorDetails.result') }}</TableHead>
+                        <TableHead>{{ t('monitor-details.checked-at') }}</TableHead>
+                        <TableHead>{{ t('monitor-details.result') }}</TableHead>
                         <TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
-                          {{ t('monitorDetails.attempts') }}
+                          {{ t('monitor-details.attempts') }}
                         </TableHead>
                         <TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
-                          {{ t('monitorDetails.duration') }}
+                          {{ t('monitor-details.duration') }}
                         </TableHead>
                         <TableHead class="w-24 [@container_workspace_(max-width:_700px)]:w-12">
-                          <span class="sr-only">{{ t('monitorDetails.diagnostics') }}</span>
+                          <span class="sr-only">{{ t('monitor-details.diagnostics') }}</span>
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -439,7 +439,7 @@ function viewRound(round: Round) {
                       <TableRow v-for="round in rounds" :key="round.id">
                         <TableCell class="muted" un-text="13px subtle">
                           {{ formatDate(round.startedAt) }}
-                          <span class="mt-1 hidden text-size-xs [@container_workspace_(max-width:_700px)]:block">{{ t('monitorDetails.attempts') }} · {{ n(round.attempts?.length || 0) }}<br>{{ t('monitorDetails.duration') }} · {{ duration(round.latencyMs) }}</span>
+                          <span class="mt-1 hidden text-size-xs [@container_workspace_(max-width:_700px)]:block">{{ t('monitor-details.attempts') }} · {{ n(round.attempts?.length || 0) }}<br>{{ t('monitor-details.duration') }} · {{ duration(round.latencyMs) }}</span>
                         </TableCell>
                         <TableCell>
                           <Badge :variant="round.stateDisplay.variant" :data-state="round.stateDisplay.state" dot>
@@ -453,8 +453,8 @@ function viewRound(round: Round) {
                           {{ duration(round.latencyMs) }}
                         </TableCell>
                         <TableCell class="text-end">
-                          <Button variant="ghost" size="sm" :aria-label="t('monitorDetails.diagnostics')" @click="viewRound(round)">
-                            <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('monitorDetails.diagnostics') }}</span>
+                          <Button variant="ghost" size="sm" :aria-label="t('monitor-details.diagnostics')" @click="viewRound(round)">
+                            <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('monitor-details.diagnostics') }}</span>
                             <span class="i-lucide-chevron-right hidden size-4 [@container_workspace_(max-width:_700px)]:block" aria-hidden="true" />
                           </Button>
                         </TableCell>
@@ -474,13 +474,13 @@ function viewRound(round: Round) {
           <LayerCard>
             <LayerCardSecondary>
               <h2 class="text-size-lg font-semibold text-default">
-                {{ t('monitorDetails.monitorInformation') }}
+                {{ t('monitor-details.monitor-information') }}
               </h2>
             </LayerCardSecondary>
             <LayerCardPrimary>
               <dl class="definition-list tabular-nums [&_div]:grid [&_div]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] [&_div]:gap-3 [&_div]:text-size-xs [&_dt]:text-subtle [&_dt]:[overflow-wrap:anywhere] [&_dd]:m-0 [&_dd]:text-end [&_dd]:[overflow-wrap:anywhere]" grid="~" gap="16px">
                 <div>
-                  <dt>{{ t('monitorDetails.type') }}</dt>
+                  <dt>{{ t('monitor-details.type') }}</dt>
                   <dd>{{ monitor.type.toUpperCase() }}</dd>
                 </div>
                 <div>
@@ -488,28 +488,28 @@ function viewRound(round: Round) {
                   <dd>{{ monitor.group || '—' }}</dd>
                 </div>
                 <div v-if="monitor.type !== 'heartbeat'">
-                  <dt>{{ t('monitorDetails.checkInterval2') }}</dt>
+                  <dt>{{ t('monitor-details.check-interval-2') }}</dt>
                   <dd>{{ monitor.intervalSeconds }} s</dd>
                 </div>
                 <div v-if="monitor.type !== 'heartbeat'">
-                  <dt>{{ t('monitorDetails.attemptTimeout') }}</dt>
+                  <dt>{{ t('monitor-details.attempt-timeout') }}</dt>
                   <dd>{{ monitor.timeoutSeconds }} s</dd>
                 </div>
                 <div v-if="['http', 'tcp', 'dns'].includes(monitor.type)">
-                  <dt>{{ t('monitorDetails.additionalRetryLimit') }}</dt>
+                  <dt>{{ t('monitor-details.additional-retry-limit') }}</dt>
                   <dd>{{ monitor.retries }}</dd>
                 </div>
                 <div v-if="['http', 'tcp', 'dns'].includes(monitor.type)">
-                  <dt>{{ t('monitorDetails.failureRecoveryThreshold') }}</dt>
+                  <dt>{{ t('monitor-details.failure-recovery-threshold') }}</dt>
                   <dd>{{ monitor.failureThreshold }} / {{ monitor.recoveryThreshold }}</dd>
                 </div>
                 <template v-if="monitor.heartbeat">
                   <div>
-                    <dt>{{ t('monitorDetails.expectedPeriod2') }}</dt>
+                    <dt>{{ t('monitor-details.expected-period-2') }}</dt>
                     <dd>{{ monitor.heartbeat.periodSeconds }} s</dd>
                   </div>
                   <div>
-                    <dt>{{ t('monitorDetails.gracePeriod') }}</dt>
+                    <dt>{{ t('monitor-details.grace-period') }}</dt>
                     <dd>{{ monitor.heartbeat.graceSeconds }} s</dd>
                   </div>
                 </template>
@@ -529,23 +529,23 @@ function viewRound(round: Round) {
             </LayerCardPrimary>
           </LayerCard>
           <Banner mt="5" variant="secondary">
-            {{ t('monitorDetails.uptimeUsesConfirmedStateDurationUnknownPausedAnd') }}
+            {{ t('monitor-details.uptime-uses-confirmed-state-duration-unknown-paused-and') }}
           </Banner>
           <Button v-if="canEdit()" mt="5" variant="destructive" @click="confirmDelete = true">
-            <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />{{ t('common.deleteMonitor') }}
+            <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />{{ t('common.delete-monitor') }}
           </Button>
         </aside>
       </div>
     </template>
-  </template><Dialog v-model:open="deleteDialogOpen" :close-label="t('common.close')" :title="t('common.deleteMonitor')" :description="t('monitorDetails.thisDeletesTheMonitorConfigurationConfirmItIs')">
+  </template><Dialog v-model:open="deleteDialogOpen" :close-label="t('common.close')" :title="t('common.delete-monitor')" :description="t('monitor-details.this-deletes-the-monitor-configuration-confirm-it-is')">
     <template #footer>
       <Button :disabled="busy" @click="confirmDelete = false">
         {{ t('common.cancel') }}
       </Button><Button :loading="busy" variant="destructive" @click="act('delete')">
-        {{ t('monitorDetails.delete') }}
+        {{ t('monitor-details.delete') }}
       </Button>
     </template>
-  </Dialog><Dialog v-model:open="diagnosticsOpen" :close-label="t('common.close')" :title="t('monitorDetails.roundDiagnostics')" wide>
+  </Dialog><Dialog v-model:open="diagnosticsOpen" :close-label="t('common.close')" :title="t('monitor-details.round-diagnostics')" wide>
     <template v-if="selectedRound">
       <p mb="4" class="muted" un-text="13px subtle">
         {{ formatDate(selectedRound.startedAt) }} · {{ duration(selectedRound.latencyMs) }}
@@ -553,7 +553,7 @@ function viewRound(round: Round) {
       <LayerCard v-for="attempt in attempts" :key="attempt.number" mb="4">
         <LayerCardPrimary>
           <div flex="~ wrap items-center justify-between gap-3">
-            <h3>{{ t('monitorDetails.attemptNumber', { number: n(attempt.number) }) }}</h3>
+            <h3>{{ t('monitor-details.attempt-number', { number: n(attempt.number) }) }}</h3>
             <Badge :variant="attempt.stateDisplay.variant" :data-state="attempt.stateDisplay.state" dot>
               {{ attempt.stateDisplay.label }}
             </Badge>

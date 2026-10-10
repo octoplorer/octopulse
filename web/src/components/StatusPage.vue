@@ -23,16 +23,16 @@ const props = defineProps<{
 }>()
 const { t, n, d, locale } = useI18n({ useScope: 'global' })
 const stateLabels: Record<string, string> = {
-  operational: 'publicState.operational',
-  normal: 'publicState.normal',
-  up: 'publicState.up',
-  partial: 'publicState.partial',
-  partial_outage: 'publicState.partial_outage',
-  outage: 'publicState.outage',
-  full_outage: 'publicState.full_outage',
-  maintenance: 'publicState.maintenance',
-  unknown: 'publicState.unknown',
-  insufficient_data: 'publicState.insufficient_data',
+  operational: 'public-state.operational',
+  normal: 'public-state.normal',
+  up: 'public-state.up',
+  partial: 'public-state.partial',
+  partial_outage: 'public-state.partial-outage',
+  outage: 'public-state.outage',
+  full_outage: 'public-state.full-outage',
+  maintenance: 'public-state.maintenance',
+  unknown: 'public-state.unknown',
+  insufficient_data: 'public-state.insufficient-data',
 }
 const heading = computed(() =>
   stateLabels[props.page.state] ? t(stateLabels[props.page.state]!) : props.page.state,
@@ -97,10 +97,10 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
       color: props.page.config.brandColor || 'var(--color-brand)',
       valueFormatter: availabilityPercent,
       dayFormatter: at => `${utcDay(at)} UTC`,
-      noDataLabel: t('statusPage.noEffectiveObservations'),
-      coverageLabel: t('statusPage.coverage'),
+      noDataLabel: t('status-page.no-effective-observations'),
+      coverageLabel: t('status-page.coverage'),
     }),
-    label: t('statusPage.dailyChartSummary', {
+    label: t('status-page.daily-chart-summary', {
       name: monitor.name,
       days: points.length,
       observed: points.filter(point => point.uptime != null).length,
@@ -139,7 +139,7 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
             {{ link.label }}<span ml="1" class="i-lucide-arrow-up-right" w="11px" h="11px" aria-hidden="true" />
           </Link><Button
             v-if="!preview"
-            :aria-label="`${t('common.switchLanguage')} (${locale === 'zh-CN' ? 'EN' : '中'})`"
+            :aria-label="`${t('common.switch-language')} (${locale === 'zh-CN' ? 'EN' : '中'})`"
             @click="locale = locale === 'zh-CN' ? 'en' : 'zh-CN'"
           >
             <template #icon>
@@ -152,7 +152,7 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
         </nav>
       </header>
       <Banner v-if="stale" role="status" mb="5">
-        {{ t('statusPage.statusDataCouldNotBeRefreshedTheLast') }}
+        {{ t('status-page.status-data-could-not-be-refreshed-the-last') }}
       </Banner>
       <p v-if="page.config.description" class="status-page-description leading-relaxed [overflow-wrap:anywhere]" un-text="13px subtle" max-w="600px" mb="25px">
         {{ page.config.description }}
@@ -172,8 +172,8 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
             {{ heading }}
           </h1>
           <p class="tabular-nums [overflow-wrap:anywhere]" un-text="12px subtle" mt="6px">
-            {{ t('statusPage.lastUpdated') }} {{ formatDate(page.updatedAt)
-            }}{{ preview ? ` · ${t('statusPage.draftPreview')}` : '' }}
+            {{ t('status-page.last-updated') }} {{ formatDate(page.updatedAt)
+            }}{{ preview ? ` · ${t('status-page.draft-preview')}` : '' }}
           </p>
         </div>
       </div>
@@ -216,7 +216,7 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
               </div>
               <template v-if="monitor.certificate">
                 <div class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap" un-text="12px subtle" mt="9px">
-                  <span>{{ t('statusPage.timeRemaining') }}
+                  <span>{{ t('status-page.time-remaining') }}
                     {{
                       monitor.certificate.expiresAt
                         ? n(monitor.certificate.daysRemaining, {
@@ -225,14 +225,14 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
                         })
                         : '—'
                     }}
-                    {{ t('common.days') }}</span><span>{{ t('statusPage.expires') }}
+                    {{ t('common.days') }}</span><span>{{ t('status-page.expires') }}
                     {{ formatDate(monitor.certificate.expiresAt) }}</span>
                 </div>
               </template><template v-else>
                 <template v-if="showMetric(group.id, monitor.id, 'showUptime')">
                   <div flex="~ items-center justify-between wrap gap-2" un-text="11px subtle">
-                    <span>{{ t('statusPage.dailyAvailability') }} · {{ t('statusPage.last90Days') }} (UTC)</span>
-                    <span flex="~ items-center gap-1"><span size="2" rounded="full" bg="fill" border="1px solid line" />{{ t('statusPage.noEffectiveObservations') }}</span>
+                    <span>{{ t('status-page.daily-availability') }} · {{ t('status-page.last-90-days') }} (UTC)</span>
+                    <span flex="~ items-center gap-1"><span size="2" rounded="full" bg="fill" border="1px solid line" />{{ t('status-page.no-effective-observations') }}</span>
                   </div>
                   <Chart
                     v-if="dailyCharts.get(`${group.id}:${monitor.id}`)?.hasData"
@@ -241,32 +241,32 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
                     :aria-label="dailyCharts.get(`${group.id}:${monitor.id}`)!.label"
                   />
                   <p v-else un-text="11px subtle" my="3">
-                    {{ t('chart.noObservations') }}
+                    {{ t('chart.no-observations') }}
                   </p>
                   <div class="tabular-nums [@media(max-width:700px)]:gap-8px" flex="~ items-center justify-between wrap gap-2" un-text="12px subtle" mt="9px">
-                    <span>{{ t('statusPage.last24Hours') }} · {{ t('common.uptime') }}
-                      <strong>{{ availabilityPercent(monitor.availability?.uptime) }}</strong><span ml="3">{{ t('statusPage.coverage') }}
-                        {{ availabilityPercent(monitor.availability?.coverage) }}</span></span><span>{{ t('statusPage.effectiveDuration') }}
+                    <span>{{ t('status-page.last-24-hours') }} · {{ t('common.uptime') }}
+                      <strong>{{ availabilityPercent(monitor.availability?.uptime) }}</strong><span ml="3">{{ t('status-page.coverage') }}
+                        {{ availabilityPercent(monitor.availability?.coverage) }}</span></span><span>{{ t('status-page.effective-duration') }}
                       {{ duration(monitor.availability?.effectiveMs) }}</span>
                   </div>
                 </template>
                 <p v-if="showMetric(group.id, monitor.id, 'showLatency')" class="tabular-nums" un-text="12px subtle" mt="9px">
-                  {{ t('statusPage.recentLatency') }} {{ latencyText(monitor) }}
+                  {{ t('status-page.recent-latency') }} {{ latencyText(monitor) }}
                 </p>
               </template>
             </article>
             <p v-if="!group.monitors.length" p="5" un-text="13px subtle">
-              {{ t('statusPage.noServicesInThisGroup') }}
+              {{ t('status-page.no-services-in-this-group') }}
             </p>
           </LayerCard>
         </section>
         <p v-if="!page.groups.length" py="6" un-text="13px subtle">
-          {{ t('statusPage.noServicesHaveBeenPublishedYet') }}
+          {{ t('status-page.no-services-have-been-published-yet') }}
         </p>
       </template>
       <section v-if="incidents.length">
         <h2 class="public-incidents-title" un-text="15px" mt="30px" mb="14px">
-          {{ incidentId ? t('statusPage.incidentUpdates') : t('statusPage.incidentAnnouncements') }}
+          {{ incidentId ? t('status-page.incident-updates') : t('status-page.incident-announcements') }}
         </h2>
         <LayerCard
           v-for="incident in incidents"
@@ -314,19 +314,19 @@ const dailyCharts = computed(() => new Map(props.page.groups.flatMap(group => gr
       </section>
       <Empty v-if="incidentId && !incidents.length" size="sm">
         <EmptyTitle as="h1">
-          {{ t('statusPage.incidentUnavailable') }}
+          {{ t('status-page.incident-unavailable') }}
         </EmptyTitle>
-        <EmptyDescription>{{ t('statusPage.incidentUnavailableDescription') }}</EmptyDescription>
+        <EmptyDescription>{{ t('status-page.incident-unavailable-description') }}</EmptyDescription>
       </Empty>
       <Button v-if="incidentId" as-child>
         <RouterLink :to="base || '/'" mt="5">
           {{
-            t('statusPage.backToStatusPage')
+            t('status-page.back-to-status-page')
           }}
         </RouterLink>
       </Button>
       <footer class="public-footer [@media(max-width:700px)]:gap-15px" flex="~ items-center justify-between" border="t-1px t-solid t-line" mt="34px" pt="20px" un-text="12px subtle">
-        <span flex="~ items-center gap-1.5"><span class="i-lucide-activity" w="13px" h="13px" aria-hidden="true" />{{ t('publicPage.poweredBy') }}</span>
+        <span flex="~ items-center gap-1.5"><span class="i-lucide-activity" w="13px" h="13px" aria-hidden="true" />{{ t('public-page.powered-by') }}</span>
       </footer>
     </div>
   </component>

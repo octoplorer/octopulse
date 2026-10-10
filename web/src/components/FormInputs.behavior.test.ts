@@ -103,7 +103,7 @@ describe('form input adapters', () => {
   it('associates the proxy secret trigger with its field label', async () => {
     const wrapper = render(ConnectionFields, { secrets, modelValue: emptyHTTP().connection })
     await nextTick()
-    const label = wrapper.findAll('label').find(label => label.text() === i18n.global.t('connectionFields.proxyPasswordSecret'))!
+    const label = wrapper.findAll('label').find(label => label.text() === i18n.global.t('connection-fields.proxy-password-secret'))!
     const trigger = wrapper.find('[data-part=trigger]')
     expect(wrapper.find('select').attributes('id')).toBe(label.attributes('for'))
     expect(trigger.attributes('aria-labelledby')?.split(' ')).toContain(label.attributes('id'))
@@ -112,7 +112,7 @@ describe('form input adapters', () => {
   it('names key-value controls independently of their placeholders', () => {
     const wrapper = render(KeyValues, { secrets, nameLabel: 'Header name', modelValue: [{ name: '', value: '' }] })
     expect(wrapper.find('input').attributes('aria-label')).toBe('Header name')
-    expect(wrapper.find('[data-part=trigger]').attributes('aria-label')).toBe(i18n.global.t('keyValues.secretReference'))
+    expect(wrapper.find('[data-part=trigger]').attributes('aria-label')).toBe(i18n.global.t('key-values.secret-reference'))
   })
 
   it('edits TLS switches and server names while preserving the other TLS settings', async () => {

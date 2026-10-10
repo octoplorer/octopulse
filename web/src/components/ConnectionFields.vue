@@ -19,19 +19,19 @@ function update<K extends keyof ConnectionConfigForm>(name: K, value: Connection
 
 <template>
   <FieldGroup>
-    <Field :label="t('connectionFields.proxyUrl')" description="HTTP(S), SOCKS5 / SOCKS5H">
+    <Field :label="t('connection-fields.proxy-url')" description="HTTP(S), SOCKS5 / SOCKS5H">
       <Input :model-value="model.proxyUrl" placeholder="socks5://127.0.0.1:1080" @update:model-value="update('proxyUrl', String($event ?? ''))" />
-    </Field><Field :label="t('connectionFields.proxyUsername')">
+    </Field><Field :label="t('connection-fields.proxy-username')">
       <Input :model-value="model.proxyUsername" autocomplete="off" @update:model-value="update('proxyUsername', String($event ?? ''))" />
-    </Field><Field :label="t('connectionFields.proxyPasswordSecret')">
+    </Field><Field :label="t('connection-fields.proxy-password-secret')">
       <Select :model-value="model.proxyPasswordSecretRef" @update:model-value="update('proxyPasswordSecretRef', $event)">
         <SelectTrigger>
-          <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+          <SelectValue :placeholder="t('secret-select.no-secret-reference')" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             <SelectItem value="">
-              {{ t('secretSelect.noSecretReference') }}
+              {{ t('secret-select.no-secret-reference') }}
             </SelectItem>
             <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
               {{ secret.name }}
@@ -40,13 +40,13 @@ function update<K extends keyof ConnectionConfigForm>(name: K, value: Connection
         </SelectContent>
       </Select>
     </Field><Field
-      :label="t('connectionFields.customDnsServer')"
-      :description="t('connectionFields.hostPortResolutionWithAProxyFollowsThe')"
+      :label="t('connection-fields.custom-dns-server')"
+      :description="t('connection-fields.host-port-resolution-with-a-proxy-follows-the')"
     >
       <Input :model-value="model.dnsServer" placeholder="1.1.1.1:53" @update:model-value="update('dnsServer', String($event ?? ''))" />
     </Field><Field
-      :label="t('connectionFields.fixedConnectionIp')"
-      :description="t('connectionFields.directConnectionsOnlyHostSniStayIntactCannot')"
+      :label="t('connection-fields.fixed-connection-ip')"
+      :description="t('connection-fields.direct-connections-only-host-sni-stay-intact-cannot')"
     >
       <Input :model-value="model.fixedIp" placeholder="192.0.2.1" @update:model-value="update('fixedIp', String($event ?? ''))" />
     </Field>

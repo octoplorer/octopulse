@@ -23,12 +23,12 @@ defineExpose({ focusEditor })
 
 <template>
   <div ref="workspaceElement" class="page-editor-workspace">
-    <div class="editor-view-switch mb-5 flex w-fit gap-1 rounded-lg bg-recessed p-1" role="group" :aria-label="t('pageEditor.editorViews')">
+    <div class="editor-view-switch mb-5 flex w-fit gap-1 rounded-lg bg-recessed p-1" role="group" :aria-label="t('page-editor.editor-views')">
       <Button :variant="activePane === 'edit' ? 'secondary' : 'ghost'" :aria-pressed="activePane === 'edit'" :aria-controls="`${id}-edit`" @click="activePane = 'edit'">
         <span class="i-lucide-pencil size-4" aria-hidden="true" />{{ t('common.edit') }}
       </Button>
       <Button :variant="activePane === 'preview' ? 'secondary' : 'ghost'" :aria-pressed="activePane === 'preview'" :aria-controls="`${id}-preview`" @click="activePane = 'preview'">
-        <span class="i-lucide-eye size-4" aria-hidden="true" />{{ t('pageEditor.preview') }}
+        <span class="i-lucide-eye size-4" aria-hidden="true" />{{ t('page-editor.preview') }}
       </Button>
     </div>
     <div class="editor-workspace grid min-w-0 items-start gap-6">
@@ -38,7 +38,7 @@ defineExpose({ focusEditor })
       <aside
         v-show="activePane === 'preview'" :id="`${id}-preview`" ref="previewPane" class="preview-pane min-w-0"
         :style="{ '--preview-top': `${previewTop}px`, '--preview-viewport-height': `${viewportHeight}px` }"
-        :aria-label="t('pageEditor.liveDraftPreview')" tabindex="0"
+        :aria-label="t('page-editor.live-draft-preview')" tabindex="0"
       >
         <slot name="preview" />
       </aside>

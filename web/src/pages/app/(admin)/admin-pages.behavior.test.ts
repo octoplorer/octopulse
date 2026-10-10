@@ -70,10 +70,10 @@ const t = i18n.global.t
 describe('migrated administration pages', () => {
   it('clears a cancelled secret draft and prevents duplicate delete requests while allowing retry after failure', async () => {
     await render(Secrets)
-    await click(t('common.addSecret'))
+    await click(t('common.add-secret'))
     await input('#secret-form textarea[name=value]', 'unsaved-value')
     await click(t('common.cancel'), document.querySelector('[role=dialog][data-state=open]')!)
-    await click(t('common.addSecret'))
+    await click(t('common.add-secret'))
     expect(document.querySelector<HTMLTextAreaElement>('#secret-form textarea')?.value).toBe('')
     await click(t('common.cancel'), document.querySelector('[role=dialog][data-state=open]')!)
     await click(t('common.delete'))
@@ -96,7 +96,7 @@ describe('migrated administration pages', () => {
 
   it('submits maintenance scope from checkbox groups and converts the preserved wall-clock inputs in the selected timezone', async () => {
     await render(Maintenance)
-    await click(t('common.scheduleMaintenance'))
+    await click(t('common.schedule-maintenance'))
     const form = document.querySelector<HTMLFormElement>('#maintenance-form')!
     await input('#maintenance-form input:not([type])', 'Database upgrade')
     const dates = form.querySelectorAll<HTMLInputElement>('input[type=datetime-local]')
@@ -107,7 +107,7 @@ describe('migrated administration pages', () => {
     form.querySelector<HTMLInputElement>('input[type=checkbox][value=monitor-1]')!.click()
     form.querySelector<HTMLInputElement>('input[type=checkbox][value=page-1]')!.click()
     await nextTick()
-    await click(t('maintenance.saveSchedule'))
+    await click(t('maintenance.save-schedule'))
     expect(api.createMaintenance).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ name: 'Database upgrade', monitorIds: ['monitor-1'], pageIds: ['page-1'], timezone: 'Asia/Shanghai', startsAt: Date.UTC(2026, 9, 12, 2), endsAt: Date.UTC(2026, 9, 12, 3, 30) }) }))
     expect(document.querySelector('[role=dialog][data-state=open]')).toBeNull()
   })

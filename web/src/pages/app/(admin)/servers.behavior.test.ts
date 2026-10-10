@@ -34,7 +34,7 @@ async function render() {
   return wrapper
 }
 async function retry(wrapper: ReturnType<typeof mount>) {
-  const button = wrapper.findAll('button').find(button => button.text() === i18n.global.t('asyncState.retry'))
+  const button = wrapper.findAll('button').find(button => button.text() === i18n.global.t('async-state.retry'))
   expect(button).toBeDefined()
   await button!.trigger('click')
   await flushPromises()
@@ -45,12 +45,12 @@ describe('beszel connection state', () => {
     const disabled: SystemsResponse = { items: [], source: '', stale: true, syncedAt: 0, version: '', error: 'Beszel integration is disabled' }
     api.listBeszelSystems.mockResolvedValue({ data: disabled })
     const wrapper = await render()
-    expect(wrapper.text()).toContain(i18n.global.t('servers.configureConnection'))
+    expect(wrapper.text()).toContain(i18n.global.t('servers.configure-connection'))
     expect(wrapper.find('[role=alert]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain(disabled.error)
-    expect(wrapper.text()).not.toContain(i18n.global.t('servers.dataIsStale'))
-    expect(wrapper.text()).not.toContain(i18n.global.t('servers.lastSync'))
-    expect(wrapper.text()).not.toContain(i18n.global.t('asyncState.retry'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('servers.data-is-stale'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('servers.last-sync'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('async-state.retry'))
     expect(wrapper.text()).not.toContain(i18n.global.t('common.refresh'))
   })
 
@@ -58,12 +58,12 @@ describe('beszel connection state', () => {
     api.listBeszelSystems.mockResolvedValueOnce({ data: { ...connected, items: [], stale: true, error: 'Beszel Hub is unavailable' } }).mockResolvedValue({ data: connected })
     const wrapper = await render()
     expect(wrapper.get('[role=alert]').text()).toContain('Beszel Hub is unavailable')
-    expect(wrapper.text()).toContain(i18n.global.t('servers.dataIsStale'))
-    expect(wrapper.text()).not.toContain(i18n.global.t('servers.configureConnection'))
+    expect(wrapper.text()).toContain(i18n.global.t('servers.data-is-stale'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('servers.configure-connection'))
     await retry(wrapper)
     expect(wrapper.find('[role=alert]').exists()).toBe(false)
     expect(wrapper.text()).toContain(server.name)
-    expect(wrapper.text()).not.toContain(i18n.global.t('servers.dataIsStale'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('servers.data-is-stale'))
   })
 
   it('lets retry recover an unexpected request failure', async () => {

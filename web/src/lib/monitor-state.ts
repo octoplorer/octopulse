@@ -11,12 +11,12 @@ const labels: Record<string, string> = {
   healthy: 'states.healthy',
   expiring: 'states.expiring',
   expired: 'states.expired',
-  check_failed: 'states.check_failed',
+  check_failed: 'states.check-failed',
   normal: 'states.normal',
   operational: 'states.operational',
-  partial_outage: 'states.partial_outage',
-  full_outage: 'states.full_outage',
-  insufficient_data: 'states.insufficient_data',
+  partial_outage: 'states.partial-outage',
+  full_outage: 'states.full-outage',
+  insufficient_data: 'states.insufficient-data',
 }
 
 const variants: Record<string, StateVariant> = {

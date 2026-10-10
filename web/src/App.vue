@@ -10,7 +10,7 @@ import { dark } from './composables/preferences'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 useHead({
-  title: () => `Octopulse · ${t('app.serviceMonitoring')}`,
+  title: () => `Octopulse · ${t('app.service-monitoring')}`,
   htmlAttrs: {
     'lang': locale,
     'data-mode': () => dark.value ? 'dark' : 'light',
@@ -36,5 +36,5 @@ watch(
 
 <template>
   <RouterView />
-  <Toasty :close-label="t('app.closeNotification')" />
+  <Toasty :close-label="t('app.close-notification')" />
 </template>
