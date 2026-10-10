@@ -1,5 +1,11 @@
+<script setup lang="ts">
+import { stickyCellClasses } from './sticky'
+
+const props = defineProps<{ sticky?: 'left' | 'right' }>()
+</script>
+
 <template>
-  <td class="align-middle [@media(max-width:700px)]:px-15px [@media(max-width:700px)]:py-13px" p="y-14px x-20px" border="b-1 solid line">
+  <td class="relative p-3 text-start text-size-sm align-middle" :class="props.sticky ? stickyCellClasses[props.sticky] : ''">
     <slot />
   </td>
 </template>

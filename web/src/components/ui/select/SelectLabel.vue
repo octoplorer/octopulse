@@ -8,16 +8,7 @@ const forwarded = useForwardProps(props)
 </script>
 
 <template>
-  <ArkSelect.ItemGroupLabel v-bind="forwarded" class="select-label">
+  <ArkSelect.ItemGroupLabel v-bind="forwarded" class="px-3.5 py-1.5 text-size-sm font-semibold text-subtle">
     <slot />
   </ArkSelect.ItemGroupLabel>
 </template>
-
-<style scoped>
-.select-label {
-  padding: 6px 14px;
-  color: var(--text-color-subtle);
-  font-size: 14px;
-  font-weight: 600;
-}
-</style>

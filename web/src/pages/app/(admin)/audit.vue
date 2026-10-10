@@ -3,14 +3,18 @@ import { useQuery } from '@pinia/colada'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { listAuditQuery } from '../../../client/@pinia/colada.gen'
-import AsyncState from '../../../components/AsyncState.vue'
-import EmptyState from '../../../components/EmptyState.vue'
-import PageHeader from '../../../components/PageHeader.vue'
 import { Badge } from '../../../components/ui/badge'
+import { Banner } from '../../../components/ui/banner'
+import { PageHeader } from '../../../components/ui/blocks/page-header'
 import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
+import { ClipboardText } from '../../../components/ui/clipboard-text'
+import { Empty } from '../../../components/ui/empty'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../../components/ui/input-group'
+import { LayerCard, LayerCardPrimary } from '../../../components/ui/layer-card'
+import { Loader } from '../../../components/ui/loader'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, TableToolbar } from '../../../components/ui/table'
 import { formatDate } from '../../../composables/preferences'
+import { errorText } from '../../../lib/errors'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -34,50 +38,79 @@ const items = computed(
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.auditLog')" :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')">
-    <Button @click="query.refetch()">
-      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
-    </Button>
+  <PageHeader class="mb-6" :title="t('navigation.auditLog')" :description="t('audit.traceConfigurationChangesAndTheirActorsWithoutRecording')">
+    <template #actions>
+      <Button :loading="query.isLoading.value" @click="query.refetch()">
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+      </Button>
+    </template>
   </PageHeader>
-  <Card as="section">
-    <TableToolbar>
-      <div class="search-box relative [@media(max-width:700px)]:basis-full [@media(max-width:700px)]:max-w-none [@container_workspace_(max-width:_700px)]:basis-full [@container_workspace_(max-width:_700px)]:max-w-none" flex="~ items-center 1" gap="8px" un-text="subtle" max-w="340px" min-w="180px" border="1 solid line" rounded="8px" pl="10px" bg="base" shadow="control">
-        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-search" /><input v-model="search" w="full" min-w="0" border="0!" bg="transparent!" shadow="none!" p="y-7px! r-10px! l-0!" :placeholder="t('audit.searchActorActionOrResource')" :aria-label="t('audit.searchAuditLog')">
+  <LayerCard>
+    <LayerCardPrimary class="p-0!">
+      <TableToolbar>
+        <InputGroup class="w-full max-w-sm">
+          <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+          <InputGroupInput v-model="search" type="search" :placeholder="t('audit.searchActorActionOrResource')" :aria-label="t('audit.searchAuditLog')" />
+        </InputGroup>
+        <span class="muted" un-text="13px subtle">{{
+          t('counts.records', { count: items.length }, items.length)
+        }}</span>
+      </TableToolbar>
+      <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
       </div>
-      <span class="muted" un-text="13px subtle">{{
-        t('counts.records', { count: items.length }, items.length)
-      }}</span>
-    </TableToolbar>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState v-if="!items.length" :title="t('audit.noMatchingRecords')" />
-      <TableContainer v-else>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t('audit.time') }}</TableHead>
-              <TableHead>{{ t('audit.actor') }}</TableHead>
-              <TableHead>{{ t('audit.action') }}</TableHead>
-              <TableHead>{{ t('audit.resource') }}</TableHead>
-              <TableHead>{{ t('audit.resourceId') }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="entry in items" :key="entry.id">
-              <TableCell class="muted" un-text="13px subtle">
-                {{ formatDate(entry.createdAt) }}
-              </TableCell>
-              <TableCell>{{ entry.username }}</TableCell>
-              <TableCell>
-                <Badge>{{ entry.action }}</Badge>
-              </TableCell>
-              <TableCell>{{ entry.resourceType }}</TableCell>
-              <TableCell>
-                <code class="muted" un-text="13px subtle">{{ entry.resourceId }}</code>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </AsyncState>
-  </Card>
+      <Banner v-else-if="query.error.value" variant="error">
+        {{ errorText(query.error.value) }}
+        <Button variant="ghost" @click="query.refetch()">
+          {{ t('asyncState.retry') }}
+        </Button>
+      </Banner>
+      <template v-else>
+        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search.trim() ? t('audit.noMatchingRecords') : t('audit.noRecords')" :description="search.trim() ? t('monitors.tryChangingYourSearchOrFilters') : undefined">
+          <template #actions>
+            <Button v-if="search.trim()" @click="search = ''">
+              {{ t('common.clearFilters') }}
+            </Button>
+          </template>
+        </Empty>
+        <TableContainer v-else :scroll-label="t('common.scrollTable')">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{{ t('audit.actor') }}</TableHead>
+                <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ t('audit.action') }}
+                </TableHead>
+                <TableHead>{{ t('audit.resource') }}</TableHead>
+                <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ t('audit.time') }}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="entry in items" :key="entry.id">
+                <TableCell>
+                  <span class="block font-medium [overflow-wrap:anywhere]">{{ entry.username }}</span>
+                  <span class="mt-1 block text-size-xs text-subtle [@container_workspace_(width_>_700px)]:hidden">{{ formatDate(entry.createdAt) }}</span>
+                  <Badge class="mt-2 [@container_workspace_(width_>_700px)]:hidden">
+                    {{ entry.action }}
+                  </Badge>
+                </TableCell>
+                <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                  <Badge>{{ entry.action }}</Badge>
+                </TableCell>
+                <TableCell>
+                  <span class="block [overflow-wrap:anywhere]">{{ entry.resourceType }}</span>
+                  <ClipboardText v-if="entry.resourceId" :text="entry.resourceId" inline :copy-label="t('monitorDetails.copy')" :copied-label="t('monitorDetails.copied')" class="mt-1 max-w-64 text-subtle" />
+                </TableCell>
+                <TableCell class="whitespace-nowrap text-subtle [@container_workspace_(max-width:_700px)]:hidden">
+                  {{ formatDate(entry.createdAt) }}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </template>
+    </LayerCardPrimary>
+  </LayerCard>
 </template>

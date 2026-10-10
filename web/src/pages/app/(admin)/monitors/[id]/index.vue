@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Round } from '../../../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
-import { useClipboard } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,17 +13,18 @@ import {
   rotateHeartbeatMutation,
   updateMonitorMutation,
 } from '../../../../../client/@pinia/colada.gen'
-import AsyncState from '../../../../../components/AsyncState.vue'
-import EChart from '../../../../../components/EChart.vue'
-import EmptyState from '../../../../../components/EmptyState.vue'
-import Modal from '../../../../../components/Modal.vue'
-import PageHeader from '../../../../../components/PageHeader.vue'
-import StateBadge from '../../../../../components/StateBadge.vue'
-import { Alert } from '../../../../../components/ui/alert'
 import { Badge } from '../../../../../components/ui/badge'
+import { Banner } from '../../../../../components/ui/banner'
+import { PageHeader } from '../../../../../components/ui/blocks/page-header'
 import { Button } from '../../../../../components/ui/button'
-import { Card, CardContent } from '../../../../../components/ui/card'
+import { Chart } from '../../../../../components/ui/chart'
+import { ClipboardText } from '../../../../../components/ui/clipboard-text'
+import { Code } from '../../../../../components/ui/code'
+import { Dialog } from '../../../../../components/ui/dialog'
+import { Empty } from '../../../../../components/ui/empty'
 import { FieldDescription, FieldError } from '../../../../../components/ui/field'
+import { LayerCard, LayerCardPrimary, LayerCardSecondary } from '../../../../../components/ui/layer-card'
+import { Loader } from '../../../../../components/ui/loader'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../../../components/ui/select'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../../../components/ui/tabs'
@@ -35,10 +35,11 @@ import { duration, formatDate, formatPercent, timezone } from '../../../../../co
 import { normalizeTimeSeries, timeSeriesOption } from '../../../../../lib/chart'
 import { errorText } from '../../../../../lib/errors'
 import { targetOf } from '../../../../../lib/monitor'
+import { monitorStateDisplay } from '../../../../../lib/monitor-state'
 
 const { t, n, d } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: 'navigation.monitorDetails' } })
+definePage({ meta: { title: 'navigation.monitorDetails', contentWidth: 'detail' } })
 
 const checkMonitor = useMutation(checkMonitorMutation())
 const updateMonitor = useMutation(updateMonitorMutation())
@@ -80,13 +81,31 @@ const history = useQuery(
 )
 const busy = ref(false)
 const confirmDelete = ref(false)
+const deleteDialogOpen = computed({
+  get: () => confirmDelete.value,
+  set: (open: boolean) => {
+    if (!busy.value)
+      confirmDelete.value = open
+  },
+})
 const selectedRound = ref<Round | null>(null)
 const diagnosticsOpen = ref(false)
 const heartbeatToken = ref('')
 const heartbeatUrl = ref('')
 const tab = ref('history')
-const { copy, copied } = useClipboard()
 const monitor = computed(() => query.data.value)
+const currentState = computed(() => monitorStateDisplay(
+  monitor.value?.type === 'certificate' ? monitor.value.certificate?.state : monitor.value?.state,
+  { paused: monitor.value ? !monitor.value.enabled : false },
+))
+const rounds = computed(() => (history.data.value?.rounds ?? []).map(round => ({
+  ...round,
+  stateDisplay: monitorStateDisplay(round.success ? 'up' : 'down'),
+})))
+const attempts = computed(() => (selectedRound.value?.attempts ?? []).map(attempt => ({
+  ...attempt,
+  stateDisplay: monitorStateDisplay(attempt.success ? 'up' : 'down'),
+})))
 const availability = computed(() => history.data.value?.availability)
 const latencyPoints = computed(() => normalizeTimeSeries(
   (history.data.value?.latency ?? []).map(point => ({ at: point.at, value: point.latencyMs })),
@@ -158,119 +177,140 @@ function viewRound(round: Round) {
 </script>
 
 <template>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
+  <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+    <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+  </div>
+  <Banner v-else-if="query.error.value" variant="error">
+    {{ errorText(query.error.value) }}
+    <Button variant="ghost" @click="query.refetch()">
+      {{ t('asyncState.retry') }}
+    </Button>
+  </Banner>
+  <template v-else>
     <template v-if="monitor">
-      <PageHeader :title="monitor.name" :description="targetOf(monitor)">
-        <Button variant="ghost" as-child>
-          <RouterLink to="/app/monitors">
-            <span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-left" />{{ t('monitorDetails.allMonitors') }}
-          </RouterLink>
-        </Button><template v-if="canEdit()">
-          <Button :disabled="busy" @click="act('toggle')">
-            <span v-if="monitor.enabled" w="14px" h="14px" aria-hidden="true" class="i-lucide-pause" /><span v-else w="14px" h="14px" aria-hidden="true" class="i-lucide-play" />{{
-              monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
-            }}
-          </Button><Button as-child>
-            <RouterLink :to="`/app/monitors/${monitor.id}/edit`">
-              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />{{ t('common.edit') }}
+      <PageHeader :title="monitor.name" :description="targetOf(monitor)" class="mb-6">
+        <template #actions>
+          <Button variant="ghost" as-child>
+            <RouterLink to="/app/monitors">
+              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-left" />{{ t('monitorDetails.allMonitors') }}
             </RouterLink>
-          </Button><Button v-if="monitor.type !== 'heartbeat'" :disabled="busy || !monitor.enabled" variant="primary" @click="act('check')">
-            <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('monitorDetails.checkNow') }}
-          </Button>
+          </Button><template v-if="canEdit()">
+            <Button :disabled="busy" @click="act('toggle')">
+              <span v-if="monitor.enabled" w="14px" h="14px" aria-hidden="true" class="i-lucide-pause" /><span v-else w="14px" h="14px" aria-hidden="true" class="i-lucide-play" />{{
+                monitor.enabled ? t('monitorDetails.pause') : t('monitorDetails.enable')
+              }}
+            </Button><Button as-child>
+              <RouterLink :to="`/app/monitors/${monitor.id}/edit`">
+                <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />{{ t('common.edit') }}
+              </RouterLink>
+            </Button><Button v-if="monitor.type !== 'heartbeat'" :disabled="busy || !monitor.enabled" variant="primary" @click="act('check')">
+              <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('monitorDetails.checkNow') }}
+            </Button>
+          </template>
         </template>
       </PageHeader>
-      <div class="grid grid-cols-4 gap-16px mb-24px [&_.stat-card]:p-20px [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-8px [&_.stat-label]:text-13px [&_.stat-label]:text-subtle [&_.stat-label]:font-400 [&_.stat-icon]:flex [&_.stat-icon]:text-subtle [&_.stat-value]:mt-20px [&_.stat-value]:mb-8px [&_.stat-value]:text-32px [&_.stat-value]:font-600 [&_.stat-value]:tracking-[-1px] [&_.stat-value]:leading-[1.2] [&_.stat-value]:tabular-nums [&_.stat-meta]:text-12px [&_.stat-meta]:text-subtle [&_.positive]:text-fg-success [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:[&_.stat-card]:p-18px [@media(max-width:1200px)]:[&_.stat-value]:text-27px [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:gap-10px [@media(max-width:700px)]:[&_.stat-card]:p-17px [@media(max-width:700px)]:[&_.stat-value]:text-25px [@media(max-width:380px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-2! [@container_workspace_(max-width:_380px)]:[&&]:grid-cols-1!">
-        <Card class="stat-card">
-          <div class="stat-label">
-            {{ t('monitorDetails.currentState') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
-          </div>
-          <div mt="5" mb="4">
-            <StateBadge :state="monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state" :paused="!monitor.enabled" />
-          </div>
-          <p class="stat-meta">
-            {{ formatDate(monitor.lastCheckedAt) }}
-          </p>
-        </Card>
-        <Card class="stat-card">
-          <div class="stat-label">
-            {{
-              monitor.certificate
-                ? t('common.certificateExpires')
-                : t('monitorDetails.durationUptime')
-            }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-circle-check" />
-          </div>
-          <div :style="monitor.certificate ? { fontSize: '16px' } : undefined" class="stat-value">
-            {{
-              monitor.certificate
-                ? formatDate(monitor.certificate.expiresAt)
-                : formatPercent(availability?.uptime)
-            }}
-          </div>
-          <p class="stat-meta">
-            <template v-if="monitor.certificate">
+      <div class="mb-6 grid grid-cols-4 gap-3 [@container_workspace_(max-width:_880px)]:grid-cols-2 [@container_workspace_(max-width:_440px)]:grid-cols-1 [&_.stat-label]:flex [&_.stat-label]:items-center [&_.stat-label]:justify-between [&_.stat-label]:gap-2 [&_.stat-label]:text-size-sm [&_.stat-label]:text-subtle [&_.stat-value]:my-4 [&_.stat-value]:text-size-3xl [&_.stat-value]:font-semibold [&_.stat-value]:tracking-tight [&_.stat-value]:tabular-nums [&_.stat-meta]:text-size-xs [&_.stat-meta]:text-subtle">
+        <LayerCard>
+          <LayerCardPrimary class="stat-card">
+            <div class="stat-label">
+              {{ t('monitorDetails.currentState') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-activity" />
+            </div>
+            <div mt="5" mb="4">
+              <Badge :variant="currentState.variant" :data-state="currentState.state" dot>
+                {{ currentState.label }}
+              </Badge>
+            </div>
+            <p class="stat-meta">
+              {{ formatDate(monitor.lastCheckedAt) }}
+            </p>
+          </LayerCardPrimary>
+        </LayerCard>
+        <LayerCard>
+          <LayerCardPrimary class="stat-card">
+            <div class="stat-label">
               {{
-                t('common.certificateRiskIsExcludedFromUptime')
+                monitor.certificate
+                  ? t('common.certificateExpires')
+                  : t('monitorDetails.durationUptime')
+              }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-circle-check" />
+            </div>
+            <div :style="monitor.certificate ? { fontSize: '16px' } : undefined" class="stat-value">
+              {{
+                monitor.certificate
+                  ? formatDate(monitor.certificate.expiresAt)
+                  : formatPercent(availability?.uptime)
               }}
-            </template><template v-else>
-              {{ t('monitorDetails.effectiveDuration') }}
-              {{ duration(availability?.effectiveMs) }}
-            </template>
-          </p>
-        </Card>
-        <Card class="stat-card">
-          <div class="stat-label">
-            {{
-              monitor.certificate
-                ? t('monitorDetails.daysRemaining')
-                : t('monitorDetails.observationCoverage')
-            }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />
-          </div>
-          <div class="stat-value">
-            {{
-              monitor.certificate
-                ? monitor.certificate.expiresAt
-                  ? n(monitor.certificate.daysRemaining, 'decimal')
-                  : '—'
-                : formatPercent(availability?.coverage)
-            }}
-          </div>
-          <p class="stat-meta">
-            {{
-              monitor.certificate
-                ? t('monitorDetails.warningThresholdsSummary', {
-                  thresholds: (monitor.certificate.warningDays || [])
-                    .map((days) => n(days))
-                    .join(', '),
-                })
-                : t('monitorDetails.missingDataNeverCountsAsUp')
-            }}
-          </p>
-        </Card>
-        <Card class="stat-card">
-          <div class="stat-label">
-            {{ t('monitorDetails.latestLatency') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
-          </div>
-          <div class="stat-value">
-            {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
-          </div>
-          <p class="stat-meta">
-            {{
-              monitor.type === 'heartbeat'
-                ? monitor.heartbeat?.periodSeconds
-                : monitor.intervalSeconds
-            }}
-            s
-            {{
-              monitor.type === 'heartbeat'
-                ? t('monitorDetails.expectedPeriod')
-                : t('monitorDetails.checkInterval')
-            }}
-          </p>
-        </Card>
+            </div>
+            <p class="stat-meta">
+              <template v-if="monitor.certificate">
+                {{
+                  t('common.certificateRiskIsExcludedFromUptime')
+                }}
+              </template><template v-else>
+                {{ t('monitorDetails.effectiveDuration') }}
+                {{ duration(availability?.effectiveMs) }}
+              </template>
+            </p>
+          </LayerCardPrimary>
+        </LayerCard>
+        <LayerCard>
+          <LayerCardPrimary class="stat-card">
+            <div class="stat-label">
+              {{
+                monitor.certificate
+                  ? t('monitorDetails.daysRemaining')
+                  : t('monitorDetails.observationCoverage')
+              }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />
+            </div>
+            <div class="stat-value">
+              {{
+                monitor.certificate
+                  ? monitor.certificate.expiresAt
+                    ? n(monitor.certificate.daysRemaining, 'decimal')
+                    : '—'
+                  : formatPercent(availability?.coverage)
+              }}
+            </div>
+            <p class="stat-meta">
+              {{
+                monitor.certificate
+                  ? t('monitorDetails.warningThresholdsSummary', {
+                    thresholds: (monitor.certificate.warningDays || [])
+                      .map((days) => n(days))
+                      .join(', '),
+                  })
+                  : t('monitorDetails.missingDataNeverCountsAsUp')
+              }}
+            </p>
+          </LayerCardPrimary>
+        </LayerCard>
+        <LayerCard>
+          <LayerCardPrimary class="stat-card">
+            <div class="stat-label">
+              {{ t('monitorDetails.latestLatency') }}<span w="15px" h="15px" aria-hidden="true" class="i-lucide-clock" />
+            </div>
+            <div class="stat-value">
+              {{ duration(history.data.value?.latency?.at(-1)?.latencyMs) }}
+            </div>
+            <p class="stat-meta">
+              {{
+                monitor.type === 'heartbeat'
+                  ? monitor.heartbeat?.periodSeconds
+                  : monitor.intervalSeconds
+              }}
+              s
+              {{
+                monitor.type === 'heartbeat'
+                  ? t('monitorDetails.expectedPeriod')
+                  : t('monitorDetails.checkInterval')
+              }}
+            </p>
+          </LayerCardPrimary>
+        </LayerCard>
       </div>
-      <Card v-if="monitor.type === 'heartbeat'" mb="6">
-        <CardContent>
-          <div flex="~ items-center justify-between gap-4">
+      <LayerCard v-if="monitor.type === 'heartbeat'" mb="6">
+        <LayerCardPrimary>
+          <div flex="~ wrap items-center justify-between gap-4">
             <div>
               <h2>{{ t('monitorDetails.heartbeatReporting') }}</h2>
               <p mt="2" class="muted" un-text="13px subtle">
@@ -281,25 +321,23 @@ function viewRound(round: Round) {
               <span w="14px" h="14px" aria-hidden="true" class="i-lucide-key-round" />{{ t('monitorDetails.generateRotateToken') }}
             </Button>
           </div>
-          <Alert v-if="monitor.heartbeat?.lastReceivedAt" mt="4" variant="default">
+          <Banner v-if="monitor.heartbeat?.lastReceivedAt" mt="4" variant="secondary">
             {{ t('monitorDetails.lastReport') }} {{ formatDate(monitor.heartbeat.lastReceivedAt) }} ·
             {{ monitor.heartbeat.lastSuccess ? t('monitorDetails.up') : t('monitorDetails.down') }}
             <p v-if="monitor.heartbeat.description" mt="2">
               {{ monitor.heartbeat.description }}
             </p>
-          </Alert>
+          </Banner>
           <div v-if="heartbeatToken" class="heartbeat-url [overflow-wrap:anywhere]" p="14px" border="1 solid line" bg="tint" rounded="8px" un-text="12px" mt="15px">
-            <code>{{ heartbeatUrl }}</code><Button variant="ghost" size="sm" @click="copy(heartbeatUrl)">
-              <span w="13px" h="13px" aria-hidden="true" class="i-lucide-copy" />{{ copied ? t('monitorDetails.copied') : t('monitorDetails.copy') }}
-            </Button>
+            <ClipboardText :text="heartbeatUrl" :copy-label="t('monitorDetails.copy')" :copied-label="t('monitorDetails.copied')" class="max-w-full" />
             <p mt="3" class="muted" un-text="13px subtle">
               {{ t('monitorDetails.postReportsStatusUpOrStatusDownWith') }}
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </LayerCardPrimary>
+      </LayerCard>
       <div v-if="monitor.certificate" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
-        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check" /><span>{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
+        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-shield-check shrink-0" /><span class="min-w-0 [overflow-wrap:anywhere]">{{ t('common.certificateExpires') }} {{ formatDate(monitor.certificate.expiresAt) }} ·
           {{
             t('monitorDetails.remainingDays', {
               days: monitor.certificate.expiresAt
@@ -309,63 +347,72 @@ function viewRound(round: Round) {
           }}
           · {{ t('common.certificateRiskIsExcludedFromUptime') }}</span>
       </div>
-      <div grid="~ cols-[minmax(0,1fr)_280px]" gap="22px" class="[&>*]:min-w-0 [@media(max-width:1200px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1!">
-        <Card as="section">
+      <div class="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 [@container_workspace_(max-width:_960px)]:grid-cols-1">
+        <LayerCard>
           <TabsRoot v-model="tab">
-            <TabsList>
-              <TabsTrigger value="history">
+            <TabsList variant="line">
+              <TabsTrigger variant="line" value="history">
                 {{
                   t('monitorDetails.historyTrends')
                 }}
-              </TabsTrigger><TabsTrigger value="configuration">
+              </TabsTrigger><TabsTrigger variant="line" value="configuration">
                 {{
                   t('monitorDetails.configuration')
                 }}
               </TabsTrigger>
-              <div ml="auto" class="historical-period" flex="~ items-center" gap="9px" un-text="12px subtle">
-                <Select v-model="period">
-                  <SelectTrigger w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="24h">
-                        {{ t('counts.hours', { count: 24 }, 24) }}
-                      </SelectItem>
-                      <SelectItem value="7d">
-                        {{ t('counts.days', { count: 7 }, 7) }}
-                      </SelectItem>
-                      <SelectItem value="30d">
-                        {{ t('counts.days', { count: 30 }, 30) }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
             </TabsList><TabsContent value="history">
-              <CardContent>
-                <div flex="~ justify-between items-center" mb="4">
+              <LayerCardPrimary>
+                <div flex="~ wrap justify-between items-center gap-3" mb="4">
                   <h3>{{ t('monitorDetails.responseLatency') }}</h3>
-                  <span class="mini-label" un-text="12px subtle" tracking="0.5px">ms</span>
+                  <div class="historical-period" flex="~ items-center" gap="9px" un-text="12px subtle">
+                    <Select v-model="period">
+                      <SelectTrigger w="auto!" :aria-label="t('monitorDetails.statisticsWindow')">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="24h">
+                            {{ t('counts.hours', { count: 24 }, 24) }}
+                          </SelectItem>
+                          <SelectItem value="7d">
+                            {{ t('counts.days', { count: 7 }, 7) }}
+                          </SelectItem>
+                          <SelectItem value="30d">
+                            {{ t('counts.days', { count: 30 }, 30) }}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <EChart
+                <Chart
                   v-if="latencyPoints.length"
                   :option="latencyOption"
-                  :height="180"
+                  :height="240"
                   :aria-label="latencyLabel"
                   :loading="history.isPending.value"
                 />
-                <div v-else h="180px" flex="~ items-center justify-center" un-text="subtle" role="status">
+                <div v-else h="240px" flex="~ items-center justify-center" un-text="subtle" role="status">
                   {{ t('chart.noObservations') }}
                 </div>
                 <FieldDescription as="p" mt="2">
                   {{ t('monitorDetails.sourceActualCheckRoundsMissingObservationsAreNot') }}
                 </FieldDescription>
-              </CardContent>
-              <AsyncState :pending="history.isPending.value" :error="history.error.value" @retry="refreshHistory()">
-                <EmptyState v-if="!history.data.value?.rounds.length" :title="t('monitorDetails.noCheckRecordsYet')" :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')" />
+              </LayerCardPrimary>
+              <div v-if="history.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+                <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+              </div>
+              <Banner v-else-if="history.error.value" variant="error">
+                {{ errorText(history.error.value) }}
+                <Button variant="ghost" @click="refreshHistory()">
+                  {{ t('asyncState.retry') }}
+                </Button>
+              </Banner>
+              <template v-else>
+                <Empty v-if="!history.data.value?.rounds.length" size="sm" class="rounded-none border-none" :title="t('monitorDetails.noCheckRecordsYet')" :description="t('monitorDetails.roundsAndDiagnosticsAppearAfterTheFirstCheck')" />
                 <TableContainer
                   v-else
+                  :scroll-label="t('common.scrollTable')"
                   max-h="400px"
                   overscroll="contain"
                   tabindex="0"
@@ -377,43 +424,61 @@ function viewRound(round: Round) {
                       <TableRow>
                         <TableHead>{{ t('monitorDetails.checkedAt') }}</TableHead>
                         <TableHead>{{ t('monitorDetails.result') }}</TableHead>
-                        <TableHead>{{ t('monitorDetails.attempts') }}</TableHead>
-                        <TableHead>{{ t('monitorDetails.duration') }}</TableHead>
-                        <TableHead />
+                        <TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
+                          {{ t('monitorDetails.attempts') }}
+                        </TableHead>
+                        <TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
+                          {{ t('monitorDetails.duration') }}
+                        </TableHead>
+                        <TableHead class="w-24 [@container_workspace_(max-width:_700px)]:w-12">
+                          <span class="sr-only">{{ t('monitorDetails.diagnostics') }}</span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow v-for="round in history.data.value.rounds" :key="round.id">
+                      <TableRow v-for="round in rounds" :key="round.id">
                         <TableCell class="muted" un-text="13px subtle">
                           {{ formatDate(round.startedAt) }}
+                          <span class="mt-1 hidden text-size-xs [@container_workspace_(max-width:_700px)]:block">{{ t('monitorDetails.attempts') }} · {{ n(round.attempts?.length || 0) }}<br>{{ t('monitorDetails.duration') }} · {{ duration(round.latencyMs) }}</span>
                         </TableCell>
-                        <TableCell><StateBadge :state="round.success ? 'up' : 'down'" /></TableCell>
-                        <TableCell>{{ round.attempts?.length || 0 }}</TableCell>
-                        <TableCell>{{ duration(round.latencyMs) }}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm" @click="viewRound(round)">
-                            {{ t('monitorDetails.diagnostics') }}
+                          <Badge :variant="round.stateDisplay.variant" :data-state="round.stateDisplay.state" dot>
+                            {{ round.stateDisplay.label }}
+                          </Badge>
+                        </TableCell>
+                        <TableCell class="text-end [@container_workspace_(max-width:_700px)]:hidden">
+                          {{ n(round.attempts?.length || 0) }}
+                        </TableCell>
+                        <TableCell class="whitespace-nowrap text-end [@container_workspace_(max-width:_700px)]:hidden">
+                          {{ duration(round.latencyMs) }}
+                        </TableCell>
+                        <TableCell class="text-end">
+                          <Button variant="ghost" size="sm" :aria-label="t('monitorDetails.diagnostics')" @click="viewRound(round)">
+                            <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('monitorDetails.diagnostics') }}</span>
+                            <span class="i-lucide-chevron-right hidden size-4 [@container_workspace_(max-width:_700px)]:block" aria-hidden="true" />
                           </Button>
                         </TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </AsyncState>
+              </template>
             </TabsContent><TabsContent value="configuration">
-              <CardContent>
-                <pre class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="tint" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(monitor, null, 2) }}</pre>
-              </CardContent>
+              <LayerCardPrimary>
+                <Code :code="JSON.stringify(monitor, null, 2)" lang="json" class="max-h-100" />
+              </LayerCardPrimary>
             </TabsContent>
           </TabsRoot>
-        </Card>
-        <aside>
-          <Card as="section">
-            <CardContent>
-              <h2 mb="6">
+        </LayerCard>
+        <aside class="min-w-0">
+          <LayerCard>
+            <LayerCardSecondary>
+              <h2 class="text-size-lg font-semibold text-default">
                 {{ t('monitorDetails.monitorInformation') }}
               </h2>
-              <dl class="definition-list tabular-nums [&_div]:flex [&_div]:justify-between [&_div]:gap-15px [&_div]:text-12px [&_dt]:text-subtle [&_dd]:m-0 [&_dd]:text-right [&_dd]:[overflow-wrap:anywhere]" grid="~" gap="16px">
+            </LayerCardSecondary>
+            <LayerCardPrimary>
+              <dl class="definition-list tabular-nums [&_div]:grid [&_div]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] [&_div]:gap-3 [&_div]:text-size-xs [&_dt]:text-subtle [&_dt]:[overflow-wrap:anywhere] [&_dd]:m-0 [&_dd]:text-end [&_dd]:[overflow-wrap:anywhere]" grid="~" gap="16px">
                 <div>
                   <dt>{{ t('monitorDetails.type') }}</dt>
                   <dd>{{ monitor.type.toUpperCase() }}</dd>
@@ -453,50 +518,52 @@ function viewRound(round: Round) {
                   <dd>{{ formatDate(monitor.createdAt) }}</dd>
                 </div>
               </dl>
-              <Alert v-if="monitor.description" mt="6" as="p" variant="default">
+              <Banner v-if="monitor.description" mt="6" variant="secondary">
                 {{ monitor.description }}
-              </Alert>
+              </Banner>
               <div flex="~ wrap gap-2" mt="4">
-                <Badge v-for="tag in monitor.tags" :key="tag">
+                <Badge v-for="tag in monitor.tags" :key="tag" class="max-w-full whitespace-normal! [overflow-wrap:anywhere]">
                   {{ tag }}
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
-          <Alert mt="5" as="p" variant="default">
+            </LayerCardPrimary>
+          </LayerCard>
+          <Banner mt="5" variant="secondary">
             {{ t('monitorDetails.uptimeUsesConfirmedStateDurationUnknownPausedAnd') }}
-          </Alert>
+          </Banner>
           <Button v-if="canEdit()" mt="5" variant="destructive" @click="confirmDelete = true">
             <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />{{ t('common.deleteMonitor') }}
           </Button>
         </aside>
       </div>
     </template>
-  </AsyncState><Modal v-model:open="confirmDelete" :title="t('common.deleteMonitor')" :description="t('monitorDetails.thisDeletesTheMonitorConfigurationConfirmItIs')">
+  </template><Dialog v-model:open="deleteDialogOpen" :close-label="t('common.close')" :title="t('common.deleteMonitor')" :description="t('monitorDetails.thisDeletesTheMonitorConfigurationConfirmItIs')">
     <template #footer>
-      <Button @click="confirmDelete = false">
+      <Button :disabled="busy" @click="confirmDelete = false">
         {{ t('common.cancel') }}
-      </Button><Button :disabled="busy" variant="destructive" @click="act('delete')">
+      </Button><Button :loading="busy" variant="destructive" @click="act('delete')">
         {{ t('monitorDetails.delete') }}
       </Button>
     </template>
-  </Modal><Modal v-model:open="diagnosticsOpen" :title="t('monitorDetails.roundDiagnostics')" wide>
+  </Dialog><Dialog v-model:open="diagnosticsOpen" :close-label="t('common.close')" :title="t('monitorDetails.roundDiagnostics')" wide>
     <template v-if="selectedRound">
       <p mb="4" class="muted" un-text="13px subtle">
         {{ formatDate(selectedRound.startedAt) }} · {{ duration(selectedRound.latencyMs) }}
       </p>
-      <Card v-for="attempt in selectedRound.attempts" :key="attempt.number" mb="4">
-        <CardContent>
-          <div flex="~ items-center justify-between">
+      <LayerCard v-for="attempt in attempts" :key="attempt.number" mb="4">
+        <LayerCardPrimary>
+          <div flex="~ wrap items-center justify-between gap-3">
             <h3>{{ t('monitorDetails.attemptNumber', { number: n(attempt.number) }) }}</h3>
-            <StateBadge :state="attempt.success ? 'up' : 'down'" />
+            <Badge :variant="attempt.stateDisplay.variant" :data-state="attempt.stateDisplay.state" dot>
+              {{ attempt.stateDisplay.label }}
+            </Badge>
           </div>
           <FieldError v-if="attempt.error" as="p" py="10px" px="0">
             {{ attempt.error }}
           </FieldError>
-          <pre mt="4" class="json-output [overflow-wrap:anywhere]" un-text="12px" whitespace="pre-wrap" bg="tint" p="15px" border="1 solid line" rounded="8px" max-h="400px" overflow="auto">{{ JSON.stringify(attempt.detail, null, 2) }}</pre>
-        </CardContent>
-      </Card>
+          <Code :code="JSON.stringify(attempt.detail, null, 2) ?? '{}'" lang="json" class="mt-4 max-h-100" />
+        </LayerCardPrimary>
+      </LayerCard>
     </template>
-  </Modal>
+  </Dialog>
 </template>

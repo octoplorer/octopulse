@@ -1,5 +1,5 @@
 <template>
-  <div class="[&_.span-full]:col-span-full [@media(max-width:700px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1" grid="~ cols-2 gap-18px">
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-4 [&_.span-full]:col-span-full">
     <slot />
   </div>
 </template>

@@ -1,11 +1,3 @@
 <template>
-  <div class="select-separator" role="separator" />
+  <div class="my-1 h-px bg-line" role="separator" />
 </template>
-
-<style scoped>
-.select-separator {
-  height: 1px;
-  margin: 4px 0;
-  background: var(--color-line);
-}
-</style>

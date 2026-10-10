@@ -2,7 +2,7 @@
 import type { Incident } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { useForm } from '@tanstack/vue-form'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createIncidentsMutation,
@@ -12,19 +12,22 @@ import {
   listPagesQuery,
   updateIncidentsMutation,
 } from '../../../client/@pinia/colada.gen'
-import AsyncState from '../../../components/AsyncState.vue'
-import EmptyState from '../../../components/EmptyState.vue'
-import Field from '../../../components/Field.vue'
-import Modal from '../../../components/Modal.vue'
-import PageHeader from '../../../components/PageHeader.vue'
-import { Alert } from '../../../components/ui/alert'
+import { Separator } from '../../../components/common/separator'
 import { Badge } from '../../../components/ui/badge'
+import { Banner } from '../../../components/ui/banner'
+import { PageHeader } from '../../../components/ui/blocks/page-header'
 import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
-import { FieldError, FieldGroup, FieldInput, FieldLabel, FieldTextarea } from '../../../components/ui/field'
+import { Checkbox, CheckboxGroup } from '../../../components/ui/checkbox'
+import { Dialog } from '../../../components/ui/dialog'
+import { Empty } from '../../../components/ui/empty'
+import { Field, FieldGroup } from '../../../components/ui/field'
+import { Input, InputArea } from '../../../components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../../components/ui/input-group'
+import { LayerCard } from '../../../components/ui/layer-card'
+import { Loader } from '../../../components/ui/loader'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
-import { Separator } from '../../../components/ui/separator'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, TableToolbar } from '../../../components/ui/table'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { canEdit } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
 import { formatDate, statusLabel } from '../../../composables/preferences'
@@ -46,7 +49,14 @@ const open = ref(false)
 const detailOpen = ref(false)
 const selected = ref<Incident | null>(null)
 const error = ref('')
-const filter = ref('active')
+const filter = shallowRef('active')
+const search = shallowRef('')
+const allItems = computed(() => query.data.value?.items || [])
+const statusTabs = computed(() => [
+  { value: 'active', label: t('incidents.active'), count: allItems.value.filter(incident => incident.status !== 'resolved').length },
+  { value: 'resolved', label: t('incidents.resolved'), count: allItems.value.filter(incident => incident.status === 'resolved').length },
+  { value: 'all', label: t('incidents.all'), count: allItems.value.length },
+])
 function empty(): Incident {
   return {
     id: '',
@@ -104,14 +114,19 @@ const updateForm = useForm({
 const publishing = updateForm.useSelector(state => state.isSubmitting)
 const items = computed(
   () =>
-    query.data.value?.items
+    allItems.value
       .filter(
         x =>
-          filter.value === 'all'
-          || (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'),
+          (filter.value === 'all'
+            || (filter.value === 'active' ? x.status !== 'resolved' : x.status === 'resolved'))
+          && (!search.value.trim() || `${x.title} ${x.body}`.toLowerCase().includes(search.value.trim().toLowerCase())),
       )
-      .sort((a, b) => b.updatedAt - a.updatedAt) || [],
+      .sort((a, b) => b.updatedAt - a.updatedAt),
 )
+function clearFilters() {
+  search.value = ''
+  filter.value = 'all'
+}
 function edit(incident: Incident) {
   if (form.state.isSubmitting || updateForm.state.isSubmitting)
     return
@@ -137,88 +152,128 @@ function detail(incident: Incident) {
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.incidents')" :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')">
-    <Button v-if="canEdit()" variant="primary" @click="create">
-      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('incidents.createIncident') }}
-    </Button>
+  <PageHeader class="mb-6" :title="t('navigation.incidents')" :description="t('incidents.communicateImpactAndProgressWithClearConsistentUpdates')">
+    <template #actions>
+      <Button v-if="canEdit()" variant="primary" @click="create">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('incidents.createIncident') }}
+      </Button>
+    </template>
   </PageHeader>
-  <Card as="section">
-    <TableToolbar>
-      <h2 un-text="sm">
-        {{ t('incidents.incidentAnnouncements') }}
-      </h2>
-      <Select v-model="filter">
-        <SelectTrigger w="auto!" :aria-label="t('incidents.incidentFilter')">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="active">
-              {{ t('incidents.active') }}
-            </SelectItem>
-            <SelectItem value="resolved">
-              {{ t('incidents.resolved') }}
-            </SelectItem>
-            <SelectItem value="all">
-              {{ t('incidents.all') }}
-            </SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </TableToolbar>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState v-if="!items.length" :title="t('incidents.noIncidentsHere')" :description="t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')" />
-      <TableContainer v-else>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t('incidents.incident') }}</TableHead>
-              <TableHead>{{ t('incidents.progress') }}</TableHead>
-              <TableHead>{{ t('incidents.impact') }}</TableHead>
-              <TableHead>{{ t('common.updated') }}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="incident in items" :key="incident.id">
-              <TableCell>
-                <Button p="0!" variant="ghost" @click="detail(incident)">
-                  <span w="15px" h="15px" aria-hidden="true" class="i-lucide-message-square" />{{ incident.title }}
-                </Button><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{
-                  t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
-                }}</span>
-              </TableCell>
-              <TableCell>
-                <Badge>{{ statusLabel(incident.status) }}</Badge>
-              </TableCell>
-              <TableCell>{{ statusLabel(incident.impact) }}</TableCell>
-              <TableCell class="muted" un-text="13px subtle">
-                {{ formatDate(incident.updatedAt) }}
-              </TableCell>
-              <TableCell>
-                <Button size="sm" @click="detail(incident)">
-                  {{ t('incidents.viewUpdates') }}
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </AsyncState>
-  </Card>
-  <Alert mt="5" as="p" variant="default">
+  <LayerCard>
+    <TabsRoot v-model="filter">
+      <TabsList variant="line" class="[@container_workspace_(max-width:_700px)]:px-4!" :aria-label="t('incidents.incidentFilter')">
+        <TabsTrigger v-for="status in statusTabs" :key="status.value" variant="line" :value="status.value">
+          {{ status.label }}<span class="ms-2 text-size-xs text-subtle">{{ status.count }}</span>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent :value="filter">
+        <TableToolbar>
+          <InputGroup class="w-full max-w-sm [@container_workspace_(max-width:_700px)]:max-w-none">
+            <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+            <InputGroupInput v-model="search" type="search" :placeholder="t('incidents.searchTitleOrContent')" :aria-label="t('incidents.searchIncidents')" />
+          </InputGroup>
+          <span class="text-size-sm text-subtle">{{ t('incidents.showingIncidents', { shown: items.length, total: allItems.length }) }}</span>
+        </TableToolbar>
+        <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        </div>
+        <Banner v-else-if="query.error.value" variant="error">
+          {{ errorText(query.error.value) }}
+          <Button variant="ghost" @click="query.refetch()">
+            {{ t('asyncState.retry') }}
+          </Button>
+        </Banner>
+        <template v-else>
+          <Empty v-if="!items.length" :title="allItems.length ? t('incidents.noMatchingIncidents') : t('incidents.noIncidentsHere')" :description="allItems.length ? t('monitors.tryChangingYourSearchOrFilters') : t('incidents.manualIncidentsDoNotChangeMonitorStatesOr')" size="sm" class="rounded-none border-none">
+            <template #icon>
+              <span class="i-lucide-message-square size-8 text-subtle" aria-hidden="true" />
+            </template>
+            <template #actions>
+              <Button v-if="allItems.length" @click="clearFilters">
+                {{ t('common.clearFilters') }}
+              </Button>
+              <Button v-else-if="canEdit()" variant="primary" @click="create">
+                {{ t('incidents.createIncident') }}
+              </Button>
+            </template>
+          </Empty>
+          <TableContainer v-else :scroll-label="t('common.scrollTable')">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{{ t('incidents.incident') }}</TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('incidents.progress') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('incidents.impact') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('common.updated') }}
+                  </TableHead>
+                  <TableHead class="w-28 [@container_workspace_(max-width:_700px)]:w-12">
+                    <span class="sr-only">{{ t('incidents.viewUpdates') }}</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="incident in items" :key="incident.id">
+                  <TableCell>
+                    <button class="block max-w-sm rounded text-start font-medium text-default outline-none hover:text-brand focus-visible:ring-2 focus-visible:ring-brand [overflow-wrap:anywhere]" @click="detail(incident)">
+                      {{ incident.title }}
+                    </button><span class="mt-1 block max-w-sm text-size-xs text-subtle [overflow-wrap:anywhere]">{{
+                      t('counts.pages', { count: incident.pageIds.length }, incident.pageIds.length)
+                    }}</span>
+                    <div class="mt-2 hidden space-y-2 [@container_workspace_(max-width:_700px)]:block">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <Badge :variant="incident.status === 'resolved' ? 'success' : 'warning'" dot>
+                          {{ statusLabel(incident.status) }}
+                        </Badge>
+                        <span class="text-size-xs text-subtle">{{ statusLabel(incident.impact) }}</span>
+                      </div>
+                      <div class="text-size-xs text-subtle">
+                        {{ formatDate(incident.updatedAt) }}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                    <Badge :variant="incident.status === 'resolved' ? 'success' : 'warning'" dot>
+                      {{ statusLabel(incident.status) }}
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ statusLabel(incident.impact) }}
+                  </TableCell>
+                  <TableCell class="whitespace-nowrap text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
+                    {{ formatDate(incident.updatedAt) }}
+                  </TableCell>
+                  <TableCell class="text-end">
+                    <Button size="sm" variant="ghost" :aria-label="t('incidents.viewUpdates')" @click="detail(incident)">
+                      <span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('incidents.viewUpdates') }}</span>
+                      <span class="i-lucide-chevron-right hidden size-4 [@container_workspace_(max-width:_700px)]:block" aria-hidden="true" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </template>
+      </TabsContent>
+    </TabsRoot>
+  </LayerCard>
+  <p class="mt-4 text-size-sm text-subtle">
     {{ t('incidents.activeIncidentsMayRaiseAPageSImpact') }}
-  </Alert>
-  <Modal v-model:open="open" :title="editingId ? t('incidents.editIncident') : t('incidents.createIncident2')" wide>
+  </p>
+  <Dialog v-model:open="open" :close-label="t('common.close')" :title="editingId ? t('incidents.editIncident') : t('incidents.createIncident2')" size="xl">
     <form id="incident-form" @submit.prevent="form.handleSubmit">
       <FieldGroup>
         <form.Field v-slot="{ field }" name="title">
           <Field :label="t('incidents.title')" class="span-full">
-            <FieldInput :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <Input :model-value="field.state.value" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="body">
           <Field :label="t('incidents.description')" class="span-full">
-            <FieldTextarea :model-value="field.state.value" rows="5" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <InputArea :model-value="field.state.value" :min-rows="5" required @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
           </Field>
         </form.Field><form.Field v-slot="{ field }" name="status">
           <Field :label="t('incidents.progressStatus')">
@@ -259,41 +314,59 @@ function detail(incident: Incident) {
         </form.Field>
         <form.Field v-slot="{ field }" name="pageIds">
           <div class="span-full">
-            <FieldLabel as="label">
-              {{ t('incidents.publishToStatusPages') }}
-            </FieldLabel>
-            <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-              <label v-for="page in pages.data.value?.items" :key="page.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input :checked="field.state.value.includes(page.id)" type="checkbox" :value="page.id" @change="field.handleChange(($event.target as HTMLInputElement).checked ? [...field.state.value, page.id] : field.state.value.filter(id => id !== page.id))" @blur="field.handleBlur">{{
-                page.name
-              }}</label>
+            <div v-if="pages.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
             </div>
+            <Banner v-else-if="pages.error.value" variant="error">
+              {{ errorText(pages.error.value) }}
+              <Button variant="ghost" @click="pages.refetch()">
+                {{ t('asyncState.retry') }}
+              </Button>
+            </Banner>
+            <template v-else>
+              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.publishToStatusPages')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+                <Checkbox v-for="page in pages.data.value?.items" :key="page.id" :value="page.id" :label="page.name" />
+              </CheckboxGroup>
+              <p v-if="!pages.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
+                {{ t('counts.pages', { count: 0 }, 0) }}
+              </p>
+            </template>
           </div>
         </form.Field>
         <form.Field v-slot="{ field }" name="monitorIds">
           <div class="span-full">
-            <FieldLabel as="label">
-              {{ t('incidents.relatedMonitors') }}
-            </FieldLabel>
-            <div mt="3" class="checkbox-group" flex="~ wrap" gap="12px">
-              <label v-for="monitor in monitors.data.value?.items" :key="monitor.id" class="checkbox-label" flex="~ items-center" gap="8px" un-text="12px default"><input :checked="field.state.value.includes(monitor.id)" type="checkbox" :value="monitor.id" @change="field.handleChange(($event.target as HTMLInputElement).checked ? [...field.state.value, monitor.id] : field.state.value.filter(id => id !== monitor.id))" @blur="field.handleBlur">{{
-                monitor.name
-              }}</label>
+            <div v-if="monitors.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+              <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
             </div>
+            <Banner v-else-if="monitors.error.value" variant="error">
+              {{ errorText(monitors.error.value) }}
+              <Button variant="ghost" @click="monitors.refetch()">
+                {{ t('asyncState.retry') }}
+              </Button>
+            </Banner>
+            <template v-else>
+              <CheckboxGroup :model-value="field.state.value" :label="t('incidents.relatedMonitors')" orientation="horizontal" @update:model-value="field.handleChange" @focusout="field.handleBlur">
+                <Checkbox v-for="monitor in monitors.data.value?.items" :key="monitor.id" :value="monitor.id" :label="monitor.name" />
+              </CheckboxGroup>
+              <p v-if="!monitors.data.value?.items.length" class="mt-2 text-size-sm text-subtle">
+                {{ t('counts.monitors', { count: 0 }, 0) }}
+              </p>
+            </template>
           </div>
         </form.Field>
       </FieldGroup>
-      <FieldError v-if="error" as="p" py="10px" px="0">
+      <Banner v-if="error" variant="error" class="mt-4">
         {{ error }}
-      </FieldError>
+      </Banner>
     </form>
     <template #footer>
-      <Button @click="open = false">
+      <Button :disabled="saving" @click="open = false">
         {{ t('common.cancel') }}
-      </Button><Button form="incident-form" :disabled="saving" variant="primary">
+      </Button><Button type="submit" form="incident-form" :loading="saving" variant="primary">
         {{ t('incidents.saveIncident') }}
       </Button>
     </template>
-  </Modal><Modal v-model:open="detailOpen" :title="selected?.title || ''" wide>
+  </Dialog><Dialog v-model:open="detailOpen" :close-label="t('common.close')" :title="selected?.title || ''" size="xl">
     <template v-if="selected">
       <div flex="~ items-start justify-between gap-4" mb="5">
         <p class="muted" un-text="13px subtle">
@@ -338,12 +411,12 @@ function detail(incident: Incident) {
           </Field>
         </updateForm.Field><updateForm.Field v-slot="{ field }" name="body">
           <Field :label="t('incidents.update')" mt="4">
-            <FieldTextarea :model-value="field.state.value" required rows="4" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <InputArea :model-value="field.state.value" required :min-rows="4" @update:model-value="field.handleChange($event ?? '')" @blur="field.handleBlur" />
           </Field>
-        </updateForm.Field><Button :disabled="publishing" mt="4" variant="primary">
+        </updateForm.Field><Button type="submit" :loading="publishing" mt="4" variant="primary">
           {{ t('incidents.publishUpdate') }}
         </Button>
       </form>
     </template>
-  </Modal>
+  </Dialog>
 </template>

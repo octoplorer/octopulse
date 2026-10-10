@@ -1,22 +1,13 @@
 <script setup lang="ts">
-import type { TabTriggerBaseProps } from '@ark-ui/vue/tabs'
 import { TabTrigger } from '@ark-ui/vue/tabs'
-import { useForwardProps } from '@ark-ui/vue/utils'
+import { cva } from 'cva'
 
-const props = defineProps<TabTriggerBaseProps>()
-const forwarded = useForwardProps(props)
+withDefaults(defineProps<{ value: string, disabled?: boolean, variant?: 'line' | 'segmented', asChild?: boolean }>(), { variant: 'segmented' })
+const variants = cva({ base: 'shrink-0 whitespace-nowrap text-size-base font-medium outline-none disabled:opacity-50 focus:outline-none focus:ring-focus/50 focus-visible:ring-2 focus-visible:ring-brand', variants: { variant: { line: 'border-0 border-b-2 border-solid border-transparent bg-transparent py-3 text-subtle focus-visible:ring-inset data-[selected]:border-b-current data-[selected]:text-strong', segmented: 'rounded-md border-0 bg-transparent px-3 py-1.5 text-subtle data-[selected]:bg-base data-[selected]:text-default data-[selected]:shadow-control' } } })
 </script>
 
 <template>
-  <TabTrigger
-    v-bind="forwarded"
-    class="[@media(max-width:700px)]:whitespace-nowrap [&[data-selected]]:text-strong [&[data-selected]]:border-b-current [&[aria-selected=true]]:text-strong [&[aria-selected=true]]:border-b-current"
-    p="y-14px x-0"
-    border="0 b-2 solid b-transparent"
-    bg="transparent"
-    un-text="14px subtle"
-    font="500"
-  >
+  <TabTrigger :value="value" :disabled="disabled" :as-child="asChild" :class="variants({ variant })">
     <slot />
   </TabTrigger>
 </template>

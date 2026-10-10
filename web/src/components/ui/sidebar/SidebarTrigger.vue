@@ -27,7 +27,7 @@ defineExpose({ element })
     data-part="trigger"
     :aria-expanded="expanded"
     :aria-label="expanded ? 'Collapse sidebar' : 'Expand sidebar'"
-    class="flex size-8.5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-subtle hover:bg-$sidebar-active-bg hover:text-default focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset"
+    class="flex size-8.5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-subtle hover:bg-$sidebar-active-bg hover:text-default focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset "
     v-bind="$attrs"
     @click="handleClick"
   >

@@ -2,7 +2,7 @@
 import type { User } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { useForm } from '@tanstack/vue-form'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createUserMutation,
@@ -10,20 +10,21 @@ import {
   listUsersQuery,
   updateUserMutation,
 } from '../../../client/@pinia/colada.gen'
-import AsyncState from '../../../components/AsyncState.vue'
-import EmptyState from '../../../components/EmptyState.vue'
-import Field from '../../../components/Field.vue'
-import Modal from '../../../components/Modal.vue'
-import PageHeader from '../../../components/PageHeader.vue'
-import Toggle from '../../../components/Toggle.vue'
-import { Alert } from '../../../components/ui/alert'
-import { Avatar } from '../../../components/ui/avatar'
+import { Avatar } from '../../../components/common/avatar'
 import { Badge } from '../../../components/ui/badge'
+import { Banner } from '../../../components/ui/banner'
+import { PageHeader } from '../../../components/ui/blocks/page-header'
 import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
-import { FieldError, FieldGroup, FieldInput } from '../../../components/ui/field'
+import { Dialog } from '../../../components/ui/dialog'
+import { Empty } from '../../../components/ui/empty'
+import { Field, FieldGroup } from '../../../components/ui/field'
+import { Input } from '../../../components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../../components/ui/input-group'
+import { LayerCard, LayerCardPrimary } from '../../../components/ui/layer-card'
+import { Loader } from '../../../components/ui/loader'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
+import { Switch } from '../../../components/ui/switch'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TablePagination, TableRow, TableToolbar } from '../../../components/ui/table'
 import { currentUser, isAdmin } from '../../../composables/api'
 import { languageOptions } from '../../../composables/i18n'
 import { notify } from '../../../composables/notices'
@@ -33,13 +34,18 @@ import { clone } from '../../../lib/form'
 
 const { t } = useI18n({ useScope: 'global' })
 
-definePage({ meta: { title: 'navigation.members', roles: ['admin'] } })
+definePage({ meta: { title: 'navigation.members', roles: ['admin'], contentWidth: 'compact' } })
 
 const createUser = useMutation(createUserMutation())
 const updateUser = useMutation(updateUserMutation())
 const deleteUser = useMutation(deleteUserMutation())
 
 const query = useQuery({ ...listUsersQuery(), staleTime: 10000 })
+const search = ref('')
+const items = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  return (query.data.value?.items || []).filter(user => `${user.name} ${user.username}`.toLowerCase().includes(term))
+})
 const open = ref(false)
 const error = ref('')
 function empty() {
@@ -83,6 +89,7 @@ const form = formApi.useSelector(state => state.values)
 const saving = formApi.useSelector(state => state.isSubmitting)
 const deleteTarget = ref<User | null>(null)
 const deleteOpen = ref(false)
+const deleting = ref(false)
 function edit(user?: User) {
   if (formApi.state.isSubmitting)
     return
@@ -91,8 +98,9 @@ function edit(user?: User) {
   open.value = true
 }
 async function remove() {
-  if (!deleteTarget.value)
+  if (!deleteTarget.value || deleting.value)
     return
+  deleting.value = true
   try {
     await deleteUser.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
@@ -101,6 +109,9 @@ async function remove() {
   }
   catch (e) {
     notify(errorText(e), 'error')
+  }
+  finally {
+    deleting.value = false
   }
 }
 function confirmDelete(value: User) {
@@ -114,69 +125,118 @@ function cancel() {
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.members')" :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')">
-    <Button v-if="isAdmin()" variant="primary" @click="edit()">
-      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMember') }}
-    </Button>
+  <PageHeader class="mb-6" :title="t('navigation.members')" :description="t('users.collaborateWithAdministratorOperatorAndViewerRoles')">
+    <template #actions>
+      <Button v-if="isAdmin()" variant="primary" @click="edit()">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMember') }}
+      </Button>
+    </template>
   </PageHeader>
-  <Card as="section">
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState v-if="!query.data.value?.items.length" :title="t('users.noMembers')" />
-      <TableContainer v-else>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t('users.member') }}</TableHead>
-              <TableHead>{{ t('common.role') }}</TableHead>
-              <TableHead>{{ t('common.status') }}</TableHead>
-              <TableHead>{{ t('common.created') }}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="user in query.data.value.items" :key="user.id">
-              <TableCell>
-                <div flex="~ items-center gap-3">
-                  <Avatar>{{ user.name?.[0] || user.username[0] }}</Avatar><span><span class="monitor-name block" font="600" un-text="13px">{{ user.name || user.username }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ user.username
-                  }}{{ user.id === currentUser?.id ? ` · ${t('users.you')}` : '' }}</span></span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge>{{ statusLabel(user.role) }}</Badge>
-              </TableCell>
-              <TableCell>{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</TableCell>
-              <TableCell class="muted" un-text="13px subtle">
-                {{ formatDate(user.createdAt) }}
-              </TableCell>
-              <TableCell>
-                <div v-if="isAdmin()" flex="~ gap-2">
-                  <Button :aria-label="t('common.edit')" shape="square" @click="edit(user)">
-                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
-                  </Button><Button :disabled="user.id === currentUser?.id" :aria-label="t('common.delete')" shape="square" @click="confirmDelete(user)">
-                    <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </AsyncState>
-  </Card>
-  <Alert mt="5" as="p" variant="default">
+  <LayerCard>
+    <LayerCardPrimary class="p-0!">
+      <TableToolbar>
+        <InputGroup class="w-full max-w-sm">
+          <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+          <InputGroupInput v-model="search" type="search" :placeholder="t('users.searchMembersPlaceholder')" :aria-label="t('users.searchMembers')" />
+        </InputGroup>
+        <Button v-if="search" variant="ghost" size="sm" @click="search = ''">
+          {{ t('common.clearFilters') }}
+        </Button>
+      </TableToolbar>
+      <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+        <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+      </div>
+      <Banner v-else-if="query.error.value" variant="error">
+        {{ errorText(query.error.value) }}
+        <Button variant="ghost" @click="query.refetch()">
+          {{ t('asyncState.retry') }}
+        </Button>
+      </Banner>
+      <template v-else>
+        <Empty v-if="!items.length" size="sm" class="rounded-none border-none" :title="search ? t('users.noMatchingMembers') : t('users.noMembers')">
+          <Button v-if="search" @click="search = ''">
+            {{ t('common.clearFilters') }}
+          </Button>
+          <Button v-else-if="isAdmin()" variant="primary" @click="edit()">
+            {{ t('common.addMember') }}
+          </Button>
+        </Empty>
+        <TableContainer v-else :scroll-label="t('common.scrollTable')">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{{ t('users.member') }}</TableHead>
+                <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ t('common.role') }}
+                </TableHead>
+                <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ t('common.status') }}
+                </TableHead>
+                <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ t('common.created') }}
+                </TableHead>
+                <TableHead class="w-24">
+                  <span class="sr-only">{{ t('common.edit') }}</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="user in items" :key="user.id">
+                <TableCell>
+                  <div class="flex min-w-0 items-center gap-3">
+                    <Avatar class="shrink-0">
+                      {{ user.name?.[0] || user.username[0] }}
+                    </Avatar><span class="min-w-0"><span class="block font-medium [overflow-wrap:anywhere]">{{ user.name || user.username }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ user.username
+                    }}{{ user.id === currentUser?.id ? ` · ${t('users.you')}` : '' }}</span></span>
+                  </div>
+                  <div class="mt-2 flex flex-wrap items-center gap-2 [@container_workspace_(width_>_700px)]:hidden">
+                    <Badge>{{ statusLabel(user.role) }}</Badge>
+                    <span class="text-size-xs text-subtle">{{ user.enabled ? t('common.enabled') : t('common.disabled') }}</span>
+                  </div>
+                  <span class="mt-1 block text-size-xs text-subtle [@container_workspace_(width_>_700px)]:hidden">{{ t('common.created') }} · {{ formatDate(user.createdAt) }}</span>
+                </TableCell>
+                <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                  <Badge>{{ statusLabel(user.role) }}</Badge>
+                </TableCell>
+                <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                  {{ user.enabled ? t('common.enabled') : t('common.disabled') }}
+                </TableCell>
+                <TableCell class="text-subtle [@container_workspace_(max-width:_700px)]:hidden">
+                  {{ formatDate(user.createdAt) }}
+                </TableCell>
+                <TableCell>
+                  <div v-if="isAdmin()" class="flex justify-end gap-2">
+                    <Button :aria-label="t('common.edit')" shape="square" @click="edit(user)">
+                      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
+                    </Button><Button :disabled="user.id === currentUser?.id" :aria-label="t('common.delete')" shape="square" @click="confirmDelete(user)">
+                      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </template>
+      <TablePagination v-if="query.data.value">
+        {{ t('users.showingMembers', { shown: items.length, total: query.data.value.items.length }) }}
+      </TablePagination>
+    </LayerCardPrimary>
+  </LayerCard>
+  <p class="mt-4 max-w-prose text-size-sm text-subtle">
     {{ t('users.operatorsManageMonitorsMaintenanceAndPublicPagesAdministrators') }}
-  </Alert>
-  <Modal v-model:open="open" :title="form.id ? t('users.editMember') : t('common.addMember')">
+  </p>
+  <Dialog v-model:open="open" :close-label="t('common.close')" size="lg" :title="form.id ? t('users.editMember') : t('common.addMember')">
     <form id="user-form" @submit.prevent="formApi.handleSubmit()">
       <FieldGroup>
         <formApi.Field v-slot="{ field }" name="username">
           <Field :label="t('common.username')">
-            <FieldInput :name="field.name" :model-value="field.state.value" required :disabled="!!form.id" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <Input :name="field.name" :model-value="field.state.value" required :disabled="!!form.id" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="name">
           <Field :label="t('common.displayName')">
-            <FieldInput :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <Input :name="field.name" :model-value="field.state.value" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="role">
@@ -215,39 +275,39 @@ function cancel() {
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="timezone">
           <Field :label="t('common.displayTimeZone')" class="span-full">
-            <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <Input :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="password">
-          <Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :hint="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
-            <FieldInput :name="field.name" :model-value="field.state.value" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          <Field :label="form.id ? t('users.newPasswordLeaveEmptyToKeep') : t('common.password')" :description="t('common.atLeast12CharactersUpTo72Bytes')" class="span-full">
+            <Input :name="field.name" :model-value="field.state.value" type="password" :required="!form.id" minlength="12" maxlength="72" autocomplete="new-password" @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
           </Field>
         </formApi.Field>
         <formApi.Field v-slot="{ field }" name="enabled">
           <div class="span-full">
-            <Toggle :model-value="field.state.value" :label="t('users.enableAccount')" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+            <Switch :model-value="field.state.value" :label="t('users.enableAccount')" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
           </div>
         </formApi.Field>
       </FieldGroup>
-      <FieldError v-if="error" as="p" py="10px" px="0">
+      <Banner v-if="error" variant="error" class="mt-4">
         {{ error }}
-      </FieldError>
+      </Banner>
     </form>
     <template #footer>
-      <Button @click="cancel">
+      <Button :disabled="saving" @click="cancel">
         {{ t('common.cancel') }}
-      </Button><Button form="user-form" :disabled="saving" variant="primary">
+      </Button><Button type="submit" form="user-form" :loading="saving" variant="primary">
         {{ t('users.saveMember') }}
       </Button>
     </template>
-  </Modal><Modal v-model:open="deleteOpen" :title="t('users.deleteMember')">
+  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('users.deleteMember')">
     <p>{{ deleteTarget?.name || deleteTarget?.username }}</p>
     <template #footer>
-      <Button @click="deleteOpen = false">
+      <Button :disabled="deleting" @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="destructive" @click="remove">
+      </Button><Button variant="destructive" :loading="deleting" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>
-  </Modal>
+  </Dialog>
 </template>

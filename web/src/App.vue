@@ -4,9 +4,8 @@ import { useHead } from '@unhead/vue'
 import { watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
-import { Toast, ToastClose, ToastViewport } from './components/ui/toast'
+import { Toasty } from './components/ui/toast'
 import { currentUser } from './composables/api'
-import { dismissNotice, notices } from './composables/notices'
 import { dark } from './composables/preferences'
 
 const { t, locale } = useI18n({ useScope: 'global' })
@@ -37,11 +36,5 @@ watch(
 
 <template>
   <RouterView />
-  <ToastViewport>
-    <Toast v-for="item in notices" :key="item.id" :variant="item.kind">
-      <span>{{ item.message }}</span><ToastClose :aria-label="t('app.closeNotification')" @click="dismissNotice(item.id)">
-        ×
-      </ToastClose>
-    </Toast>
-  </ToastViewport>
+  <Toasty :close-label="t('app.closeNotification')" />
 </template>

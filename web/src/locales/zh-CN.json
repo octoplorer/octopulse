@@ -16,7 +16,8 @@
     "actor": "操作者",
     "action": "操作",
     "resource": "资源类型",
-    "resourceId": "资源 ID"
+    "resourceId": "资源 ID",
+    "noRecords": "暂无审计记录"
   },
   "common": {
     "monitors": "监控项",
@@ -77,7 +78,11 @@
     "addMember": "添加成员",
     "role": "角色",
     "password": "密码",
-    "workspace": "工作空间"
+    "workspace": "工作空间",
+    "close": "关闭",
+    "clearFilters": "清除筛选",
+    "skipToContent": "跳转到主要内容",
+    "scrollTable": "横向滚动查看更多列"
   },
   "connectionFields": {
     "proxyUrl": "代理 URL",
@@ -140,12 +145,17 @@
     "publishAnUpdate": "发布进展",
     "progress2": "进展状态",
     "update": "说明",
-    "publishUpdate": "发布进展"
+    "publishUpdate": "发布进展",
+    "searchIncidents": "搜索事件公告",
+    "searchTitleOrContent": "搜索标题或公告内容…",
+    "noMatchingIncidents": "没有匹配的事件公告",
+    "showingIncidents": "显示 {shown} / {total} 个事件公告"
   },
   "keyValues": {
     "valueFromSecret": "值来自秘密引用",
     "removeField": "移除字段",
-    "addField": "添加字段"
+    "addField": "添加字段",
+    "secretReference": "秘密引用"
   },
   "login": {
     "everyHeartbeat": "每一次心跳，",
@@ -186,7 +196,12 @@
     "affectedMonitors": "影响的监控项",
     "showOnStatusPages": "公开展示到状态页",
     "saveSchedule": "保存计划",
-    "deleteMaintenance": "删除维护计划"
+    "deleteMaintenance": "删除维护计划",
+    "all": "全部",
+    "searchMaintenance": "搜索维护计划",
+    "searchNameOrDescription": "搜索名称或描述…",
+    "noMatchingMaintenance": "没有匹配的维护计划",
+    "showingMaintenance": "显示 {shown} / {total} 个维护计划"
   },
   "modal": {
     "closeDialog": "关闭对话框"
@@ -399,6 +414,8 @@
     "viewDetails": "查看详情"
   },
   "navigation": {
+    "monitoring": "监控",
+    "serviceOperations": "服务运营",
     "overview": "概览",
     "statusPages": "状态页",
     "incidents": "事件公告",
@@ -411,7 +428,7 @@
     "monitorDetails": "监控详情",
     "newMonitor": "创建监控项",
     "newStatusPage": "创建状态页",
-    "administration": "管理",
+    "administration": "管理与设置",
     "signOut": "退出登录",
     "closeNavigation": "关闭导航",
     "openNavigation": "打开导航",
@@ -447,7 +464,20 @@
     "forSmtpTelegramAndOtherServiceUrlsThe": "如 smtp://…、telegram://… 等，完整 URL 存储为秘密，不会回读。",
     "enableChannel": "启用渠道",
     "save": "保存",
-    "deleteChannel": "删除通知渠道"
+    "deleteChannel": "删除通知渠道",
+    "searchChannels": "搜索通知渠道",
+    "searchChannelsPlaceholder": "搜索渠道名称…",
+    "noMatchingChannels": "没有匹配的通知渠道",
+    "showingChannels": "显示 {shown} / {total} 个通知渠道",
+    "searchDeliveries": "搜索投递记录",
+    "searchDeliveriesPlaceholder": "搜索监控项、渠道或错误…",
+    "allChannels": "全部渠道",
+    "allStatuses": "全部状态",
+    "filterChannel": "筛选通知渠道",
+    "filterStatus": "筛选投递状态",
+    "noMatchingDeliveries": "没有匹配的投递记录",
+    "showingDeliveries": "显示 {shown} / {total} 条投递记录",
+    "viewFailureDetails": "查看错误详情"
   },
   "overview": {
     "serviceOverview": "服务概览",
@@ -530,7 +560,9 @@
     "savingRefreshesRealStatisticsNewlySelectedServicesShow": "保存后重新读取真实统计；未保存的新选项显示已有服务状态，暂无历史统计。发布前不会改变公开页面。",
     "deleteStatusPage": "删除状态页",
     "thePagePathAndDomainWillStopPublishing": "该页面的路径与域名入口将停止发布。",
-    "logoPlaceholder": "https://… 或 /assets/uploads/…"
+    "logoPlaceholder": "https://… 或 /assets/uploads/…",
+    "preview": "预览",
+    "editorViews": "状态页视图"
   },
   "pages": {
     "shareServiceHealthAndUpdatesWithYourOwn": "以你的品牌发布服务状态，让每个人及时了解进展。",
@@ -583,7 +615,11 @@
     "secretValue": "秘密值",
     "saveSecret": "保存秘密",
     "deleteSecret": "删除秘密",
-    "removeMonitorAndChannelReferencesBeforeDeletingA": "被监控或渠道引用的秘密需要先解除引用。"
+    "removeMonitorAndChannelReferencesBeforeDeletingA": "被监控或渠道引用的秘密需要先解除引用。",
+    "searchSecrets": "搜索秘密凭据",
+    "searchSecretsPlaceholder": "搜索名称或引用 ID…",
+    "noMatchingSecrets": "没有匹配的秘密凭据",
+    "showingSecrets": "显示 {shown} / {total} 个秘密凭据"
   },
   "servers": {
     "beszelConnectionSaved": "Beszel 连接已保存",
@@ -715,7 +751,9 @@
     "noServicesHaveBeenPublishedYet": "尚未发布服务。",
     "incidentUpdates": "事件进展",
     "incidentAnnouncements": "事件公告",
-    "backToStatusPage": "返回状态页"
+    "backToStatusPage": "返回状态页",
+    "incidentUnavailable": "未找到此事件公告",
+    "incidentUnavailableDescription": "返回状态页查看当前服务状态与事件公告。"
   },
   "tLSFields": {
     "enableTls": "启用 TLS",
@@ -744,6 +782,10 @@
     "newPasswordLeaveEmptyToKeep": "新密码（留空保留）",
     "enableAccount": "启用账号",
     "saveMember": "保存成员",
-    "deleteMember": "删除成员"
+    "deleteMember": "删除成员",
+    "searchMembers": "搜索成员",
+    "searchMembersPlaceholder": "搜索名称或用户名…",
+    "noMatchingMembers": "没有匹配的成员",
+    "showingMembers": "显示 {shown} / {total} 位成员"
   }
 }

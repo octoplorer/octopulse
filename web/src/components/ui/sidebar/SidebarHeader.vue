@@ -5,7 +5,7 @@ defineOptions({ name: 'SidebarHeader' })
 <template>
   <div
     data-sidebar="header"
-    class="flex h-[58px] shrink-0 items-center gap-1 overflow-hidden border-b border-line px-3"
+    class="flex h-[var(--sidebar-header-height,58px)] shrink-0 items-center gap-1 overflow-hidden border-b border-line px-3"
   >
     <slot />
   </div>

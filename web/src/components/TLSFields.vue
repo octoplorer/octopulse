@@ -3,11 +3,10 @@ import type { Secret } from '../client/types.gen'
 import type { TLSConfigForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
-import Field from './Field.vue'
-import SecretSelect from './SecretSelect.vue'
-import Toggle from './Toggle.vue'
-import { FieldGroup, FieldInput } from './ui/field'
+import { Field, FieldGroup } from './ui/field'
+import { Input } from './ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Switch } from './ui/switch'
 
 defineProps<{ secrets: Secret[], allowToggle?: boolean }>()
 
@@ -21,7 +20,7 @@ function update<K extends keyof TLSConfigForm>(name: K, value: TLSConfigForm[K])
 
 <template>
   <div>
-    <Toggle
+    <Switch
       v-if="allowToggle"
       :model-value="model.enabled" :label="t('tLSFields.enableTls')"
       mb="5"
@@ -29,17 +28,55 @@ function update<K extends keyof TLSConfigForm>(name: K, value: TLSConfigForm[K])
     />
     <FieldGroup>
       <Field :label="t('tLSFields.sniServerName')">
-        <FieldInput :model-value="model.serverName" :placeholder="t('tLSFields.useTargetHostname')" @update:model-value="update('serverName', $event)" />
+        <Input :model-value="model.serverName" :placeholder="t('tLSFields.useTargetHostname')" @update:model-value="update('serverName', String($event ?? ''))" />
       </Field><Field :label="t('tLSFields.customCaSecret')">
-        <SecretSelect :model-value="model.caSecretRef" :secrets="secrets" optional @update:model-value="update('caSecretRef', $event)" />
+        <Select :model-value="model.caSecretRef" @update:model-value="update('caSecretRef', $event)">
+          <SelectTrigger>
+            <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="">
+                {{ t('secretSelect.noSecretReference') }}
+              </SelectItem>
+              <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
+                {{ secret.name }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field><Field :label="t('tLSFields.clientPemCertificate')">
-        <SecretSelect
-          :model-value="model.clientCertificateSecretRef" :secrets="secrets"
-          optional
-          @update:model-value="update('clientCertificateSecretRef', $event)"
-        />
+        <Select :model-value="model.clientCertificateSecretRef" @update:model-value="update('clientCertificateSecretRef', $event)">
+          <SelectTrigger>
+            <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="">
+                {{ t('secretSelect.noSecretReference') }}
+              </SelectItem>
+              <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
+                {{ secret.name }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field><Field :label="t('tLSFields.clientPrivateKey')">
-        <SecretSelect :model-value="model.clientKeySecretRef" :secrets="secrets" optional @update:model-value="update('clientKeySecretRef', $event)" />
+        <Select :model-value="model.clientKeySecretRef" @update:model-value="update('clientKeySecretRef', $event)">
+          <SelectTrigger>
+            <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="">
+                {{ t('secretSelect.noSecretReference') }}
+              </SelectItem>
+              <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
+                {{ secret.name }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </Field><Field :label="t('tLSFields.minimumTlsVersion')">
         <Select :model-value="model.minVersion" @update:model-value="update('minVersion', $event)">
           <SelectTrigger><SelectValue :placeholder="t('common.default')" /></SelectTrigger>
@@ -76,7 +113,7 @@ function update<K extends keyof TLSConfigForm>(name: K, value: TLSConfigForm[K])
         </Select>
       </Field>
       <div class="span-full">
-        <Toggle
+        <Switch
           :model-value="model.insecureSkipVerify" :label="t('tLSFields.skipTlsCertificateVerification')"
           :description="t('tLSFields.forKnownSelfSignedServicesVerificationIsEnabled')"
           @update:model-value="update('insecureSkipVerify', $event)"

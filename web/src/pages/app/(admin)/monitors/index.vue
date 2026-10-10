@@ -3,18 +3,22 @@ import { useQuery } from '@pinia/colada'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { listMonitorsQuery } from '../../../../client/@pinia/colada.gen'
-import AsyncState from '../../../../components/AsyncState.vue'
-import EmptyState from '../../../../components/EmptyState.vue'
-import PageHeader from '../../../../components/PageHeader.vue'
-import StateBadge from '../../../../components/StateBadge.vue'
+import { Badge } from '../../../../components/ui/badge'
+import { Banner } from '../../../../components/ui/banner'
+import { PageHeader } from '../../../../components/ui/blocks/page-header'
 import { Button } from '../../../../components/ui/button'
-import { Card } from '../../../../components/ui/card'
+import { Empty } from '../../../../components/ui/empty'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../../../components/ui/input-group'
+import { LayerCard } from '../../../../components/ui/layer-card'
+import { Loader } from '../../../../components/ui/loader'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select'
-import { Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableHeader, TableRow, TableToolbar } from '../../../../components/ui/table'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TablePagination, TableRow, TableToolbar } from '../../../../components/ui/table'
 import { canEdit } from '../../../../composables/api'
 import { usePollingEnabled } from '../../../../composables/polling'
 import { formatDate } from '../../../../composables/preferences'
+import { errorText } from '../../../../lib/errors'
 import { monitorTypes, targetOf } from '../../../../lib/monitor'
+import { monitorStateDisplay } from '../../../../lib/monitor-state'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 
@@ -33,6 +37,7 @@ const query = useQuery(
 const search = ref('')
 const state = ref('all')
 const type = ref('all')
+const hasFilters = computed(() => !!search.value || state.value !== 'all' || type.value !== 'all')
 const items = computed(() =>
   [...(query.data.value?.items || [])].sort((a, b) => a.name.localeCompare(b.name, locale.value)),
 )
@@ -40,133 +45,161 @@ const filtered = computed(() =>
   items.value.filter(
     m =>
       (!search.value
-        || `${m.name} ${m.group} ${m.tags?.join(' ')} ${targetOf(m)}`
+        || `${m.name} ${m.group ?? ''} ${m.tags?.join(' ') ?? ''} ${targetOf(m)}`
           .toLowerCase()
           .includes(search.value.toLowerCase()))
         && (state.value === 'all'
           || (state.value === 'paused' ? !m.enabled : m.enabled && m.state === state.value))
         && (type.value === 'all' || m.type === type.value),
-  ),
+  ).map(monitor => ({
+    ...monitor,
+    stateDisplay: monitorStateDisplay(
+      monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state,
+      { paused: !monitor.enabled },
+    ),
+  })),
 )
+function clearFilters() {
+  search.value = ''
+  state.value = 'all'
+  type.value = 'all'
+}
 </script>
 
 <template>
-  <PageHeader :title="t('common.monitors')" :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')">
-    <Button @click="query.refetch()">
-      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
-    </Button><Button v-if="canEdit()" variant="primary" as-child>
-      <RouterLink to="/app/monitors/new">
-        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('common.addMonitor') }}
-      </RouterLink>
-    </Button>
+  <PageHeader :title="t('common.monitors')" :description="t('monitors.defineHealthyBehaviorAndDetectEveryChange')" class="mb-6">
+    <template #actions>
+      <Button :loading="query.isPending.value" @click="query.refetch()">
+        <span class="i-lucide-refresh-cw size-4" aria-hidden="true" />{{ t('common.refresh') }}
+      </Button>
+      <Button v-if="canEdit()" variant="primary" as-child>
+        <RouterLink to="/app/monitors/new">
+          <span class="i-lucide-plus size-4" aria-hidden="true" />{{ t('common.addMonitor') }}
+        </RouterLink>
+      </Button>
+    </template>
   </PageHeader>
-  <Card as="section">
-    <TableToolbar>
-      <div class="search-box relative [@media(max-width:700px)]:basis-full [@media(max-width:700px)]:max-w-none [@container_workspace_(max-width:_700px)]:basis-full [@container_workspace_(max-width:_700px)]:max-w-none" flex="~ items-center 1" gap="8px" un-text="subtle" max-w="340px" min-w="180px" border="1 solid line" rounded="8px" pl="10px" bg="base" shadow="control">
-        <span w="16px" h="16px" aria-hidden="true" class="i-lucide-search" /><input v-model="search" w="full" min-w="0" border="0!" bg="transparent!" shadow="none!" p="y-7px! r-10px! l-0!" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')">
-      </div>
-      <div flex="~ items-center gap-2">
+  <LayerCard>
+    <TableToolbar class="flex-wrap gap-3">
+      <InputGroup class="min-w-0 flex-1 basis-64">
+        <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+        <InputGroupInput v-model="search" :placeholder="t('monitors.searchNameTargetOrTags')" :aria-label="t('monitors.searchMonitors')" />
+      </InputGroup>
+      <div class="flex max-w-full flex-none flex-wrap items-center gap-3">
         <Select v-model="state">
-          <SelectTrigger w="auto!" :aria-label="t('monitors.filterStatus')">
+          <SelectTrigger :aria-label="t('monitors.filterStatus')" class="w-auto!">
             <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          </SelectTrigger><SelectContent>
             <SelectGroup>
               <SelectItem value="all">
                 {{ t('monitors.allStates') }}
-              </SelectItem>
-              <SelectItem value="up">
+              </SelectItem><SelectItem value="up">
                 {{ t('monitors.up') }}
-              </SelectItem>
-              <SelectItem value="down">
+              </SelectItem><SelectItem value="down">
                 {{ t('monitors.down') }}
-              </SelectItem>
-              <SelectItem value="unknown">
+              </SelectItem><SelectItem value="unknown">
                 {{ t('monitors.unknown') }}
-              </SelectItem>
-              <SelectItem value="paused">
+              </SelectItem><SelectItem value="paused">
                 {{ t('common.paused') }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
-        </Select><Select v-model="type">
-          <SelectTrigger w="auto!" :aria-label="t('monitors.filterType')">
+        </Select>
+        <Select v-model="type">
+          <SelectTrigger :aria-label="t('monitors.filterType')" class="w-auto!">
             <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          </SelectTrigger><SelectContent>
             <SelectGroup>
               <SelectItem value="all">
                 {{ t('monitors.allTypes') }}
-              </SelectItem>
-              <SelectItem v-for="item in monitorTypes" :key="item.value" :value="item.value">
+              </SelectItem><SelectItem v-for="item in monitorTypes" :key="item.value" :value="item.value">
                 {{ t(item.label) }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
+        <Button v-if="hasFilters" variant="ghost" size="sm" @click="clearFilters">
+          <span class="i-lucide-x size-3.5" aria-hidden="true" />{{ t('common.clearFilters') }}
+        </Button>
       </div>
     </TableToolbar>
-    <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-      <EmptyState
-        v-if="!filtered.length" :title="
-          items.length ? t('monitors.noMatchingMonitors') : t('monitors.startWatchingYourServices')
-        " :description="
-          items.length
-            ? t('monitors.tryChangingYourSearchOrFilters')
-            : t('monitors.addAServiceCheckToSeeStatusHistory')
-        "
-      >
-        <Button v-if="!items.length && canEdit()" variant="primary" as-child>
-          <RouterLink to="/app/monitors/new">
-            {{ t('common.createMonitor') }}
-          </RouterLink>
-        </Button>
-      </EmptyState>
-      <TableContainer v-else>
+    <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+      <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+    </div>
+    <Banner v-else-if="query.error.value" variant="error">
+      {{ errorText(query.error.value) }}
+      <Button variant="ghost" @click="query.refetch()">
+        {{ t('asyncState.retry') }}
+      </Button>
+    </Banner>
+    <template v-else>
+      <Empty v-if="!filtered.length" :title="items.length ? t('monitors.noMatchingMonitors') : t('monitors.startWatchingYourServices')" :description="items.length ? t('monitors.tryChangingYourSearchOrFilters') : t('monitors.addAServiceCheckToSeeStatusHistory')" size="sm" class="rounded-none border-none">
+        <template #icon>
+          <span class="i-lucide-activity size-8 text-subtle" aria-hidden="true" />
+        </template>
+        <template #actions>
+          <Button v-if="hasFilters" @click="clearFilters">
+            {{ t('common.clearFilters') }}
+          </Button>
+          <Button v-if="canEdit() && !items.length" variant="primary" as-child>
+            <RouterLink to="/app/monitors/new">
+              {{ t('common.addMonitor') }}
+            </RouterLink>
+          </Button>
+        </template>
+      </Empty>
+      <TableContainer v-else :scroll-label="t('common.scrollTable')">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{{ t('common.service') }}</TableHead>
-              <TableHead>{{ t('common.status') }}</TableHead>
-              <TableHead>{{ t('common.group') }}</TableHead>
-              <TableHead>{{ t('monitors.intervalRetries') }}</TableHead>
-              <TableHead>{{ t('common.lastCheck') }}</TableHead>
-              <TableHead />
+              <TableHead class="w-2/5 min-w-64 [@container_workspace_(max-width:_700px)]:w-auto! [@container_workspace_(max-width:_700px)]:min-w-0!">
+                {{ t('common.service') }}
+              </TableHead><TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                {{ t('common.status') }}
+              </TableHead><TableHead class="text-end [@container_workspace_(max-width:_700px)]:hidden">
+                {{ t('monitors.intervalRetries') }}
+              </TableHead><TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                {{ t('common.lastCheck') }}
+              </TableHead><TableHead class="w-12">
+                <span class="sr-only">{{ t('monitors.viewDetails') }}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-for="monitor in filtered" :key="monitor.id">
               <TableCell>
-                <RouterLink :to="`/app/monitors/${monitor.id}`" flex="~ items-center gap-3">
-                  <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span v-if="monitor.type === 'http' || monitor.type === 'dns'" w="16px" h="16px" aria-hidden="true" class="i-lucide-globe" /><span v-else w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /></span><span><span class="monitor-name block" font="600" un-text="13px">{{ monitor.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ targetOf(monitor) }}</span></span>
+                <RouterLink :to="`/app/monitors/${monitor.id}`" class="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand">
+                  <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-recessed text-subtle"><span :class="monitor.type === 'http' || monitor.type === 'dns' ? 'i-lucide-globe' : 'i-lucide-server'" class="size-4" aria-hidden="true" /></span>
+                  <span class="min-w-0 space-y-1 [overflow-wrap:anywhere]">
+                    <span class="block font-medium">{{ monitor.name }}</span>
+                    <span class="block text-size-xs text-subtle">{{ targetOf(monitor) }}</span>
+                    <span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-size-xs text-subtle">
+                      <span>{{ monitor.type.toUpperCase() }}</span>
+                      <span v-if="monitor.group">{{ monitor.group }}</span>
+                    </span>
+                    <span class="hidden space-y-2 pt-1 [@container_workspace_(max-width:_700px)]:block">
+                      <Badge :variant="monitor.stateDisplay.variant" :data-state="monitor.stateDisplay.state" dot>{{ monitor.stateDisplay.label }}</Badge>
+                      <span class="block text-size-xs text-subtle">{{ t('monitors.intervalRetries') }} · {{ monitor.type === 'heartbeat' ? monitor.heartbeat?.periodSeconds : monitor.intervalSeconds }} s<span v-if="['http', 'tcp', 'dns'].includes(monitor.type)"> / {{ monitor.retries }}</span></span>
+                      <span class="block text-size-xs text-subtle">{{ t('common.lastCheck') }} · {{ formatDate(monitor.lastCheckedAt) }}</span>
+                    </span>
+                  </span>
                 </RouterLink>
               </TableCell>
-              <TableCell>
-                <StateBadge
-                  :state="
-                    monitor.type === 'certificate' ? monitor.certificate?.state : monitor.state
-                  " :paused="!monitor.enabled"
-                />
+              <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                <Badge :variant="monitor.stateDisplay.variant" :data-state="monitor.stateDisplay.state" dot>
+                  {{ monitor.stateDisplay.label }}
+                </Badge>
               </TableCell>
-              <TableCell class="muted" un-text="13px subtle">
-                {{ monitor.group || '—' }}
+              <TableCell class="whitespace-nowrap text-end text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
+                {{ monitor.type === 'heartbeat' ? monitor.heartbeat?.periodSeconds : monitor.intervalSeconds }} s<span v-if="['http', 'tcp', 'dns'].includes(monitor.type)"> / {{ monitor.retries }}</span>
               </TableCell>
-              <TableCell>
-                {{
-                  monitor.type === 'heartbeat'
-                    ? monitor.heartbeat?.periodSeconds
-                    : monitor.intervalSeconds
-                }}
-                s
-                <span v-if="['http', 'tcp', 'dns'].includes(monitor.type)" class="muted" un-text="13px subtle">/ {{ monitor.retries }}</span>
-              </TableCell>
-              <TableCell class="muted" un-text="13px subtle">
+              <TableCell class="whitespace-nowrap text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
                 {{ formatDate(monitor.lastCheckedAt) }}
               </TableCell>
-              <TableCell>
-                <Button shape="square" as-child>
+              <TableCell class="text-end">
+                <Button variant="ghost" shape="square" size="sm" as-child>
                   <RouterLink :to="`/app/monitors/${monitor.id}`" :aria-label="t('monitors.viewDetails')">
-                    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-chevron-right" />
+                    <span class="i-lucide-chevron-right size-4" aria-hidden="true" />
                   </RouterLink>
                 </Button>
               </TableCell>
@@ -174,9 +207,7 @@ const filtered = computed(() =>
           </TableBody>
         </Table>
       </TableContainer>
-    </AsyncState>
-    <TableFooter>
-      <span>{{ t('counts.monitors', { count: filtered.length }, filtered.length) }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span>
-    </TableFooter>
-  </Card>
+    </template>
+    <TablePagination><span role="status" aria-live="polite">{{ t('overview.showingMonitors', { shown: filtered.length, total: items.length }) }}</span><span>{{ t('common.refreshesEvery30Seconds') }}</span></TablePagination>
+  </LayerCard>
 </template>

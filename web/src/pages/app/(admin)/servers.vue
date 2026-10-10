@@ -20,21 +20,20 @@ import {
   listSecretsQuery,
   updateBeszelConfigMutation,
 } from '../../../client/@pinia/colada.gen'
-import AsyncState from '../../../components/AsyncState.vue'
-import EChart from '../../../components/EChart.vue'
-import EmptyState from '../../../components/EmptyState.vue'
-import Field from '../../../components/Field.vue'
-import Modal from '../../../components/Modal.vue'
-import PageHeader from '../../../components/PageHeader.vue'
-import SecretSelect from '../../../components/SecretSelect.vue'
-import Toggle from '../../../components/Toggle.vue'
-import { Alert } from '../../../components/ui/alert'
 import { Badge } from '../../../components/ui/badge'
+import { Banner } from '../../../components/ui/banner'
+import { PageHeader } from '../../../components/ui/blocks/page-header'
 import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
-import { FieldError, FieldInput } from '../../../components/ui/field'
+import { Chart } from '../../../components/ui/chart'
+import { Dialog } from '../../../components/ui/dialog'
+import { Empty } from '../../../components/ui/empty'
+import { Field, FieldError } from '../../../components/ui/field'
+import { Input } from '../../../components/ui/input'
+import { LayerCard, LayerCardPrimary } from '../../../components/ui/layer-card'
+import { Loader } from '../../../components/ui/loader'
+import { Meter } from '../../../components/ui/meter'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
-import { Separator } from '../../../components/ui/separator'
+import { Switch } from '../../../components/ui/switch'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { isAdmin } from '../../../composables/api'
@@ -60,6 +59,7 @@ const query = useQuery(
       autoRefetch: 30000,
     }),
 )
+const integrationDisabled = computed(() => query.data.value?.error === 'Beszel integration is disabled')
 const secrets = useQuery({
   ...listSecretsQuery(),
   staleTime: 10000,
@@ -131,6 +131,13 @@ const configForm = useForm({
   },
 })
 const saving = configForm.useSelector(state => state.isSubmitting)
+const configDialogOpen = computed({
+  get: () => configOpen.value,
+  set: (open: boolean) => {
+    if (!saving.value)
+      configOpen.value = open
+  },
+})
 let detailRequest = 0
 async function configure() {
   if (configForm.state.isSubmitting)
@@ -209,115 +216,132 @@ function percentage(value: number | undefined) {
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.servers')" :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')">
-    <Button @click="query.refetch()">
-      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
-    </Button><Button v-if="isAdmin()" variant="primary" @click="configure">
-      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
-    </Button>
+  <PageHeader :title="t('navigation.servers')" :description="t('servers.independentServerMetricsFromBeszelSeparateFromWebsite')" class="mb-6">
+    <template #actions>
+      <Button v-if="!integrationDisabled" @click="query.refetch()">
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+      </Button><Button v-if="isAdmin() && !integrationDisabled" variant="primary" @click="configure">
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-settings" />{{ t('servers.beszelConnection') }}
+      </Button>
+    </template>
   </PageHeader>
-  <div flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
-    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server" /><span>{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
+  <div v-if="!integrationDisabled" flex="~ items-center" gap="9px" mb="22px" p="y-13px x-16px" border="1 solid line" rounded="8px" bg="base" un-text="12px subtle">
+    <span w="16px" h="16px" aria-hidden="true" class="i-lucide-server shrink-0" /><span class="min-w-0 [overflow-wrap:anywhere]">{{ t('common.source') }}: {{ query.data.value?.source || 'Beszel' }} ·
       {{ t('servers.lastSync') }} {{ formatDate(query.data.value?.syncedAt)
       }}<span v-if="query.data.value?.stale"> · {{ t('servers.dataIsStale') }}</span></span>
   </div>
-  <Alert v-if="query.data.value?.error" role="alert" variant="destructive">
+  <Banner v-if="query.data.value?.error && !integrationDisabled" role="alert" variant="error" class="mb-6">
     {{ query.data.value.error }}
-  </Alert>
-  <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-    <EmptyState v-if="!query.data.value?.items.length" :title="t('servers.connectYourBeszelHub')" :description="t('servers.useADedicatedAccountToReadItsVisible')">
+    <Button variant="ghost" @click="query.refetch()">
+      {{ t('asyncState.retry') }}
+    </Button>
+  </Banner>
+  <Loader v-if="query.isPending.value" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
+    {{ t('asyncState.loadingData') }}
+  </Loader>
+  <Banner v-else-if="query.error.value" variant="error">
+    {{ errorText(query.error.value) }}
+    <Button variant="ghost" @click="query.refetch()">
+      {{ t('asyncState.retry') }}
+    </Button>
+  </Banner>
+  <template v-else>
+    <Empty v-if="integrationDisabled || (!query.data.value?.error && !query.data.value?.items.length)" size="sm" :title="t('servers.connectYourBeszelHub')" :description="t('servers.useADedicatedAccountToReadItsVisible')">
       <Button v-if="isAdmin()" variant="primary" @click="configure">
         {{ t('servers.configureConnection') }}
       </Button>
-    </EmptyState>
-    <div v-else grid="~ cols-3" gap="20px" class="[@media(max-width:1200px)]:grid-cols-2 [@media(max-width:900px)]:grid-cols-2 [@media(max-width:700px)]:grid-cols-1 [@container_workspace_(max-width:_700px)]:grid-cols-1!">
-      <Card v-for="server in query.data.value.items" :key="server.id" as="article" p="22px" class="[&_h2]:text-16px">
-        <div flex="~ items-center justify-between gap-3">
-          <div flex="~ items-center gap-3">
-            <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
-            <div>
-              <h2>{{ server.name }}</h2>
-              <p class="muted" un-text="13px subtle">
-                {{ server.host || server.id }}
-              </p>
+    </Empty>
+    <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-6">
+      <LayerCard v-for="server in query.data.value.items" :key="server.id" class="flex flex-col [&_h2]:text-16px">
+        <LayerCardPrimary class="flex flex-1 flex-col gap-5 tabular-nums">
+          <div flex="~ items-start justify-between gap-3">
+            <div flex="~ items-start gap-3" class="min-w-0">
+              <span class="monitor-type-icon" flex="~ items-center justify-center shrink-0" size="32px" border="1 solid line" rounded="8px" un-text="subtle" bg="base"><span w="17px" h="17px" aria-hidden="true" class="i-lucide-server" /></span>
+              <div class="min-w-0 [overflow-wrap:anywhere]">
+                <h2>{{ server.name }}</h2>
+                <p class="muted" un-text="13px subtle">
+                  {{ server.host || server.id }}
+                </p>
+              </div>
+            </div>
+            <Badge class="shrink-0">
+              {{ server.status }}
+            </Badge>
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <Meter label="CPU" :value="server.cpu ?? 0" :custom-value="percentage(server.cpu)" />
+            <Meter :label="t('servers.memory')" :value="server.memory ?? 0" :custom-value="percentage(server.memory)" />
+            <Meter :label="t('servers.disk')" :value="server.disk ?? 0" :custom-value="percentage(server.disk)" />
+            <div class="space-y-2 text-size-xs text-subtle">
+              <span>{{ t('servers.updated') }}</span><p>{{ formatDate(server.updatedAt) }}</p>
+              <Badge v-if="server.stale" variant="warning">
+                {{ t('servers.staleData') }}
+              </Badge>
             </div>
           </div>
-          <Badge>{{ server.status }}</Badge>
-        </div>
-        <div grid="~ cols-2" gap="18px" mt="25px" class="tabular-nums [&_strong]:block [&_strong]:mt-5px [&_strong]:text-19px [&_strong]:font-[var(--font-sans)] [&_.metric-progress]:mt-8px [&_.metric-progress]:h-5px [&_.metric-progress]:overflow-hidden [&_.metric-progress]:rounded-5px [&_.metric-progress]:bg-line [&_.metric-progress_span]:block [&_.metric-progress_span]:h-full [&_.metric-progress_span]:rounded-5px [&_.metric-progress_span]:bg-brand">
-          <div>
-            <span class="mini-label" un-text="12px subtle" tracking="0.5px">CPU</span><strong>{{ percentage(server.cpu) }}</strong>
-            <div class="metric-progress">
-              <span :style="{ width: `${Math.min(server.cpu || 0, 100)}%` }" />
-            </div>
+          <div class="mt-auto border-t border-line pt-4">
+            <Button variant="ghost" size="sm" @click="detail(server)">
+              {{ t('servers.historyContainers') }}<span class="i-lucide-arrow-up-right size-4" aria-hidden="true" />
+            </Button>
           </div>
-          <div>
-            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.memory') }}</span><strong>{{ percentage(server.memory) }}</strong>
-            <div class="metric-progress">
-              <span :style="{ width: `${Math.min(server.memory || 0, 100)}%` }" />
-            </div>
-          </div>
-          <div>
-            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.disk') }}</span><strong>{{ percentage(server.disk) }}</strong>
-            <div class="metric-progress">
-              <span :style="{ width: `${Math.min(server.disk || 0, 100)}%` }" />
-            </div>
-          </div>
-          <div>
-            <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.updated') }}</span>
-            <p mt="2" class="muted" un-text="13px subtle">
-              {{ formatDate(server.updatedAt) }}
-            </p>
-            <span v-if="server.stale" class="certificate-risk" un-text="12px fg-warning">{{ t('servers.staleData') }}</span>
-          </div>
-        </div>
-        <Separator />
-        <Button p="0!" variant="ghost" @click="detail(server)">
-          {{ t('servers.historyContainers') }}<span w="14px" h="14px" aria-hidden="true" class="i-lucide-arrow-up-right" />
-        </Button>
-      </Card>
+        </LayerCardPrimary>
+      </LayerCard>
     </div>
-  </AsyncState>
-  <Alert mt="6" as="p" variant="default">
+  </template>
+  <Banner v-if="!integrationDisabled" mt="6" variant="secondary">
     {{ t('servers.offlineServersStaleDataOrIncompatibleVersionsDo') }}
-  </Alert>
-  <Modal v-model:open="configOpen" :title="t('servers.beszelHubConnection')">
-    <form id="beszel-form" @submit.prevent="configForm.handleSubmit">
-      <Alert mb="5" as="p" variant="default">
+  </Banner>
+  <Dialog v-model:open="configDialogOpen" :close-label="t('common.close')" :title="t('servers.beszelHubConnection')">
+    <form id="beszel-form" @submit.prevent="configForm.handleSubmit()">
+      <Banner mb="5" variant="secondary">
         {{ t('servers.supportsBeszel020XUseADedicated') }}
-      </Alert>
+      </Banner>
       <configForm.Field v-slot="{ field }" name="url">
         <Field :label="t('servers.hubUrl')">
-          <FieldInput :model-value="field.state.value" type="url" placeholder="https://beszel.example.com" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          <Input :model-value="field.state.value" type="url" placeholder="https://beszel.example.com" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="email">
         <Field :label="t('servers.dedicatedAccountEmail')" mt="4">
-          <FieldInput :model-value="field.state.value" type="email" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          <Input :model-value="field.state.value" type="email" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="passwordSecretId">
         <Field :label="t('servers.passwordSecretReference')" mt="4">
-          <SecretSelect :model-value="field.state.value" :secrets="secrets.data.value?.items || []" @update:model-value="field.handleChange($event || '')" @focusout="field.handleBlur" />
+          <Select :model-value="field.state.value" @update:model-value="field.handleChange($event || '')">
+            <SelectTrigger @focusout="field.handleBlur">
+              <SelectValue :placeholder="t('secretSelect.chooseASecret')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="">
+                  {{ t('secretSelect.chooseASecret') }}
+                </SelectItem>
+                <SelectItem v-for="secret in secrets.data.value?.items || []" :key="secret.id" :value="secret.id">
+                  {{ secret.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="pollSeconds">
         <Field :label="t('servers.syncIntervalSeconds')" mt="4">
-          <FieldInput :model-value="field.state.value" type="number" min="30" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
+          <Input :model-value="field.state.value" type="number" min="30" required @update:model-value="field.handleChange(Number($event))" @blur="field.handleBlur" />
         </Field>
       </configForm.Field><configForm.Field v-slot="{ field }" name="enabled">
-        <Toggle :model-value="field.state.value" :label="t('servers.enableIntegration')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+        <Switch :model-value="field.state.value" :label="t('servers.enableIntegration')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
       </configForm.Field>
       <FieldError v-if="error" as="p" py="10px" px="0">
         {{ error }}
       </FieldError>
     </form>
     <template #footer>
-      <Button @click="configOpen = false">
+      <Button :disabled="saving" @click="configOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button form="beszel-form" :disabled="saving" variant="primary">
+      </Button><Button type="submit" form="beszel-form" :loading="saving" variant="primary">
         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-save" />{{ t('servers.saveConnection') }}
       </Button>
     </template>
-  </Modal><Modal v-model:open="detailOpen" :title="selected?.name || ''" wide>
-    <div v-if="selected?.info" mb="5" grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
+  </Dialog><Dialog v-model:open="detailOpen" :close-label="t('common.close')" :title="selected?.name || ''" wide>
+    <div v-if="selected?.info" mb="5" grid="~ cols-2" gap="15px" class="tabular-nums [overflow-wrap:anywhere] [@media(max-width:700px)]:grid-cols-1">
       <div>
         <span class="mini-label" un-text="12px subtle" tracking="0.5px">{{ t('servers.hostname') }}</span>
         <p>{{ selected.info.hostname || '—' }}</p>
@@ -339,25 +363,34 @@ function percentage(value: number | undefined) {
         </p>
       </div>
     </div>
-    <AsyncState :pending="detailLoading" :error="detailError" @retry="selected && detail(selected)">
+    <Loader v-if="detailLoading" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs">
+      {{ t('asyncState.loadingData') }}
+    </Loader>
+    <Banner v-else-if="detailError" variant="error">
+      {{ errorText(detailError) }}
+      <Button variant="ghost" @click="selected && detail(selected)">
+        {{ t('asyncState.retry') }}
+      </Button>
+    </Banner>
+    <template v-else>
       <TabsRoot v-model="tab">
-        <TabsList>
-          <TabsTrigger value="history">
+        <TabsList variant="line">
+          <TabsTrigger variant="line" value="history">
             {{
               t('servers.history')
             }}
-          </TabsTrigger><TabsTrigger value="containers">
+          </TabsTrigger><TabsTrigger variant="line" value="containers">
             {{
               t('servers.containers')
             }}
           </TabsTrigger>
         </TabsList><TabsContent value="history">
-          <div flex="~ items-center justify-between gap-3" mt="5">
-            <Alert as="p" variant="default">
+          <div flex="~ wrap items-center justify-between gap-3" mt="5">
+            <Banner variant="secondary">
               {{ t('common.source') }}: {{ historyMeta?.source || 'Beszel' }} ·
               {{ formatDate(historyMeta?.syncedAt)
               }}<span v-if="historyMeta?.stale"> · {{ t('common.staleData') }}</span>
-            </Alert>
+            </Banner>
             <Select v-model="historyRange" @change="selected && detail(selected)">
               <SelectTrigger :aria-label="t('servers.historyRange')">
                 <SelectValue />
@@ -371,15 +404,18 @@ function percentage(value: number | undefined) {
               </SelectContent>
             </Select>
           </div>
-          <FieldError v-if="historyMeta?.error" as="p" py="10px" px="0">
+          <Banner v-if="historyMeta?.error" variant="error" class="mt-4">
             {{ historyMeta.error }}
-          </FieldError>
-          <EmptyState v-if="!history.length" :title="t('servers.noHistoryReturnedByTheHub')" />
+            <Button variant="ghost" @click="selected && detail(selected)">
+              {{ t('asyncState.retry') }}
+            </Button>
+          </Banner>
+          <Empty v-if="!history.length" size="sm" :title="t('servers.noHistoryReturnedByTheHub')" />
           <div v-else py="6">
             <div grid="~ cols-2" gap="15px" class="[@media(max-width:700px)]:grid-cols-1">
-              <section v-for="chart in historyCharts" :key="chart.key">
+              <section v-for="chart in historyCharts" :key="chart.key" class="min-w-0">
                 <h3>{{ chart.name }} ({{ chart.unit }})</h3>
-                <EChart v-if="chart.hasData" :option="chart.option" :height="160" :aria-label="chart.label" />
+                <Chart v-if="chart.hasData" :option="chart.option" :height="160" :aria-label="chart.label" />
                 <div v-else h="160px" flex="~ items-center justify-center" un-text="subtle" role="status">
                   {{ t('chart.noObservations') }}
                 </div>
@@ -390,33 +426,42 @@ function percentage(value: number | undefined) {
             </p>
           </div>
         </TabsContent><TabsContent value="containers">
-          <Alert mt="5" as="p" variant="default">
+          <Banner mt="5" variant="secondary">
             {{ t('common.source') }}: {{ containersMeta?.source || 'Beszel' }} ·
             {{ formatDate(containersMeta?.syncedAt)
             }}<span v-if="containersMeta?.stale"> · {{ t('common.staleData') }}</span>
-          </Alert>
-          <FieldError v-if="containersMeta?.error" as="p" py="10px" px="0">
+          </Banner>
+          <Banner v-if="containersMeta?.error" variant="error" class="mt-4">
             {{ containersMeta.error }}
-          </FieldError>
-          <EmptyState v-if="!containers.length" :title="t('servers.noVisibleContainerData')" />
-          <TableContainer v-else mt="5">
+            <Button variant="ghost" @click="selected && detail(selected)">
+              {{ t('asyncState.retry') }}
+            </Button>
+          </Banner>
+          <Empty v-if="!containers.length" size="sm" :title="t('servers.noVisibleContainerData')" />
+          <TableContainer v-else :scroll-label="t('common.scrollTable')" mt="5">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>{{ t('servers.container') }}</TableHead>
                   <TableHead>{{ t('common.status') }}</TableHead>
-                  <TableHead>CPU</TableHead>
-                  <TableHead>{{ t('common.memory') }} (MiB)</TableHead>
+                  <TableHead class="text-end">
+                    CPU
+                  </TableHead>
+                  <TableHead class="text-end">
+                    {{ t('common.memory') }} (MiB)
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow v-for="container in containers" :key="container.id || container.name">
                   <TableCell>
-                    <span class="monitor-name block" font="600" un-text="13px">{{ container.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ container.image }}</span>
+                    <span class="monitor-name block [overflow-wrap:anywhere]" font="600" un-text="13px">{{ container.name }}</span><span class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">{{ container.image }}</span>
                   </TableCell>
                   <TableCell>{{ container.status }}</TableCell>
-                  <TableCell>{{ percentage(container.cpu) }}</TableCell>
-                  <TableCell>
+                  <TableCell class="whitespace-nowrap text-end">
+                    {{ percentage(container.cpu) }}
+                  </TableCell>
+                  <TableCell class="whitespace-nowrap text-end">
                     {{
                       n(container.memory, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
                     }}
@@ -428,6 +473,6 @@ function percentage(value: number | undefined) {
           </TableContainer>
         </TabsContent>
       </TabsRoot>
-    </AsyncState>
-  </Modal>
+    </template>
+  </Dialog>
 </template>

@@ -1,3 +1,3 @@
-export { default as Toast } from './Toast.vue'
-export { default as ToastClose } from './ToastClose.vue'
-export { default as ToastViewport } from './ToastViewport.vue'
+export { createKumoToastManager, toastManager, useKumoToastManager } from './manager'
+export { default as ToastProvider } from './ToastProvider.vue'
+export { default as Toasty } from './Toasty.vue'

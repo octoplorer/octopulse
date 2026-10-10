@@ -3,9 +3,9 @@ import type { VNode } from 'vue'
 import type { SidebarRootProps } from './types'
 import { useEventListener } from '@vueuse/core'
 import { computed, defineComponent, Fragment, h, nextTick, ref, watch } from 'vue'
+import { TooltipProvider } from '../tooltip'
 import { SIDEBAR_FOCUSABLE_SELECTOR } from './constants'
 import { useSidebar } from './context'
-import { TooltipProvider } from './placeholders'
 import SidebarFooter from './SidebarFooter.vue'
 
 defineOptions({ inheritAttrs: false })

@@ -38,7 +38,7 @@ export default defineConfig({
   theme: {
     text: {
       xs: { fontSize: '12px', lineHeight: 'calc(1 / 0.75)' },
-      sm: { fontSize: '13px', lineHeight: 'calc(1 / 0.85)' },
+      sm: { fontSize: '13px', lineHeight: '1.5' },
       base: { fontSize: '14px', lineHeight: '1.5' },
       lg: { fontSize: '16px', lineHeight: '1.5' },
     },
@@ -76,6 +76,7 @@ export default defineConfig({
       'contrast': 'var(--color-contrast)',
       'overlay': 'var(--color-overlay)',
       'control': 'var(--color-control)',
+      'control-border': 'var(--color-control-border)',
       'control-thumb': 'var(--color-control-thumb)',
       'backdrop': 'var(--color-backdrop)',
       'interact': 'var(--color-interact)',
@@ -96,6 +97,7 @@ export default defineConfig({
       'warning': 'var(--color-warning)',
       'danger-tint': 'var(--color-danger-tint)',
       'danger': 'var(--color-danger)',
+      'action-danger': 'var(--color-action-danger)',
       'success-tint': 'var(--color-success-tint)',
       'success': 'var(--color-success)',
       'banner-info': 'var(--color-banner-info)',

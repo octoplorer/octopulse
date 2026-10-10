@@ -3,9 +3,10 @@ import type { Secret } from '../client/types.gen'
 import type { NameValueForm } from '../lib/monitor-form'
 import { useI18n } from 'vue-i18n'
 
-import SecretSelect from './SecretSelect.vue'
-import { Alert } from './ui/alert'
+import { Banner } from './ui/banner'
 import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 defineProps<{ secrets: Secret[], nameLabel?: string }>()
 
@@ -18,26 +19,39 @@ function update<K extends keyof NameValueForm>(index: number, name: K, value: Na
 </script>
 
 <template>
-  <div>
+  <div class="key-values">
     <div
       v-for="(item, index) in values"
       :key="index"
-      class="kv-row [@media(max-width:700px)]:grid-cols-2"
-      grid="~ cols-[1fr_1.4fr_1.1fr_auto] gap-2"
+      class="kv-row grid gap-2"
       mb="2"
     >
-      <input
-        :value="item.name" :placeholder="nameLabel || t('common.name')"
-        :aria-label="t('common.name')"
-        @input="update(index, 'name', ($event.target as HTMLInputElement).value)"
-      ><input
+      <Input
+        :model-value="item.name" :placeholder="nameLabel || t('common.name')"
+        :aria-label="nameLabel || t('common.name')"
+        @update:model-value="update(index, 'name', String($event ?? ''))"
+      /><Input
         v-if="!item.secretRef"
-        :value="item.value" :placeholder="t('common.value')"
+        :model-value="item.value" :placeholder="t('common.value')"
         :aria-label="t('common.value')"
-        @input="update(index, 'value', ($event.target as HTMLInputElement).value)"
-      ><Alert v-else as="span">
+        @update:model-value="update(index, 'value', String($event ?? ''))"
+      /><Banner v-else variant="secondary" size="sm">
         {{ t('keyValues.valueFromSecret') }}
-      </Alert><SecretSelect :model-value="item.secretRef" class="[@media(max-width:700px)]:col-start-1" :secrets="secrets" optional @update:model-value="update(index, 'secretRef', $event)" /><Button
+      </Banner><Select :model-value="item.secretRef" @update:model-value="update(index, 'secretRef', $event)">
+        <SelectTrigger class="kv-secret" :aria-label="t('keyValues.secretReference')">
+          <SelectValue :placeholder="t('secretSelect.noSecretReference')" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="">
+              {{ t('secretSelect.noSecretReference') }}
+            </SelectItem>
+            <SelectItem v-for="secret in secrets" :key="secret.id" :value="secret.id">
+              {{ secret.name }}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select><Button
         type="button"
         :aria-label="t('keyValues.removeField')"
         shape="square"
@@ -51,3 +65,29 @@ function update<K extends keyof NameValueForm>(index: number, name: K, value: Na
     </Button>
   </div>
 </template>
+
+<style scoped>
+.key-values {
+  container: key-values / inline-size;
+}
+
+.kv-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1.1fr) auto;
+}
+
+@container key-values (max-width: 700px) {
+  .kv-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .kv-secret {
+    grid-column: 1;
+  }
+}
+
+@container key-values (max-width: 380px) {
+  .kv-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

@@ -1,174 +1,120 @@
-:root {
-  --font-sans:
-    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-    sans-serif;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: var(--text-color-default);
-  background: var(--color-canvas);
-}
+@layer base {
+  :root {
+    --font-sans:
+      Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+      sans-serif;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--text-color-default);
+    background: var(--color-canvas);
+  }
 
-* {
-  box-sizing: border-box;
-}
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  line-height: 1.5;
-}
+  body {
+    margin: 0;
+    line-height: 1.5;
+  }
 
-button,
-input,
-textarea {
-  font: inherit;
-}
-
-button,
-a,
-input,
-textarea {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  cursor: pointer;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-button:focus-visible,
-a:focus-visible,
-summary:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 3px;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--font-sans);
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.7px;
-  line-height: 1.25;
-  text-wrap: balance;
-}
-
-h2 {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  line-height: 1.4;
-}
-
-h3 {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-p {
-  line-height: 1.6;
-}
-
-small {
-  font-size: 12px;
-}
-
-code {
-  overflow-wrap: anywhere;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 0.85em;
-}
-
-input:not([type='checkbox']):not([type='radio']):not([type='color']),
-textarea {
-  width: 100%;
-  min-width: 0;
-  min-height: 36px;
-  padding: 7px 10px;
-  color: var(--text-color-default);
-  font-size: 14px;
-  line-height: 1.5;
-  background: var(--color-control);
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  box-shadow: var(--shadow-control);
-}
-
-input[type='color'] {
-  width: 48px;
-  height: 39px;
-  padding: 4px;
-  background: var(--color-control);
-  border: 1px solid var(--color-line);
-  border-radius: 7px;
-}
-
-input[type='checkbox'] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--color-brand);
-}
-
-textarea {
-  min-height: 92px;
-  line-height: 1.7;
-  resize: vertical;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: var(--text-color-placeholder);
-  opacity: 1;
-}
-
-[data-scope='tabs'][data-part='content'][hidden] {
-  display: none;
-}
-
-@media (max-width: 700px) {
-  input:not([type='checkbox']):not([type='radio']):not([type='color']),
+  button,
+  input,
   textarea {
-    min-height: 40px;
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-sans);
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.7px;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  h2 {
     font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.4;
   }
 
-  body:has([data-mobile-open='true']) {
-    overflow: hidden;
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    transition: none !important;
+  p {
+    line-height: 1.6;
+  }
+
+  small {
+    font-size: 12px;
+  }
+
+  code {
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.85em;
+  }
+
+  [data-scope='tabs'][data-part='content'][hidden] {
+    display: none;
+  }
+
+  @media (max-width: 700px) {
+    body:has([data-mobile-open='true']) {
+      overflow: hidden;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition: none !important;
+    }
   }
 }
 
@@ -178,15 +124,15 @@ textarea::placeholder {
     --text-color-default: var(--color-neutral-900, oklch(21% 0.006 285.885));
     --text-color-inverse: var(--color-neutral-100, oklch(97% 0 0));
     --text-color-strong: var(--color-neutral-950, oklch(14.5% 0 0));
-    --text-color-subtle: var(--color-neutral-500, oklch(55.6% 0 0));
+    --text-color-subtle: oklch(53% 0 0);
     --text-color-inactive: var(--color-neutral-300, oklch(87% 0 0));
-    --text-color-placeholder: var(--color-neutral-400, oklch(70.8% 0 0));
+    --text-color-placeholder: var(--color-neutral-500, oklch(55.6% 0 0));
     --text-color-brand: #f6821f;
     --text-color-link: var(--color-blue-800, oklch(42.4% 0.199 265.638));
     --text-color-info: var(--color-blue-800, oklch(42.4% 0.199 265.638));
     --text-color-success: var(--color-emerald-800, oklch(43.2% 0.095 166.913));
     --text-color-danger: var(--color-red-700, oklch(50.5% 0.213 27.518));
-    --text-color-warning: oklch(59.7% 0.144 57.5);
+    --text-color-warning: oklch(55% 0.132 57.5);
     --text-color-badge-orange-subtle: var(--color-orange-800, oklch(47% 0.157 37.304));
     --text-color-badge-teal-subtle: var(--color-teal-800, oklch(43.7% 0.078 188.216));
     --text-color-badge-neutral-subtle: var(--color-neutral-800, oklch(26.9% 0 0));
@@ -201,6 +147,7 @@ textarea::placeholder {
     --color-contrast: var(--color-neutral-975, oklch(8.5% 0 0));
     --color-overlay: var(--color-neutral-50, oklch(97.5% 0 0));
     --color-control: var(--color-white, #fff);
+    --color-control-border: oklch(62% 0 0);
     --color-control-thumb: var(--color-white, #fff);
     --color-backdrop: oklch(0% 0 0 / 0.38);
     --color-interact: var(--color-neutral-300, oklch(87% 0 0));
@@ -223,12 +170,13 @@ textarea::placeholder {
     --color-warning: oklch(73.9% 0.177 58.2);
     --color-danger-tint: oklch(93.6% 0.032 17.7 / 0.42);
     --color-danger: var(--color-red-500, oklch(63.7% 0.237 25.331));
+    --color-action-danger: var(--color-red-700, oklch(50.5% 0.213 27.518));
     --color-success-tint: oklch(96.2% 0.043 156.7 / 0.57);
     --color-success: var(--color-emerald-600, oklch(59.6% 0.145 163.225));
     --color-banner-info: oklch(93.2% 0.032 255.585 / 0.7);
     --color-banner-warning: var(--color-yellow-100, oklch(97.3% 0.071 103.193));
     --color-badge-red: var(--color-red-600, oklch(57.7% 0.245 27.325));
-    --color-badge-green: var(--color-emerald-600, oklch(59.6% 0.145 163.225));
+    --color-badge-green: var(--color-emerald-700, oklch(50.8% 0.118 165.612));
     --color-badge-orange: var(--color-orange-650, oklch(81.5% 0.197 76));
     --color-badge-purple: var(--color-purple-600, oklch(55.8% 0.288 302.321));
     --color-badge-teal: var(--color-teal-650, oklch(54.9% 0.096 184.565));
@@ -244,7 +192,7 @@ textarea::placeholder {
     --text-color-strong: var(--color-neutral-50, oklch(98.5% 0 0));
     --text-color-subtle: var(--color-neutral-400, oklch(70.8% 0 0));
     --text-color-inactive: var(--color-neutral-600, oklch(43.9% 0 0));
-    --text-color-placeholder: var(--color-neutral-500, oklch(55.6% 0 0));
+    --text-color-placeholder: oklch(65% 0 0);
     --text-color-link: var(--color-blue-400, oklch(70.7% 0.165 254.624));
     --text-color-info: var(--color-blue-400, oklch(70.7% 0.165 254.624));
     --text-color-success: var(--color-emerald-200, oklch(90.5% 0.093 164.15));
@@ -262,6 +210,7 @@ textarea::placeholder {
     --color-contrast: var(--color-neutral-25, oklch(98.5% 0 0));
     --color-overlay: var(--color-neutral-800, oklch(26.9% 0 0));
     --color-control: var(--color-neutral-900, oklch(21% 0.006 285.885));
+    --color-control-border: oklch(65% 0 0);
     --color-interact: var(--color-neutral-700, oklch(37.1% 0 0));
     --color-fill: var(--color-neutral-800, oklch(26.9% 0 0));
     --color-fill-hover: var(--color-neutral-800, oklch(37.1% 0 0));
@@ -280,6 +229,7 @@ textarea::placeholder {
     --color-warning: oklch(64.5% 0.168 50);
     --color-danger-tint: oklch(42.9% 0.176 28.7 / 0.17);
     --color-danger: var(--color-red-600, oklch(57.7% 0.245 27.325));
+    --color-action-danger: var(--color-red-600, oklch(57.7% 0.245 27.325));
     --color-success-tint: oklch(39.3% 0.096 152.3 / 0.2);
     --color-success: var(--color-emerald-400, oklch(76.5% 0.177 163.223));
     --color-banner-info: oklch(37.9% 0.146 265.522 / 0.5);
@@ -292,5 +242,34 @@ textarea::placeholder {
     --color-badge-blue: var(--color-blue-700, oklch(48.8% 0.243 264.376));
     --color-badge-neutral: var(--color-neutral-600, oklch(43.9% 0 0));
     --color-badge-inverted: var(--color-white, #fff);
+  }
+}
+
+@layer base {
+  @media (forced-colors: active) {
+    :where(
+      .button,
+      .ui-input:not(.ui-control-group *),
+      .ui-control-group,
+      [data-scope='select'][data-part='trigger'],
+      [data-scope='checkbox'][data-part='control'],
+      [data-scope='radio-group'][data-part='item-control'],
+      [data-scope='switch'][data-part='control']
+    ) {
+      outline: 1px solid ButtonText !important;
+      outline-offset: 0;
+    }
+
+    :focus-visible,
+    .ui-control-group:focus-within,
+    :where(
+      [data-scope='checkbox'][data-part='control'],
+      [data-scope='radio-group'][data-part='item-control'],
+      [data-scope='radio-group'][data-part='item'],
+      [data-scope='switch'][data-part='control']
+    )[data-focus-visible] {
+      outline: 2px solid Highlight !important;
+      outline-offset: 2px;
+    }
   }
 }

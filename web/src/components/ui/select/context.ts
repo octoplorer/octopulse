@@ -5,6 +5,8 @@ import { inject, provide } from 'vue'
 
 interface SelectContext {
   collection: ComputedRef<ListCollection<SelectCollectionItem>>
+  size: ComputedRef<'xs' | 'sm' | 'base' | 'lg'>
+  describedBy: ComputedRef<string | undefined>
   registerItem: (id: symbol, item: SelectCollectionItem) => void
   unregisterItem: (id: symbol) => void
 }

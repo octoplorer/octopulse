@@ -11,10 +11,11 @@ import {
   getSetupQuery,
 } from '../../client/@pinia/colada.gen'
 import Brand from '../../components/Brand.vue'
-import Field from '../../components/Field.vue'
+import { Banner } from '../../components/ui/banner'
 import { Button } from '../../components/ui/button'
-import { FieldError, FieldInput } from '../../components/ui/field'
-import { Spinner } from '../../components/ui/spinner'
+import { Field } from '../../components/ui/field'
+import { Input } from '../../components/ui/input'
+import { Loader } from '../../components/ui/loader'
 import { applySession } from '../../composables/api'
 import { errorText } from '../../lib/errors'
 
@@ -29,6 +30,7 @@ const route = useRoute()
 const router = useRouter()
 const required = ref(false)
 const loading = ref(true)
+const loadError = ref('')
 const error = ref('')
 const formApi = useForm({
   defaultValues: {
@@ -55,7 +57,9 @@ const formApi = useForm({
   },
 })
 const saving = formApi.useSelector(state => state.isSubmitting)
-onMounted(async () => {
+async function load() {
+  loading.value = true
+  loadError.value = ''
   try {
     const setupState = await queryCache.refresh(
       queryCache.ensure({ ...getSetupQuery(), staleTime: 0 }),
@@ -75,17 +79,18 @@ onMounted(async () => {
     }
   }
   catch (e) {
-    error.value = errorText(e)
+    loadError.value = errorText(e)
   }
   finally {
     loading.value = false
   }
-})
+}
+onMounted(load)
 </script>
 
 <template>
-  <div grid="~ cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" min-h="screen" bg="canvas" un-text="default" class="[@media(max-width:900px)]:grid-cols-1">
-    <section flex="~ col" justify="between" min-h="screen" p="48px" bg="tint" border="r-1 solid line" un-text="default" class="[&_.brand-icon]:bg-base [&_.brand]:text-22px [@media(max-width:900px)]:hidden">
+  <div grid="~ cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" class="min-h-100dvh [@media(max-width:900px)]:grid-cols-1" bg="canvas" un-text="default">
+    <section flex="~ col" justify="between" class="min-h-100dvh [&_.brand-icon]:bg-base [&_.brand]:text-22px [@media(max-width:900px)]:hidden" p="48px" bg="tint" border="r-1 solid line" un-text="default">
       <Brand />
       <div relative my="auto" max-w="460px" class="[&_h1]:text-[clamp(32px,3.2vw,46px)] [&_h1]:font-500 [&_h1]:leading-[1.2] [&_h1]:tracking-[-1.2px] [&>p]:mt-24px [&>p]:max-w-360px [&>p]:text-14px [&>p]:text-subtle">
         <p class="eyebrow" un-text="12px subtle" font="500" mb="8px">
@@ -100,7 +105,7 @@ onMounted(async () => {
         <span w="15px" h="15px" aria-hidden="true" class="i-lucide-shield-check" />{{ t('login.selfHostedYourInfrastructureYourData') }}
       </div>
     </section>
-    <section flex="~ items-center justify-center" p="48px" bg="base" class="[@media(max-width:900px)]:min-h-screen [@media(max-width:700px)]:px-20px [@media(max-width:700px)]:py-32px">
+    <section flex="~ items-center justify-center" p="48px" bg="base" class="min-w-0 [@media(max-width:900px)]:min-h-100dvh [@media(max-width:700px)]:px-20px [@media(max-width:700px)]:py-32px">
       <div w="full" max-w="360px" class="[&_h1]:text-26px [&>p]:mt-10px [&>p]:mb-30px [&_form]:flex [&_form]:flex-col [&_form]:gap-18px [&_form_.button]:min-h-40px [&_form_.button]:px-12px [&_form_.button]:py-10px">
         <div hidden mb="35px" class="[@media(max-width:900px)]:block">
           <Brand />
@@ -119,35 +124,41 @@ onMounted(async () => {
           }}
         </p>
         <div v-if="loading" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle">
-          <Spinner />
+          <Loader :label="t('asyncState.loadingData')" />
         </div>
+        <Banner v-else-if="loadError" variant="error">
+          {{ loadError }}
+          <Button class="mt-3" @click="load">
+            {{ t('asyncState.retry') }}
+          </Button>
+        </Banner>
         <form v-else @submit.prevent="formApi.handleSubmit()">
           <formApi.Field v-slot="{ field }" name="username">
             <Field :label="t('common.username')">
-              <FieldInput :name="field.name" :model-value="field.state.value" autocomplete="username" required maxlength="100" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+              <Input :name="field.name" :model-value="field.state.value" autocomplete="username" required maxlength="100" @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
             </Field>
           </formApi.Field>
           <formApi.Field v-slot="{ field }" name="password">
-            <Field :label="t('common.password')" :hint="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
-              <FieldInput :name="field.name" :model-value="field.state.value" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72" @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+            <Field :label="t('common.password')" :description="required ? t('login.atLeast12CharactersUpTo72Bytes') : undefined">
+              <Input :name="field.name" :model-value="field.state.value" type="password" :autocomplete="required ? 'new-password' : 'current-password'" required :minlength="required ? 12 : undefined" maxlength="72" @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
             </Field>
           </formApi.Field>
           <template v-if="required">
             <formApi.Field v-slot="{ field }" name="organizationName">
               <Field :label="t('common.organizationName')">
-                <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+                <Input :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
               </Field>
             </formApi.Field>
             <formApi.Field v-slot="{ field }" name="timezone">
               <Field :label="t('common.organizationTimeZone')">
-                <FieldInput :name="field.name" :model-value="field.state.value" placeholder="Asia/Shanghai" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+                <Input :name="field.name" :model-value="field.state.value" placeholder="Asia/Shanghai" required @update:model-value="field.handleChange(String($event))" @blur="field.handleBlur" />
               </Field>
             </formApi.Field>
           </template>
-          <FieldError v-if="error" as="p" role="alert" py="10px" px="0">
+          <Banner v-if="error" variant="error">
             {{ error }}
-          </FieldError>
-          <Button type="submit" :disabled="saving" variant="primary">
+          </Banner>
+          <Button type="submit" :loading="saving" variant="primary">
             {{
               saving
                 ? t('login.connecting')

@@ -16,7 +16,8 @@
     "actor": "Actor",
     "action": "Action",
     "resource": "Resource",
-    "resourceId": "Resource ID"
+    "resourceId": "Resource ID",
+    "noRecords": "No audit records yet"
   },
   "common": {
     "monitors": "Monitors",
@@ -77,7 +78,11 @@
     "addMember": "Add member",
     "role": "Role",
     "password": "Password",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "close": "Close",
+    "clearFilters": "Clear filters",
+    "skipToContent": "Skip to main content",
+    "scrollTable": "Scroll to see more columns"
   },
   "connectionFields": {
     "proxyUrl": "Proxy URL",
@@ -140,12 +145,17 @@
     "publishAnUpdate": "Publish an update",
     "progress2": "Progress",
     "update": "Update",
-    "publishUpdate": "Publish update"
+    "publishUpdate": "Publish update",
+    "searchIncidents": "Search incidents",
+    "searchTitleOrContent": "Search title or announcement…",
+    "noMatchingIncidents": "No matching incidents",
+    "showingIncidents": "Showing {shown} of {total} incidents"
   },
   "keyValues": {
     "valueFromSecret": "Value from secret",
     "removeField": "Remove field",
-    "addField": "Add field"
+    "addField": "Add field",
+    "secretReference": "Secret reference"
   },
   "login": {
     "everyHeartbeat": "Every heartbeat.",
@@ -186,7 +196,12 @@
     "affectedMonitors": "Affected monitors",
     "showOnStatusPages": "Show on status pages",
     "saveSchedule": "Save schedule",
-    "deleteMaintenance": "Delete maintenance"
+    "deleteMaintenance": "Delete maintenance",
+    "all": "All",
+    "searchMaintenance": "Search maintenance",
+    "searchNameOrDescription": "Search name or description…",
+    "noMatchingMaintenance": "No matching maintenance",
+    "showingMaintenance": "Showing {shown} of {total} maintenance windows"
   },
   "modal": {
     "closeDialog": "Close dialog"
@@ -399,6 +414,8 @@
     "viewDetails": "View details"
   },
   "navigation": {
+    "monitoring": "Monitoring",
+    "serviceOperations": "Service operations",
     "overview": "Overview",
     "statusPages": "Status pages",
     "incidents": "Incidents",
@@ -411,7 +428,7 @@
     "monitorDetails": "Monitor details",
     "newMonitor": "New monitor",
     "newStatusPage": "New status page",
-    "administration": "Administration",
+    "administration": "Administration & settings",
     "signOut": "Sign out",
     "closeNavigation": "Close navigation",
     "openNavigation": "Open navigation",
@@ -447,7 +464,20 @@
     "forSmtpTelegramAndOtherServiceUrlsThe": "For smtp://…, telegram://…, and other service URLs. The full URL stays in a secret and cannot be read back.",
     "enableChannel": "Enable channel",
     "save": "Save",
-    "deleteChannel": "Delete channel"
+    "deleteChannel": "Delete channel",
+    "searchChannels": "Search notification channels",
+    "searchChannelsPlaceholder": "Search channel name…",
+    "noMatchingChannels": "No matching channels",
+    "showingChannels": "Showing {shown} of {total} channels",
+    "searchDeliveries": "Search deliveries",
+    "searchDeliveriesPlaceholder": "Search monitor, channel, or error…",
+    "allChannels": "All channels",
+    "allStatuses": "All statuses",
+    "filterChannel": "Filter delivery channel",
+    "filterStatus": "Filter delivery status",
+    "noMatchingDeliveries": "No matching deliveries",
+    "showingDeliveries": "Showing {shown} of {total} deliveries",
+    "viewFailureDetails": "View failure details"
   },
   "overview": {
     "serviceOverview": "Service overview",
@@ -530,7 +560,9 @@
     "savingRefreshesRealStatisticsNewlySelectedServicesShow": "Saving refreshes real statistics. Newly selected services show current states without fabricated history. Draft edits do not alter the public page.",
     "deleteStatusPage": "Delete status page",
     "thePagePathAndDomainWillStopPublishing": "The page path and domain will stop publishing.",
-    "logoPlaceholder": "https://… or /assets/uploads/…"
+    "logoPlaceholder": "https://… or /assets/uploads/…",
+    "preview": "Preview",
+    "editorViews": "Status page views"
   },
   "pages": {
     "shareServiceHealthAndUpdatesWithYourOwn": "Share service health and updates with your own brand.",
@@ -583,7 +615,11 @@
     "secretValue": "Secret value",
     "saveSecret": "Save secret",
     "deleteSecret": "Delete secret",
-    "removeMonitorAndChannelReferencesBeforeDeletingA": "Remove monitor and channel references before deleting a secret."
+    "removeMonitorAndChannelReferencesBeforeDeletingA": "Remove monitor and channel references before deleting a secret.",
+    "searchSecrets": "Search secrets",
+    "searchSecretsPlaceholder": "Search name or reference ID…",
+    "noMatchingSecrets": "No matching secrets",
+    "showingSecrets": "Showing {shown} of {total} secrets"
   },
   "servers": {
     "beszelConnectionSaved": "Beszel connection saved",
@@ -715,7 +751,9 @@
     "noServicesHaveBeenPublishedYet": "No services have been published yet.",
     "incidentUpdates": "Incident updates",
     "incidentAnnouncements": "Incident announcements",
-    "backToStatusPage": "Back to status page"
+    "backToStatusPage": "Back to status page",
+    "incidentUnavailable": "Incident not found",
+    "incidentUnavailableDescription": "Return to the status page to view current service health and announcements."
   },
   "tLSFields": {
     "enableTls": "Enable TLS",
@@ -744,6 +782,10 @@
     "newPasswordLeaveEmptyToKeep": "New password (leave empty to keep)",
     "enableAccount": "Enable account",
     "saveMember": "Save member",
-    "deleteMember": "Delete member"
+    "deleteMember": "Delete member",
+    "searchMembers": "Search members",
+    "searchMembersPlaceholder": "Search name or username…",
+    "noMatchingMembers": "No matching members",
+    "showingMembers": "Showing {shown} of {total} members"
   }
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SelectCollectionItem } from './types'
 import { Select as ArkSelect } from '@ark-ui/vue/select'
-import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUpdated, shallowRef, watch } from 'vue'
 import { useSelectContext } from './context'
 
 const props = defineProps<{
@@ -11,8 +11,8 @@ const props = defineProps<{
 }>()
 const context = useSelectContext()
 const id = Symbol('select-item')
-const textElement = ref<HTMLElement>()
-const item = ref<SelectCollectionItem>({
+const textElement = shallowRef<HTMLElement>()
+const item = shallowRef<SelectCollectionItem>({
   label: props.textValue ?? props.value,
   value: props.value,
   disabled: props.disabled,
@@ -47,62 +47,12 @@ onBeforeUnmount(() => context.unregisterItem(id))
 </script>
 
 <template>
-  <ArkSelect.Item class="select-item" :item="item">
-    <ArkSelect.ItemText class="select-item-text">
+  <ArkSelect.Item class="mx-1.5 flex min-h-8 cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5 text-size-base outline-none data-[highlighted]:bg-tint focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset group-focus-visible/select-content:data-[highlighted]:ring-2 group-focus-visible/select-content:data-[highlighted]:ring-brand group-focus-visible/select-content:data-[highlighted]:ring-inset data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50" :item="item">
+    <ArkSelect.ItemText class="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
       <span ref="textElement"><slot /></span>
     </ArkSelect.ItemText>
-    <ArkSelect.ItemIndicator class="select-item-indicator" aria-hidden="true">
-      <span class="i-lucide-check" />
+    <ArkSelect.ItemIndicator class="flex shrink-0 items-center text-subtle" aria-hidden="true">
+      <span class="i-lucide-check size-4" />
     </ArkSelect.ItemIndicator>
   </ArkSelect.Item>
 </template>
-
-<style scoped>
-.select-item {
-  display: flex;
-  min-height: 36px;
-  cursor: pointer;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0 6px;
-  padding: 6px 8px;
-  font-size: 16px;
-  line-height: 1.5;
-  border-radius: 4px;
-  outline: none;
-}
-
-.select-item[data-highlighted] {
-  background: var(--color-fill-hover);
-}
-
-.select-item:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--color-focus);
-}
-
-.select-item[data-disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.select-item-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.select-item-indicator {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  color: var(--text-color-subtle);
-}
-
-.select-item-indicator span {
-  width: 16px;
-  height: 16px;
-}
-</style>

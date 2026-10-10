@@ -3,9 +3,9 @@ import type { ComponentPublicInstance, PropType } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { defineComponent, h, ref, watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
+import { Tooltip } from '../tooltip'
 import { useSidebar } from './context'
 import { useMenuItemContext, wrapMenuText } from './menu-context'
-import { Tooltip } from './placeholders'
 
 export default defineComponent({
   name: 'SidebarMenuButton',
@@ -88,9 +88,8 @@ export default defineComponent({
         ? h(Tooltip, {
             content: props.tooltip,
             disabled: state.value !== 'collapsed' || peekable.value,
-            side: 'right',
-            render: interactive,
-          })
+            placement: 'right',
+          }, { default: () => interactive })
         : interactive
 
       return isInsideMenuItem

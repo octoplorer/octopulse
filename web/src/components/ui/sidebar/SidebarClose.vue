@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { Button } from '../button'
 import { useSidebar } from './context'
-import { Button } from './placeholders'
 
 defineOptions({ inheritAttrs: false })
 

@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import type { TabListBaseProps } from '@ark-ui/vue/tabs'
 import { TabList } from '@ark-ui/vue/tabs'
-import { useForwardProps } from '@ark-ui/vue/utils'
+import { cva } from 'cva'
 
-const props = defineProps<TabListBaseProps>()
-const forwarded = useForwardProps(props)
+withDefaults(defineProps<{ variant?: 'line' | 'segmented', asChild?: boolean }>(), { variant: 'segmented' })
+const variants = cva({ base: 'flex min-w-0 max-w-full items-center overflow-auto', variants: { variant: { line: 'gap-6 border-b border-solid border-line bg-base px-5 sm:px-6 max-sm:gap-4', segmented: 'w-fit gap-1 rounded-lg bg-recessed p-1' } } })
 </script>
 
 <template>
-  <TabList v-bind="forwarded" class="[@media(max-width:700px)]:gap-18px [@media(max-width:700px)]:px-18px [@media(max-width:700px)]:overflow-auto" flex="~ items-center gap-24px" border="b-1 solid line" p="x-20px y-0" bg="base">
+  <TabList :as-child="asChild" :class="variants({ variant })">
     <slot />
   </TabList>
 </template>

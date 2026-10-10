@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Channel } from '../../../client/types.gen'
+import type { Channel, DeliveryView } from '../../../client/types.gen'
 import { useMutation, useQuery } from '@pinia/colada'
 import { useForm } from '@tanstack/vue-form'
-import { ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createChannelsMutation,
@@ -14,19 +14,20 @@ import {
   testChannelMutation,
   updateChannelsMutation,
 } from '../../../client/@pinia/colada.gen'
-import AsyncState from '../../../components/AsyncState.vue'
-import EmptyState from '../../../components/EmptyState.vue'
-import Field from '../../../components/Field.vue'
-import Modal from '../../../components/Modal.vue'
-import PageHeader from '../../../components/PageHeader.vue'
-import SecretSelect from '../../../components/SecretSelect.vue'
-import Toggle from '../../../components/Toggle.vue'
-import { Alert } from '../../../components/ui/alert'
 import { Badge } from '../../../components/ui/badge'
+import { Banner } from '../../../components/ui/banner'
+import { PageHeader } from '../../../components/ui/blocks/page-header'
 import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
-import { FieldDescription, FieldError, FieldInput } from '../../../components/ui/field'
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
+import { Dialog } from '../../../components/ui/dialog'
+import { Empty } from '../../../components/ui/empty'
+import { Field, FieldDescription } from '../../../components/ui/field'
+import { Input } from '../../../components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../../components/ui/input-group'
+import { LayerCard } from '../../../components/ui/layer-card'
+import { Loader } from '../../../components/ui/loader'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
+import { Switch } from '../../../components/ui/switch'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, TableToolbar } from '../../../components/ui/table'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '../../../components/ui/tabs'
 import { isAdmin } from '../../../composables/api'
 import { notify } from '../../../composables/notices'
@@ -53,6 +54,53 @@ const tab = ref('channels')
 const testing = ref('')
 const deleteTarget = ref<Channel | null>(null)
 const deleteOpen = ref(false)
+const deleting = ref(false)
+const channelSearch = shallowRef('')
+const deliverySearch = shallowRef('')
+const channelFilter = shallowRef('all')
+const statusFilter = shallowRef('all')
+const failureOpen = shallowRef(false)
+const selectedFailure = shallowRef<DeliveryView | null>(null)
+const allChannels = computed(() => query.data.value?.items || [])
+const allDeliveries = computed(() => deliveries.data.value?.items || [])
+const channelNames = computed(() => new Map(allChannels.value.map(channel => [channel.id, channel.name])))
+const monitorNames = computed(() => new Map(monitors.data.value?.items.map(monitor => [monitor.id, monitor.name]) || []))
+const secretNames = computed(() => new Map(secrets.data.value?.items.map(secret => [secret.id, secret.name]) || []))
+const filteredChannels = computed(() => {
+  const text = channelSearch.value.trim().toLowerCase()
+  return allChannels.value.filter(channel => !text || channel.name.toLowerCase().includes(text))
+})
+const deliveryStatuses = computed(() => [...new Set(['pending', 'leased', 'sent', 'failed', 'discarded', ...allDeliveries.value.map(delivery => delivery.status)])])
+const deliveryChannels = computed(() => {
+  const names = new Map(channelNames.value)
+  allDeliveries.value.forEach((delivery) => {
+    if (!names.has(delivery.channelId))
+      names.set(delivery.channelId, delivery.channelId)
+  })
+  return [...names].map(([id, name]) => ({ id, name }))
+})
+const filteredDeliveries = computed(() => {
+  const text = deliverySearch.value.trim().toLowerCase()
+  return allDeliveries.value
+    .map(delivery => ({
+      ...delivery,
+      channelName: channelNames.value.get(delivery.channelId) || delivery.channelId,
+      monitorName: monitorNames.value.get(delivery.monitorId) || delivery.monitorId,
+    }))
+    .filter(delivery => (statusFilter.value === 'all' || delivery.status === statusFilter.value)
+      && (channelFilter.value === 'all' || delivery.channelId === channelFilter.value)
+      && (!text || `${delivery.monitorName} ${delivery.channelName} ${statusLabel(delivery.kind)} ${delivery.lastError}`.toLowerCase().includes(text)))
+    .sort((a, b) => b.createdAt - a.createdAt)
+})
+function clearDeliveryFilters() {
+  deliverySearch.value = ''
+  channelFilter.value = 'all'
+  statusFilter.value = 'all'
+}
+function showFailure(delivery: DeliveryView) {
+  selectedFailure.value = delivery
+  failureOpen.value = true
+}
 function empty(): Channel {
   return {
     id: '',
@@ -90,6 +138,8 @@ function edit(channel?: Channel) {
   open.value = true
 }
 async function test(channel: Channel) {
+  if (testing.value || !channel.enabled)
+    return
   testing.value = channel.id
   try {
     await testChannel.mutateAsync({ path: { id: channel.id } })
@@ -104,8 +154,9 @@ async function test(channel: Channel) {
   }
 }
 async function remove() {
-  if (!deleteTarget.value)
+  if (!deleteTarget.value || deleting.value)
     return
+  deleting.value = true
   try {
     await deleteChannel.mutateAsync({ path: { id: deleteTarget.value.id } })
     deleteOpen.value = false
@@ -114,6 +165,9 @@ async function remove() {
   }
   catch (e) {
     notify(errorText(e), 'error')
+  }
+  finally {
+    deleting.value = false
   }
 }
 function confirmDelete(value: Channel) {
@@ -127,75 +181,124 @@ function refresh() {
 </script>
 
 <template>
-  <PageHeader :title="t('navigation.notifications')" :description="t('notifications.connectChannelsThroughShoutrrrAndKeepEveryDelivery')">
-    <Button @click="refresh">
-      <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
-    </Button><Button v-if="isAdmin()" variant="primary" @click="edit()">
-      <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('notifications.addChannel') }}
-    </Button>
+  <PageHeader class="mb-6" :title="t('navigation.notifications')" :description="t('notifications.connectChannelsThroughShoutrrrAndKeepEveryDelivery')">
+    <template #actions>
+      <Button :loading="query.isLoading.value || deliveries.isLoading.value" @click="refresh">
+        <span w="14px" h="14px" aria-hidden="true" class="i-lucide-refresh-cw" />{{ t('common.refresh') }}
+      </Button><Button v-if="isAdmin() && tab === 'channels'" variant="primary" @click="edit()">
+        <span w="15px" h="15px" aria-hidden="true" class="i-lucide-plus" />{{ t('notifications.addChannel') }}
+      </Button>
+    </template>
   </PageHeader>
-  <Card as="section">
+  <LayerCard>
     <TabsRoot v-model="tab">
-      <TabsList>
-        <TabsTrigger value="channels">
+      <TabsList variant="line" class="[@container_workspace_(max-width:_700px)]:px-4!" :aria-label="t('navigation.notifications')">
+        <TabsTrigger variant="line" value="channels">
           {{
             t('notifications.channels')
-          }}
-        </TabsTrigger><TabsTrigger value="deliveries">
+          }}<span class="ms-2 text-size-xs text-subtle">{{ allChannels.length }}</span>
+        </TabsTrigger><TabsTrigger variant="line" value="deliveries">
           {{
             t('notifications.deliveries')
-          }}
+          }}<span class="ms-2 text-size-xs text-subtle">{{ allDeliveries.length }}</span>
         </TabsTrigger>
       </TabsList><TabsContent value="channels">
-        <AsyncState :pending="query.isPending.value" :error="query.error.value" @retry="query.refetch()">
-          <EmptyState v-if="!query.data.value?.items.length" :title="t('notifications.connectANotificationChannel')" :description="t('notifications.storeAShoutrrrServiceUrlAsASecret')">
-            <Button v-if="isAdmin()" as-child>
-              <RouterLink to="/app/secrets">
-                {{
-                  t('notifications.manageSecrets')
-                }}
-              </RouterLink>
-            </Button>
-          </EmptyState>
-          <TableContainer v-else>
+        <TableToolbar>
+          <InputGroup class="w-full max-w-sm [@container_workspace_(max-width:_700px)]:max-w-none">
+            <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+            <InputGroupInput v-model="channelSearch" type="search" :placeholder="t('notifications.searchChannelsPlaceholder')" :aria-label="t('notifications.searchChannels')" />
+          </InputGroup>
+          <span class="text-size-sm text-subtle">{{ t('notifications.showingChannels', { shown: filteredChannels.length, total: allChannels.length }) }}</span>
+        </TableToolbar>
+        <div v-if="query.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        </div>
+        <Banner v-else-if="query.error.value" variant="error">
+          {{ errorText(query.error.value) }}
+          <Button variant="ghost" @click="query.refetch()">
+            {{ t('asyncState.retry') }}
+          </Button>
+        </Banner>
+        <template v-else>
+          <Empty v-if="!filteredChannels.length" :title="allChannels.length ? t('notifications.noMatchingChannels') : t('notifications.connectANotificationChannel')" :description="allChannels.length ? t('monitors.tryChangingYourSearchOrFilters') : t('notifications.storeAShoutrrrServiceUrlAsASecret')" size="sm" class="rounded-none border-none">
+            <template #icon>
+              <span class="i-lucide-bell size-8 text-subtle" aria-hidden="true" />
+            </template>
+            <template #actions>
+              <Button v-if="allChannels.length" @click="channelSearch = ''">
+                {{ t('common.clearFilters') }}
+              </Button>
+              <div v-else-if="isAdmin()" class="flex flex-wrap justify-center gap-2">
+                <Button variant="primary" @click="edit()">
+                  {{ t('notifications.addChannel') }}
+                </Button>
+                <Button as-child>
+                  <RouterLink to="/app/secrets">
+                    {{
+                      t('notifications.manageSecrets')
+                    }}
+                  </RouterLink>
+                </Button>
+              </div>
+            </template>
+          </Empty>
+          <TableContainer v-else :scroll-label="t('common.scrollTable')">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>{{ t('common.channel') }}</TableHead>
-                  <TableHead>{{ t('notifications.secretReference') }}</TableHead>
-                  <TableHead>{{ t('common.status') }}</TableHead>
-                  <TableHead>{{ t('common.updated') }}</TableHead>
-                  <TableHead />
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('notifications.secretReference') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('common.status') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('common.updated') }}
+                  </TableHead>
+                  <TableHead class="w-36 [@container_workspace_(max-width:_700px)]:w-28">
+                    <span class="sr-only">{{ t('common.edit') }}</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="channel in query.data.value.items" :key="channel.id">
+                <TableRow v-for="channel in filteredChannels" :key="channel.id">
                   <TableCell>
-                    <span flex="~ items-center gap-2" class="monitor-name block" font="600" un-text="13px"><span w="15px" h="15px" aria-hidden="true" class="i-lucide-bell" />{{ channel.name }}</span>
+                    <span class="block max-w-sm font-medium [overflow-wrap:anywhere]">{{ channel.name }}</span>
+                    <div class="mt-2 hidden space-y-2 [@container_workspace_(max-width:_700px)]:block">
+                      <Badge :variant="channel.enabled ? 'success' : 'outline'" dot>
+                        {{ channel.enabled ? t('common.enabled') : t('common.disabled') }}
+                      </Badge>
+                      <div class="text-size-xs text-subtle [overflow-wrap:anywhere]">
+                        {{ secretNames.get(channel.serviceUrlSecretId) || '—' }}
+                      </div>
+                      <div class="text-size-xs text-subtle">
+                        {{ formatDate(channel.updatedAt) }}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px subtle">
+                  <TableCell class="text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
                     {{
-                      secrets.data.value?.items.find((x) => x.id === channel.serviceUrlSecretId)
-                        ?.name || '—'
+                      secretNames.get(channel.serviceUrlSecretId) || '—'
                     }}
                   </TableCell>
-                  <TableCell>
-                    <Badge>
+                  <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                    <Badge :variant="channel.enabled ? 'success' : 'outline'" dot>
                       {{
                         channel.enabled ? t('common.enabled') : t('common.disabled')
                       }}
                     </Badge>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px subtle">
+                  <TableCell class="whitespace-nowrap text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
                     {{ formatDate(channel.updatedAt) }}
                   </TableCell>
                   <TableCell>
-                    <div v-if="isAdmin()" flex="~ items-center gap-2">
-                      <Button :disabled="testing === channel.id || !channel.enabled" size="sm" @click="test(channel)">
-                        <span w="12px" h="12px" aria-hidden="true" class="i-lucide-send" />{{ t('notifications.test') }}
-                      </Button><Button :aria-label="t('common.edit')" shape="square" @click="edit(channel)">
+                    <div v-if="isAdmin()" class="flex items-center justify-end gap-2">
+                      <Button :loading="testing === channel.id" :disabled="!!testing || !channel.enabled" :aria-label="t('notifications.test')" size="sm" @click="test(channel)">
+                        <span w="12px" h="12px" aria-hidden="true" class="i-lucide-send" /><span class="[@container_workspace_(max-width:_700px)]:hidden">{{ t('notifications.test') }}</span>
+                      </Button><Button :aria-label="t('common.edit')" shape="square" size="sm" @click="edit(channel)">
                         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-pencil" />
-                      </Button><Button :aria-label="t('common.delete')" shape="square" @click="confirmDelete(channel)">
+                      </Button><Button :aria-label="t('common.delete')" shape="square" size="sm" @click="confirmDelete(channel)">
                         <span w="14px" h="14px" aria-hidden="true" class="i-lucide-trash-2" />
                       </Button>
                     </div>
@@ -204,94 +307,199 @@ function refresh() {
               </TableBody>
             </Table>
           </TableContainer>
-        </AsyncState>
+        </template>
       </TabsContent><TabsContent value="deliveries">
-        <AsyncState :pending="deliveries.isPending.value" :error="deliveries.error.value" @retry="deliveries.refetch()">
-          <EmptyState v-if="!deliveries.data.value?.items.length" :title="t('notifications.noDeliveriesYet')" :description="t('notifications.outagesRecoveriesAndChannelTestsCreateDurableDelivery')" />
-          <TableContainer v-else>
+        <TableToolbar>
+          <InputGroup class="w-full max-w-sm [@container_workspace_(max-width:_700px)]:max-w-none">
+            <InputGroupAddon><span class="i-lucide-search size-4" aria-hidden="true" /></InputGroupAddon>
+            <InputGroupInput v-model="deliverySearch" type="search" :placeholder="t('notifications.searchDeliveriesPlaceholder')" :aria-label="t('notifications.searchDeliveries')" />
+          </InputGroup>
+          <div class="flex flex-wrap items-center gap-2">
+            <Select v-model="statusFilter">
+              <SelectTrigger class="w-auto!" :aria-label="t('notifications.filterStatus')">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">
+                    {{ t('notifications.allStatuses') }}
+                  </SelectItem>
+                  <SelectItem v-for="status in deliveryStatuses" :key="status" :value="status">
+                    {{ statusLabel(status) }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select v-model="channelFilter">
+              <SelectTrigger class="w-auto! max-w-64" :aria-label="t('notifications.filterChannel')">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">
+                    {{ t('notifications.allChannels') }}
+                  </SelectItem>
+                  <SelectItem v-for="channel in deliveryChannels" :key="channel.id" :value="channel.id">
+                    {{ channel.name }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <span class="text-size-sm text-subtle">{{ t('notifications.showingDeliveries', { shown: filteredDeliveries.length, total: allDeliveries.length }) }}</span>
+          </div>
+        </TableToolbar>
+        <div v-if="deliveries.isPending.value" class="loading-state" flex="~ justify-center items-center gap-10px" p="60px" un-text="12px subtle" role="status">
+          <Loader :label="t('asyncState.loadingData')" />{{ t('asyncState.loadingData') }}
+        </div>
+        <Banner v-else-if="deliveries.error.value" variant="error">
+          {{ errorText(deliveries.error.value) }}
+          <Button variant="ghost" @click="deliveries.refetch()">
+            {{ t('asyncState.retry') }}
+          </Button>
+        </Banner>
+        <template v-else>
+          <Empty v-if="!filteredDeliveries.length" :title="allDeliveries.length ? t('notifications.noMatchingDeliveries') : t('notifications.noDeliveriesYet')" :description="allDeliveries.length ? t('monitors.tryChangingYourSearchOrFilters') : t('notifications.outagesRecoveriesAndChannelTestsCreateDurableDelivery')" size="sm" class="rounded-none border-none">
+            <template #icon>
+              <span class="i-lucide-send size-8 text-subtle" aria-hidden="true" />
+            </template>
+            <template #actions>
+              <Button v-if="allDeliveries.length" @click="clearDeliveryFilters">
+                {{ t('common.clearFilters') }}
+              </Button>
+              <Button v-else @click="tab = 'channels'">
+                {{ t('notifications.channels') }}
+              </Button>
+            </template>
+          </Empty>
+          <TableContainer v-else :scroll-label="t('common.scrollTable')">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>{{ t('notifications.notification') }}</TableHead>
-                  <TableHead>{{ t('common.channel') }}</TableHead>
-                  <TableHead>{{ t('notifications.statusAttempts') }}</TableHead>
-                  <TableHead>{{ t('common.created') }}</TableHead>
-                  <TableHead>{{ t('notifications.failureReason') }}</TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('common.channel') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('notifications.statusAttempts') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:hidden">
+                    {{ t('common.created') }}
+                  </TableHead>
+                  <TableHead class="[@container_workspace_(max-width:_700px)]:w-12">
+                    {{ t('notifications.failureReason') }}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="delivery in deliveries.data.value.items" :key="delivery.id">
+                <TableRow v-for="delivery in filteredDeliveries" :key="delivery.id">
                   <TableCell>
                     <span class="monitor-name block" font="600" un-text="13px">{{ statusLabel(delivery.kind) }}</span><RouterLink v-if="delivery.monitorId" :to="`/app/monitors/${delivery.monitorId}`" class="monitor-sub block [overflow-wrap:anywhere]" un-text="12px subtle" mt="3px" max-w="300px">
-                      {{
-                        monitors.data.value?.items.find((x) => x.id === delivery.monitorId)?.name
-                          || delivery.monitorId
-                      }}
+                      {{ delivery.monitorName }}
                     </RouterLink>
+                    <div class="mt-2 hidden space-y-2 [@container_workspace_(max-width:_700px)]:block">
+                      <div class="text-size-xs text-subtle [overflow-wrap:anywhere]">
+                        {{ delivery.channelName }}
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <Badge :variant="delivery.status === 'failed' ? 'danger' : delivery.status === 'sent' ? 'success' : 'outline'" dot>
+                          {{ statusLabel(delivery.status) }}
+                        </Badge>
+                        <span class="text-size-xs text-subtle">{{ delivery.attempts }}</span>
+                      </div>
+                      <div class="text-size-xs text-subtle">
+                        {{ formatDate(delivery.createdAt) }}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    {{
-                      query.data.value?.items.find((x) => x.id === delivery.channelId)?.name
-                        || delivery.channelId
-                    }}
+                  <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                    <span class="block max-w-56 [overflow-wrap:anywhere]">{{ delivery.channelName }}</span>
                   </TableCell>
-                  <TableCell>
-                    <Badge>{{ statusLabel(delivery.status) }}</Badge><span ml="2" class="muted" un-text="13px subtle">{{ delivery.attempts }}</span>
+                  <TableCell class="[@container_workspace_(max-width:_700px)]:hidden">
+                    <Badge :variant="delivery.status === 'failed' ? 'danger' : delivery.status === 'sent' ? 'success' : 'outline'" dot>
+                      {{ statusLabel(delivery.status) }}
+                    </Badge><span class="ms-2 text-size-sm text-subtle">{{ delivery.attempts }}</span>
                   </TableCell>
-                  <TableCell class="muted" un-text="13px subtle">
+                  <TableCell class="whitespace-nowrap text-size-sm text-subtle [@container_workspace_(max-width:_700px)]:hidden">
                     {{ formatDate(delivery.createdAt) }}
                   </TableCell>
-                  <TableCell class="muted" un-text="13px subtle">
-                    {{ delivery.lastError || '—' }}
+                  <TableCell class="text-size-sm text-subtle">
+                    <button v-if="delivery.lastError" class="flex max-w-64 items-center gap-2 rounded text-start outline-none hover:text-default focus-visible:ring-2 focus-visible:ring-brand" :aria-label="t('notifications.viewFailureDetails')" @click="showFailure(delivery)">
+                      <span class="line-clamp-2 [overflow-wrap:anywhere] [@container_workspace_(max-width:_700px)]:hidden">{{ delivery.lastError }}</span>
+                      <span class="i-lucide-circle-alert hidden size-4 text-danger [@container_workspace_(max-width:_700px)]:block" aria-hidden="true" />
+                      <span class="i-lucide-chevron-right size-4 shrink-0" aria-hidden="true" />
+                    </button>
+                    <span v-else>—</span>
                   </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
-        </AsyncState>
+        </template>
       </TabsContent>
     </TabsRoot>
-  </Card>
-  <Alert mt="5" as="p" variant="default">
+  </LayerCard>
+  <p class="mt-4 text-size-sm text-subtle">
     {{ t('notifications.failedJobsUseBoundedBackoffStaleOutageMessages') }}
-  </Alert>
-  <Modal v-model:open="open" :title="form.id ? t('notifications.editChannel') : t('notifications.addChannel2')">
+  </p>
+  <Dialog v-model:open="failureOpen" :close-label="t('common.close')" :title="t('notifications.failureReason')" size="lg">
+    <template v-if="selectedFailure">
+      <p class="mb-4 text-size-sm text-subtle">
+        {{ channelNames.get(selectedFailure.channelId) || selectedFailure.channelId }} · {{ formatDate(selectedFailure.createdAt) }}
+      </p>
+      <pre class="max-h-80 overflow-auto overscroll-contain whitespace-pre-wrap rounded-lg bg-recessed p-4 text-size-sm [overflow-wrap:anywhere]">{{ selectedFailure.lastError }}</pre>
+    </template>
+  </Dialog>
+  <Dialog v-model:open="open" :close-label="t('common.close')" :title="form.id ? t('notifications.editChannel') : t('notifications.addChannel2')">
     <form id="channel-form" @submit.prevent="formApi.handleSubmit()">
       <formApi.Field v-slot="{ field }" name="name">
         <Field :label="t('common.displayName')">
-          <FieldInput :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange($event)" @blur="field.handleBlur" />
+          <Input :name="field.name" :model-value="field.state.value" required @update:model-value="field.handleChange(String($event ?? ''))" @blur="field.handleBlur" />
         </Field>
       </formApi.Field>
       <formApi.Field v-slot="{ field }" name="serviceUrlSecretId">
         <Field :label="t('notifications.shoutrrrServiceUrlSecret')" mt="5">
-          <SecretSelect :model-value="field.state.value" :secrets="secrets.data.value?.items || []" @update:model-value="field.handleChange($event || '')" @focusout="field.handleBlur" />
+          <Select :model-value="field.state.value" @update:model-value="field.handleChange($event || '')">
+            <SelectTrigger @focusout="field.handleBlur">
+              <SelectValue :placeholder="t('secretSelect.chooseASecret')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="">
+                  {{ t('secretSelect.chooseASecret') }}
+                </SelectItem>
+                <SelectItem v-for="secret in secrets.data.value?.items" :key="secret.id" :value="secret.id">
+                  {{ secret.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field>
       </formApi.Field>
       <FieldDescription as="p" mt="2">
         {{ t('notifications.forSmtpTelegramAndOtherServiceUrlsThe') }}
       </FieldDescription>
       <formApi.Field v-slot="{ field }" name="enabled">
-        <Toggle :model-value="field.state.value" :label="t('notifications.enableChannel')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
+        <Switch :model-value="field.state.value" :label="t('notifications.enableChannel')" mt="5" @update:model-value="field.handleChange" @focusout="field.handleBlur" />
       </formApi.Field>
-      <FieldError v-if="error" as="p" py="10px" px="0">
+      <Banner v-if="error" variant="error" class="mt-4">
         {{ error }}
-      </FieldError>
+      </Banner>
     </form>
     <template #footer>
-      <Button @click="open = false">
+      <Button :disabled="saving" @click="open = false">
         {{ t('common.cancel') }}
-      </Button><Button form="channel-form" :disabled="saving" variant="primary">
+      </Button><Button type="submit" form="channel-form" :loading="saving" variant="primary">
         {{ t('notifications.save') }}
       </Button>
     </template>
-  </Modal><Modal v-model:open="deleteOpen" :title="t('notifications.deleteChannel')">
+  </Dialog><Dialog v-model:open="deleteOpen" :close-label="t('common.close')" :title="t('notifications.deleteChannel')">
     <p>{{ deleteTarget?.name }}</p>
     <template #footer>
-      <Button @click="deleteOpen = false">
+      <Button :disabled="deleting" @click="deleteOpen = false">
         {{ t('common.cancel') }}
-      </Button><Button variant="destructive" @click="remove">
+      </Button><Button variant="destructive" :loading="deleting" @click="remove">
         {{ t('common.delete') }}
       </Button>
     </template>
-  </Modal>
+  </Dialog>
 </template>

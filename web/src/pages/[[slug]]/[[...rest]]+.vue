@@ -6,11 +6,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { getPublicPageQuery, resolvePublicPageQuery } from '../../client/@pinia/colada.gen'
-import AsyncState from '../../components/AsyncState.vue'
-
 import StatusPage from '../../components/StatusPage.vue'
 import { Button } from '../../components/ui/button'
 import { Empty, EmptyDescription, EmptyTitle } from '../../components/ui/empty'
+import { Loader } from '../../components/ui/loader'
 import { usePollingEnabled } from '../../composables/polling'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -64,27 +63,28 @@ useHead(() => {
 
 <template>
   <StatusPage v-if="query.data.value" :page="query.data.value" :incident-id="incidentId" :stale="!!query.error.value" :path-base="isDomain ? '' : `/${route.params.slug}`" />
-  <div v-else bg="canvas" un-text="default" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
+  <main v-else bg="canvas" un-text="default" min-h="screen" py="48px" px="24px" font="sans" class="[@media(max-width:700px)]:px-17px [@media(max-width:700px)]:py-25px">
     <div class="public-inner" max-w="870px" mx="auto">
-      <AsyncState :pending="query.isPending.value">
-        <Empty>
-          <EmptyTitle as="h1">
-            {{ t('publicPage.statusPageUnavailable') }}
-          </EmptyTitle>
-          <EmptyDescription>
-            {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
-          </EmptyDescription>
-          <Button @click="query.refetch()">
-            {{ t('publicPage.tryAgain') }}
-          </Button><Button variant="ghost" as-child>
-            <RouterLink to="/app/login" ml="3">
-              {{
-                t('publicPage.adminSignIn')
-              }}
-            </RouterLink>
-          </Button>
-        </Empty>
-      </AsyncState>
+      <Loader v-if="query.isPending.value" :label="t('asyncState.loadingData')" class="flex! w-full justify-center p-15 text-size-xs" role="status">
+        {{ t('asyncState.loadingData') }}
+      </Loader>
+      <Empty v-else>
+        <EmptyTitle as="h1">
+          {{ t('publicPage.statusPageUnavailable') }}
+        </EmptyTitle>
+        <EmptyDescription>
+          {{ t('publicPage.thisAddressIsNotBoundToAPublished') }}
+        </EmptyDescription>
+        <Button @click="query.refetch()">
+          {{ t('publicPage.tryAgain') }}
+        </Button><Button variant="ghost" as-child>
+          <RouterLink to="/app/login" ml="3">
+            {{
+              t('publicPage.adminSignIn')
+            }}
+          </RouterLink>
+        </Button>
+      </Empty>
     </div>
-  </div>
+  </main>
 </template>

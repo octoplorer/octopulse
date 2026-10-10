@@ -1,5 +1,11 @@
+<script setup lang="ts">
+import { stickyHeadClasses } from './sticky'
+
+const props = withDefaults(defineProps<{ sticky?: 'left' | 'right', scope?: 'col' | 'row' | 'colgroup' | 'rowgroup' }>(), { scope: 'col' })
+</script>
+
 <template>
-  <th class="[@media(max-width:700px)]:px-15px [@media(max-width:700px)]:py-13px" font="500" un-text="12px subtle" bg="recessed" p="y-10px x-20px" border="b-1 solid line" whitespace="nowrap">
+  <th :scope="props.scope" class="group relative whitespace-nowrap border-b border-fill bg-base p-3 text-start text-size-sm font-medium text-subtle" :class="props.sticky ? stickyHeadClasses[props.sticky] : ''">
     <slot />
   </th>
 </template>

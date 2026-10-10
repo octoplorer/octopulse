@@ -1,0 +1,6 @@
+export type { PaginationLabels } from './context'
+export { default as Pagination } from './Pagination.vue'
+export { default as PaginationControls } from './PaginationControls.vue'
+export { default as PaginationInfo } from './PaginationInfo.vue'
+export { default as PaginationPageSize } from './PaginationPageSize.vue'
+export { default as PaginationSeparator } from './PaginationSeparator.vue'

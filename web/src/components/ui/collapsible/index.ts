@@ -1,0 +1,5 @@
+export { default as Collapsible } from './Collapsible.vue'
+export { default as CollapsibleContent } from './CollapsibleContent.vue'
+export { default as CollapsiblePanel } from './CollapsibleContent.vue'
+export { default as CollapsibleIndicator } from './CollapsibleIndicator.vue'
+export { default as CollapsibleTrigger } from './CollapsibleTrigger.vue'
